@@ -1,0 +1,391 @@
+
+import React, { useState, useEffect } from 'react';
+import { Student, Class, Attendance, User } from '../types';
+import Table from './Table';
+
+interface TeacherStudentsProps {
+  students: Student[];
+  classes: Class[];
+  attendances: Attendance[];
+  onSaveAttendance: (attendance: Omit<Attendance, 'id'>) => void;
+  currentUser: User;
+}
+
+const TeacherStudents: React.FC<TeacherStudentsProps> = ({ 
+  students, 
+  classes, 
+  attendances, 
+  onSaveAttendance,
+  currentUser
+}) => {
+  const [feedback, setFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [isRegisteringAttendance, setIsRegisteringAttendance] = useState(false);
+  
+  // Estado para a chamada em lote (Nova Chamada)
+  const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
+  const [batchStatuses, setBatchStatuses] = useState<Record<string, 'presente' | 'falta'>>({});
+
+  // Estado local para armazenar a data selecionada por aluno na tabela individual
+  const [studentAttendanceDates, setStudentAttendanceDates] = useState<Record<string, string>>(
+    students.reduce((acc, s) => ({ ...acc, [s.id]: new Date().toISOString().split('T')[0] }), {})
+  );
+
+  // Efeito para carregar presenças existentes ao mudar a data no modo de chamada em lote
+  useEffect(() => {
+    if (isRegisteringAttendance) {
+      const newBatchStatuses: Record<string, 'presente' | 'falta'> = {};
+      students.forEach(student => {
+        const existing = attendances.find(a => 
+          a.studentId === student.id && 
+          a.date.startsWith(batchDate)
+        );
+        if (existing) {
+          newBatchStatuses[student.id] = existing.status;
+        }
+      });
+      setBatchStatuses(newBatchStatuses);
+    }
+  }, [batchDate, isRegisteringAttendance, attendances, students]);
+
+  const handleAttendance = (studentId: string, classId: string, status: 'presente' | 'falta', customDate?: string) => {
+    const selectedDate = customDate || studentAttendanceDates[studentId] || new Date().toISOString().split('T')[0];
+    
+    const now = new Date();
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const dateToSave = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+
+    onSaveAttendance({
+      studentId,
+      classId,
+      teacherId: currentUser.id,
+      date: dateToSave,
+      status
+    });
+
+    if (!isRegisteringAttendance) {
+      const studentName = students.find(s => s.id === studentId)?.name.split(' ')[0];
+      setFeedback({
+        message: `${status === 'presente' ? 'Presença' : 'Falta'} registrada para ${studentName} em ${new Date(selectedDate).toLocaleDateString('pt-BR')}!`,
+        type: 'success'
+      });
+      setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
+  const handleFinishBatchAttendance = () => {
+    const studentIds = Object.keys(batchStatuses);
+    if (studentIds.length === 0) {
+      alert('Por favor, marque a presença de pelo menos um aluno antes de salvar.');
+      return;
+    }
+
+    studentIds.forEach(id => {
+      const student = students.find(s => s.id === id);
+      if (student) {
+        handleAttendance(id, student.classId, batchStatuses[id], batchDate);
+      }
+    });
+
+    setFeedback({
+      message: `Chamada realizada com sucesso para ${studentIds.length} alunos na data ${new Date(batchDate).toLocaleDateString('pt-BR')}!`,
+      type: 'success'
+    });
+    
+    setIsRegisteringAttendance(false);
+    setBatchStatuses({});
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const getAttendanceForDate = (studentId: string, dateStr: string) => {
+    return attendances.find(a => a.studentId === studentId && a.date.startsWith(dateStr));
+  };
+
+  const studentHistory = (studentId: string) => {
+    return attendances
+      .filter(a => a.studentId === studentId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const updateStudentDate = (studentId: string, date: string) => {
+    setStudentAttendanceDates(prev => ({ ...prev, [studentId]: date }));
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <header className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 rounded-3xl bg-emerald-500 flex items-center justify-center text-white text-2xl shadow-xl shadow-emerald-100">
+            <i className="fa-solid fa-children"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Meus Alunos</h1>
+            <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Chamada diária e controle de frequência</p>
+          </div>
+        </div>
+        
+        {feedback && (
+          <div className={`px-6 py-3 rounded-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
+            feedback.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+          }`}>
+            <i className="fa-solid fa-circle-check"></i>
+            <span className="text-[10px] font-black uppercase tracking-widest">{feedback.message}</span>
+          </div>
+        )}
+      </header>
+
+      {/* Botão de Cadastrar Nova Chamada */}
+      <div className="flex justify-start">
+        <button 
+          onClick={() => setIsRegisteringAttendance(!isRegisteringAttendance)}
+          className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${
+            isRegisteringAttendance 
+              ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100' 
+              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100 active:scale-95'
+          }`}
+        >
+          <i className={`fa-solid ${isRegisteringAttendance ? 'fa-xmark' : 'fa-calendar-plus'}`}></i>
+          {isRegisteringAttendance ? 'Cancelar Chamada' : 'Cadastrar Nova Chamada'}
+        </button>
+      </div>
+
+      {/* Formulário de Nova Chamada (Lote) */}
+      {isRegisteringAttendance && (
+        <div className="bg-white p-8 rounded-[2.5rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 animate-in zoom-in-95 duration-300 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <i className="fa-solid fa-clipboard-user"></i>
+              </div>
+              <div>
+                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">Nova Chamada Escolar</h3>
+                <p className="text-[9px] text-gray-400 font-bold uppercase">Preencha a frequência de todos os alunos</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 bg-gray-100 px-5 py-3 rounded-2xl border border-gray-200 shadow-inner">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data da Chamada:</label>
+              <input 
+                type="date"
+                value={batchDate}
+                onChange={(e) => setBatchDate(e.target.value)}
+                className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {students.length === 0 ? (
+              <div className="col-span-full py-8 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                <p className="text-gray-400 text-xs font-bold uppercase">Nenhum aluno encontrado para suas turmas.</p>
+              </div>
+            ) : (
+              students.map((student) => (
+                <div key={student.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-emerald-200 transition-all shadow-sm">
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-gray-800 text-sm truncate">{student.name}</span>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">
+                      {classes.find(c => c.id === student.classId)?.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-4">
+                    <button 
+                      onClick={() => setBatchStatuses(prev => ({ ...prev, [student.id]: 'presente' }))}
+                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${
+                        batchStatuses[student.id] === 'presente'
+                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
+                          : 'bg-white border-gray-200 text-gray-400 hover:border-emerald-200'
+                      }`}
+                    >
+                      Presente
+                    </button>
+                    <button 
+                      onClick={() => setBatchStatuses(prev => ({ ...prev, [student.id]: 'falta' }))}
+                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${
+                        batchStatuses[student.id] === 'falta'
+                          ? 'bg-rose-500 border-rose-500 text-white shadow-md'
+                          : 'bg-white border-gray-200 text-gray-400 hover:border-rose-200'
+                      }`}
+                    >
+                      Ausente
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-gray-50">
+            <button 
+              onClick={handleFinishBatchAttendance}
+              className="px-10 py-4 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all active:scale-95 shadow-xl shadow-emerald-100 flex items-center gap-3"
+            >
+              <i className="fa-solid fa-save"></i>
+              Salvar Chamada
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
+        <Table<Student>
+          data={students}
+          columns={[
+            {
+              header: 'Aluno',
+              accessor: (s) => (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold overflow-hidden">
+                    <span className="text-sm">{s.name.charAt(0)}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-gray-800">{s.name}</span>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">RA: {s.ra}</span>
+                  </div>
+                </div>
+              )
+            },
+            {
+              header: 'Turma',
+              accessor: (s) => (
+                <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg border border-blue-100">
+                  {classes.find(c => c.id === s.classId)?.name || 'N/A'}
+                </span>
+              )
+            },
+            {
+              header: 'Chamada Diária',
+              accessor: (s) => {
+                const dateStr = studentAttendanceDates[s.id] || new Date().toISOString().split('T')[0];
+                const existingAttendance = getAttendanceForDate(s.id, dateStr);
+                
+                return (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 py-2">
+                    <div className="flex items-center gap-2">
+                      {existingAttendance ? (
+                        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-black uppercase ${
+                          existingAttendance.status === 'presente' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                        }`}>
+                          <i className={`fa-solid ${existingAttendance.status === 'presente' ? 'fa-check' : 'fa-xmark'}`}></i>
+                          {existingAttendance.status}
+                          <button 
+                            onClick={() => handleAttendance(s.id, s.classId, existingAttendance.status === 'presente' ? 'falta' : 'presente')}
+                            className="ml-2 text-[8px] underline opacity-50 hover:opacity-100"
+                          >
+                            Alterar
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleAttendance(s.id, s.classId, 'presente')}
+                            className="px-3 py-2 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-emerald-100 active:scale-90 flex items-center gap-1"
+                          >
+                            <i className="fa-solid fa-check"></i> Presente
+                          </button>
+                          <button 
+                            onClick={() => handleAttendance(s.id, s.classId, 'falta')}
+                            className="px-3 py-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-rose-100 active:scale-90 flex items-center gap-1"
+                          >
+                            <i className="fa-solid fa-xmark"></i> Ausente
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    <input 
+                      type="date"
+                      value={dateStr}
+                      onChange={(e) => updateStudentDate(s.id, e.target.value)}
+                      className="p-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer shadow-sm"
+                    />
+                  </div>
+                )
+              }
+            },
+            {
+              header: 'Frequência',
+              accessor: (s) => {
+                const history = studentHistory(s.id);
+                const total = history.length;
+                const presents = history.filter(a => a.status === 'presente').length;
+                const percentage = total > 0 ? Math.round((presents / total) * 100) : 100;
+
+                return (
+                  <button 
+                    onClick={() => setShowHistory(showHistory === s.id ? null : s.id)}
+                    className="flex flex-col items-start gap-1 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-gray-700">{percentage}%</span>
+                      <span className="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 transition-colors uppercase">Histórico</span>
+                    </div>
+                    <div className="w-20 h-1 bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-500 ${percentage >= 75 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </button>
+                )
+              }
+            }
+          ]}
+        />
+      </div>
+
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowHistory(null)}></div>
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
+            <div className="p-8 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                  <i className="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900">Histórico de Frequência</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    {students.find(s => s.id === showHistory)?.name}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowHistory(null)} className="text-gray-400 hover:text-gray-900">
+                <i className="fa-solid fa-xmark text-xl"></i>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
+              {studentHistory(showHistory).length === 0 ? (
+                <div className="text-center py-20">
+                  <i className="fa-solid fa-calendar-xmark text-gray-200 text-4xl mb-4"></i>
+                  <p className="text-gray-400 text-sm font-medium italic">Nenhum registro de frequência encontrado.</p>
+                </div>
+              ) : (
+                studentHistory(showHistory).map(record => (
+                  <div key={record.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">
+                        {new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      </p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">
+                        Registrado às {new Date(record.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${
+                      record.status === 'presente' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                    }`}>
+                      {record.status}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TeacherStudents;

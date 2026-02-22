@@ -1,0 +1,153 @@
+
+[
+  {
+    "codigo": "EI01EO01",
+    "descricao": "Perceber que suas ações têm efeitos nas outras crianças e nos adultos.",
+    "componente": "Educação Infantil - O eu, o outro e o nós"
+  },
+  {
+    "codigo": "EI01EO02",
+    "descricao": "Perceber as possibilidades e os limites de seu corpo nas brincadeiras e interações das quais participa.",
+    "componente": "Educação Infantil - O eu, o outro e o nós"
+  },
+  {
+    "codigo": "EI02EO01",
+    "descricao": "Demonstrar atitudes de cuidado e solidariedade na interação com crianças e adultos.",
+    "componente": "Educação Infantil - O eu, o outro e o nós"
+  },
+  {
+    "codigo": "EI03CG01",
+    "descricao": "Criar com o corpo formas diversificadas de expressão de sentimentos, sensações e emoções, tanto nas situações do cotidiano quanto em brincadeiras, dança, teatro, música.",
+    "componente": "Educação Infantil - Corpo, gestos e movimentos"
+  },
+  {
+    "codigo": "EF15LP01",
+    "descricao": "Identificar a função social de textos que circulam em campos da vida social dos quais participa cotidianamente (a casa, a escola, a comunidade, a igreja, o shopping etc.) e nas mídias impressa, de massa e digital, reconhecendo para que foram produzidos, onde circulam, quem os produziu e a quem se destinam.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF15LP02",
+    "descricao": "Estabelecer expectativas em relação ao texto que vai ler (pressuposições antecipadoras dos sentidos, da forma e da função social do texto), apoiando-se em seus conhecimentos prévios sobre as condições de produção e recepção desse texto, o suporte, o gênero e a tipificação, bem como sobre ilustrações, suportes e outros recursos gráficos.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF15LP03",
+    "descricao": "Localizar informações explícitas em textos.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF01LP01",
+    "descricao": "Reconhecer que textos são lidos e escritos da esquerda para a direita e de cima para baixo da página.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF01LP02",
+    "descricao": "Escrever, espontaneamente ou por ditado, palavras e frases de forma alfabética – usando letras/grafemas que representem fonemas.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF01MA01",
+    "descricao": "Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas e reconhecer situações em que os números não indicam contagem nem ordem, mas sim código de identificação.",
+    "componente": "Matemática"
+  },
+  {
+    "codigo": "EF01MA02",
+    "descricao": "Contar de maneira exata ou aproximada, utilizando diferentes estratégias como o pareamento e outros agrupamentos.",
+    "componente": "Matemática"
+  },
+  {
+    "codigo": "EF01CI01",
+    "descricao": "Comparar características de diferentes materiais do cotidiano quanto a sua forma, textura, dureza, cor e brilho.",
+    "componente": "Ciências"
+  },
+  {
+    "codigo": "EF01GE01",
+    "descricao": "Descrever características de seus lugares de vivência (moradia, escola etc.) e identificar semelhanças e diferenças entre esses lugares.",
+    "componente": "Geografia"
+  },
+  {
+    "codigo": "EF01HI01",
+    "descricao": "Identificar aspectos do seu crescimento por meio do registro das lembranças de sua memória e ou de sua família e ou de objetos e fotos de sua infância.",
+    "componente": "História"
+  },
+  {
+    "codigo": "EF15AR01",
+    "descricao": "Identificar e apreciar formas distintas das artes visuais tradicionais e contemporâneas, cultivando a percepção, o imaginário, a capacidade de simbolizar e o repertório imagético.",
+    "componente": "Artes"
+  },
+  {
+    "codigo": "EF02LP01",
+    "descricao": "Utilizar, ao produzir o texto, grafia correta de palavras conhecidas ou com estruturas silábicas já dominadas.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF02MA01",
+    "descricao": "Comparar e ordenar números naturais (até a ordem de centenas) pela compreensão de características do sistema de numeração decimal (valor posicional e função do zero).",
+    "componente": "Matemática"
+  },
+  {
+    "codigo": "EF03LP01",
+    "descricao": "Ler e escrever palavras com correspondências regulares contextuais entre grafemas e fonemas (c/qu; g/gu; r/rr; s/ss; o e u, e e i em final de palavra) e com marcas de nasalidade (til, m, n).",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF04MA01",
+    "descricao": "Ler, escrever e ordenar números naturais até a ordem das dezenas de milhar.",
+    "componente": "Matemática"
+  },
+  {
+    "codigo": "EF05CI01",
+    "descricao": "Explorar fenômenos que envolvam mudanças de estado físico da matéria e comparar essas mudanças em situações cotidianas.",
+    "componente": "Ciências"
+  },
+  {
+    "codigo": "EF06LP01",
+    "descricao": "Reconhecer a impossibilidade de uma neutralidade absoluta no relato de fatos e identificar diferentes graus de parcialidade/objetividade dados pelo recorte feito e pelos efeitos de sentido advindos de escolhas adjetivas, verbais etc.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EF06MA01",
+    "descricao": "Comparar, ordenar, ler e escrever números naturais e números racionais cuja representação decimal é finita, fazendo uso da reta numérica.",
+    "componente": "Matemática"
+  },
+  {
+    "codigo": "EF07LI01",
+    "descricao": "Interagir em situações de intercâmbio oral para realizar as atividades em sala de aula, de forma respeitosa e colaborativa, trocando informações sobre si e os outros.",
+    "componente": "Língua Inglesa"
+  },
+  {
+    "codigo": "EF08HI01",
+    "descricao": "Identificar os principais aspectos conceituais do iluminismo e do liberalismo e discutir a relação entre eles e a organização do mundo contemporâneo.",
+    "componente": "História"
+  },
+  {
+    "codigo": "EF09GE01",
+    "descricao": "Analisar criticamente de que forma a hegemonia europeia foi exercida em diferentes tempos e lugares, inclusive no Brasil.",
+    "componente": "Geografia"
+  },
+  {
+    "codigo": "EM13LP01",
+    "descricao": "Relacionar o texto, tanto na produção como na leitura/escuta, com suas condições de produção e seu contexto sócio-histórico de circulação (leitor/audiência previstos, objetivos, pontos de vista e perspectivas, papel social do autor, época, gênero do discurso etc.), de forma a ampliar a compreensão de diferentes textos e analisar criticamente seus efeitos de sentido.",
+    "componente": "Língua Portuguesa"
+  },
+  {
+    "codigo": "EM13MA01",
+    "descricao": "Interpretar e construir modelos para resolver problemas que envolvam variáveis socioeconômicas ou técnico-científicas, usando funções de 1º e 2º graus, exponencial e logarítmica.",
+    "componente": "Matemática"
+  },
+  {
+    "codigo": "EM13CHS101",
+    "descricao": "Identificar, analisar e comparar diferentes fontes e narrativas expressas em diversas linguagens, com vistas à compreensão de ideias filosóficas e de processos e eventos históricos, geográficos, políticos, econômicos e sociais.",
+    "componente": "Ciências Humanas e Sociais Aplicadas"
+  },
+  {
+    "codigo": "EM13CNT101",
+    "descricao": "Analisar fenômenos naturais e processos tecnológicos, com base nas interações e relações entre matéria e energia, para propor ações individuais e coletivas que aperfeiçoem processos produtivos, minimizem impactos socioambientais e melhorem as condições de vida em âmbito local, regional e global.",
+    "componente": "Ciências da Natureza e suas Tecnologias"
+  },
+  {
+    "codigo": "EM13LGG101",
+    "descricao": "Compreender e analisar processos de produção e circulação de discursos, nas diferentes linguagens, para fazer escolhas fundamentadas em função de interesses pessoais e coletivos, bem como para atuar de forma crítica e ética na sociedade.",
+    "componente": "Linguagens e suas Tecnologias"
+  }
+]
