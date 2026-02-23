@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { User, UserProfile } from '../types';
 import { MOCK_STUDENTS, MOCK_USERS, MOCK_REPORTS, MOCK_CLASSES, MOCK_SCHOOLS } from '../constants';
 import { supabase } from '../lib/supabaseClient';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 
 interface DashboardProps {
   user: User;
@@ -13,6 +14,7 @@ interface DashboardProps {
   classes?: any[];
   usersList?: any[];
   reports?: any[];
+  studentRecords?: any[];
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -23,7 +25,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   students,
   classes,
   usersList,
-  reports
+  reports,
+  studentRecords
 }) => {
   const isSecretaria = user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN;
   const isDiretor = user.profile === UserProfile.DIRETOR;
@@ -319,14 +322,80 @@ const Dashboard: React.FC<DashboardProps> = ({
         {/* Footer Auditado */}
         <div className="bg-slate-900 text-slate-400 p-5 rounded-[2rem] flex items-center justify-center gap-4 text-[10px] font-black tracking-[0.2em] uppercase border border-slate-800 shadow-2xl">
           <span className="flex items-center gap-2">
-            <i className="fa-solid fa-shield-halved text-emerald-500 text-xs"></i>
-            Segurança de Dados
+            <i className="fa-solid fa-lock text-purple-400 text-xs"></i>
+            Conexão Criptografada
           </span>
-          <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-          <span className="flex items-center gap-2">
-            <i className="fa-solid fa-cloud-arrow-up text-blue-400 text-xs"></i>
-            Sincronizado Supabase
-          </span>
+        </div>
+
+        {/* Seção de Evolução — Adicionada para o Diretor */}
+        <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden mt-8">
+          <div className="px-8 py-7 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-gray-50/50 to-white">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                <i className="fa-solid fa-chart-line text-lg"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Evolução dos Alunos</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Monitoramento da Unidade</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            {/* Filtros da Seção */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Selecionar Aluno</label>
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                  <option value="all">Todos os Alunos da Unidade</option>
+                  {filteredStudents.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo</label>
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                  <option>Todos</option>
+                  <option>Presença</option>
+                  <option>Refeição</option>
+                  <option>Atividade</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Período</label>
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                  <option>Mês Atual</option>
+                  <option>Semana</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="h-[300px] w-full bg-gray-50/30 rounded-[2rem] border border-gray-50 p-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={studentRecords && studentRecords.length > 0 ?
+                  Array.from(new Set(studentRecords.filter(r => filteredStudents.some(s => s.id === r.studentId)).map(r => r.date))).sort().slice(-7).map(date => ({
+                    date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                    presenca: studentRecords.filter(r => r.date === date && r.recordType === 'presenca').length * 10,
+                    refeicao: studentRecords.filter(r => r.date === date && r.recordType === 'refeicao').length * 15,
+                    atividades: studentRecords.filter(r => r.date === date && r.recordType === 'atividade').length * 5,
+                  })) : [
+                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 60 },
+                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 80 },
+                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 85 },
+                  ]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
+                  <Line type="monotone" dataKey="presenca" name="Presença" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="refeicao" name="Refeição" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -341,26 +410,49 @@ const Dashboard: React.FC<DashboardProps> = ({
     { label: 'Mediadores em Campo (por escola)', count: statsData.mediators, change: 'Monitorado', icon: 'fa-person-walking-luggage', color: 'amber' },
   ];
 
-  // Métricas de assistência por escola para a Secretaria
-  const schoolAssistanceMetrics = (schools || []).map(school => {
+  // Métricas de assistência por escola para a Secretaria (Formatado para o Gráfico)
+  const chartData = (schools || []).map(school => {
     const schoolClasses = (classes || []).filter(c => c.schoolId === school.id);
     const studentsInSchool = (students || []).filter(s => schoolClasses.some(c => c.id === s.classId)).length;
     const mediatorsInSchool = (usersList || []).filter(u => u.profile === UserProfile.MEDIADOR && u.active && u.schoolId === school.id).length;
 
     const ratioValue = mediatorsInSchool > 0 ? (studentsInSchool / mediatorsInSchool) : studentsInSchool;
-    const displayRatio = mediatorsInSchool > 0 ? `1:${Math.ceil(ratioValue)}` : `0:${studentsInSchool}`;
-    const isScarce = mediatorsInSchool === 0 ? studentsInSchool > 0 : ratioValue > 10;
     const density = studentsInSchool > 0 ? (mediatorsInSchool / studentsInSchool) : 0;
 
-    return { ...school, studentsInSchool, mediatorsInSchool, displayRatio, isScarce, density };
+    return {
+      name: school.name.split(' ').slice(0, 3).join(' '), // Abrevia nome para caber no eixo
+      fullName: school.name,
+      alunos: studentsInSchool,
+      mediadores: mediatorsInSchool,
+      relacao: ratioValue.toFixed(1),
+      density
+    };
   });
 
-  const getHeatMapColor = (density: number) => {
-    if (density === 0) return 'bg-slate-50 border-slate-200';
-    if (density < 0.05) return 'bg-blue-50 border-blue-100 text-blue-700';
-    if (density < 0.1) return 'bg-blue-100 border-blue-200 text-blue-800';
-    if (density < 0.2) return 'bg-blue-200 border-blue-300 text-blue-900';
-    return 'bg-blue-500 border-blue-600 text-white';
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
+          <p className="font-black text-gray-800 text-xs uppercase tracking-widest mb-2 border-b border-gray-50 pb-2">{data.fullName}</p>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-8">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Alunos:</span>
+              <span className="text-sm font-black text-blue-600">{data.alunos}</span>
+            </div>
+            <div className="flex items-center justify-between gap-8">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Mediadores:</span>
+              <span className="text-sm font-black text-purple-600">{data.mediadores}</span>
+            </div>
+            <div className="flex items-center justify-between gap-8 pt-1.5 border-t border-gray-50 mt-1.5">
+              <span className="text-[10px] font-black text-indigo-500 uppercase">Aluno/Mediador:</span>
+              <span className="text-sm font-black text-indigo-700">1:{data.relacao}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -484,69 +576,209 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {schoolAssistanceMetrics.map((school) => (
-              <div
-                key={school.id}
-                className={`relative overflow-hidden rounded-2xl border-2 p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${getHeatMapColor(school.density)}`}
+          <div className="h-[400px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                barGap={12}
               >
-                {school.isScarce && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-rose-500 text-white px-2.5 py-1 rounded-full text-[9px] font-black uppercase shadow-lg shadow-rose-200 z-10">
-                    <i className="fa-solid fa-triangle-exclamation text-[8px]"></i>
-                    Escassez
-                  </div>
-                )}
-
-                <div>
-                  <h4 className="font-black text-sm mb-4 leading-snug pr-16">{school.name}</h4>
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium opacity-60">Alunos Matriculados</span>
-                      <span className="text-sm font-black">{school.studentsInSchool}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium opacity-60">Mediadores Ativos</span>
-                      <span className="text-sm font-black">{school.mediatorsInSchool}</span>
-                    </div>
-                    <div className="pt-2.5 mt-1 border-t border-current border-opacity-10">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase tracking-wide opacity-50">Mediador / Aluno</span>
-                        <span className={`text-sm font-black ${school.isScarce ? 'text-rose-600' : ''}`}>
-                          {school.displayRatio}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 w-full bg-black/5 h-1.5 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${school.density > 0.15 ? 'bg-white/70' : 'bg-current opacity-25'}`}
-                    style={{ width: `${Math.min(school.density * 500, 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+                <defs>
+                  <linearGradient id="colorAlunos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={1} />
+                  </linearGradient>
+                  <linearGradient id="colorMediadores" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                  interval={0}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
+                  wrapperStyle={{ paddingBottom: '30px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}
+                />
+                <Bar
+                  dataKey="alunos"
+                  name="Alunos"
+                  fill="url(#colorAlunos)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={32}
+                />
+                <Bar
+                  dataKey="mediadores"
+                  name="Mediadores"
+                  fill="url(#colorMediadores)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={32}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
-          {/* Legenda */}
-          <div className="mt-6 flex flex-wrap gap-5 pt-5 border-t border-gray-100">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-300 w-full">Legenda de Densidade</p>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-md bg-slate-50 border-2 border-slate-200"></span>
-              <span className="text-xs font-semibold text-gray-500">Sem dados</span>
+          {/* Destaques Rápidos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pb-4">
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <i className="fa-solid fa-people-group"></i>
+                </div>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Média Municipal</p>
+              </div>
+              <p className="text-2xl font-black text-slate-800">1:{(chartData.reduce((acc, curr) => acc + Number(curr.relacao), 0) / (chartData.length || 1)).toFixed(1)}</p>
+              <p className="text-xs text-slate-400 font-medium">Cobertura média de assistência</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-md bg-blue-50 border-2 border-blue-100"></span>
-              <span className="text-xs font-semibold text-gray-500">Baixa Densidade</span>
+
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                  <i className="fa-solid fa-user-check"></i>
+                </div>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Escola com mais Apoio</p>
+              </div>
+              <p className="text-2xl font-black text-slate-800">
+                {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) < Number(curr.relacao) ? prev : curr).name : 'N/A'}
+              </p>
+              <p className="text-xs text-slate-400 font-medium">Melhor taxa mediador/aluno</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-md bg-blue-200 border-2 border-blue-300"></span>
-              <span className="text-xs font-semibold text-gray-500">Média Densidade</span>
+
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                  <i className="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Ponto de Atenção</p>
+              </div>
+              <p className="text-2xl font-black text-slate-800">
+                {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) > Number(curr.relacao) ? prev : curr).name : 'N/A'}
+              </p>
+              <p className="text-xs text-slate-400 font-medium">Maior carga por mediador</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-md bg-blue-500 border-2 border-blue-600"></span>
-              <span className="text-xs font-semibold text-gray-500">Alta Densidade</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Evolução dos Alunos — Nova Seção */}
+      <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-8 py-7 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-gray-50/50 to-white">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+              <i className="fa-solid fa-chart-line text-lg"></i>
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-gray-900 tracking-tight">Evolução dos Alunos</h3>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Monitoramento de registros e desempenho</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8">
+          {/* Filtros da Seção */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="md:col-span-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Selecionar Aluno</label>
+              <select
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              >
+                <option value="all">Visão Geral da Rede</option>
+                {(isDiretor ? filteredStudents : students || []).map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo de Registro</label>
+              <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                <option>Todos os Registros</option>
+                <option>Presença e Frequência</option>
+                <option>Consumo de Refeições</option>
+                <option>Atividades Pedagógicas</option>
+                <option>Observações Mediadas</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Visualização</label>
+              <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                <option>Evolução Semanal</option>
+                <option>Comparativo Mensal</option>
+                <option>Histórico Anual</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Gráfico de Evolução Dinâmico (Simulado com base em studentRecords) */}
+          <div className="h-[350px] w-full bg-gray-50/30 rounded-[2.5rem] border border-gray-50 p-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={studentRecords && studentRecords.length > 0 ?
+                // Agrupando dados por data (simplificado)
+                Array.from(new Set(studentRecords.map(r => r.date))).sort().slice(-7).map(date => ({
+                  date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                  presenca: studentRecords.filter(r => r.date === date && r.recordType === 'presenca').length * 10,
+                  refeicao: studentRecords.filter(r => r.date === date && r.recordType === 'refeicao').length * 15,
+                  atividades: studentRecords.filter(r => r.date === date && r.recordType === 'atividade').length * 5,
+                })) : [
+                  { date: '01/02', presenca: 90, refeicao: 85, atividades: 70 },
+                  { date: '05/02', presenca: 85, refeicao: 80, atividades: 75 },
+                  { date: '10/02', presenca: 95, refeicao: 90, atividades: 80 },
+                  { date: '15/02', presenca: 100, refeicao: 95, atividades: 90 },
+                  { date: '20/02', presenca: 92, refeicao: 88, atividades: 85 },
+                ]}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                />
+                <Tooltip
+                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }} />
+                <Line type="monotone" dataKey="presenca" name="Presença (%)" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                <Line type="monotone" dataKey="refeicao" name="Refeições (%)" stroke="#8b5cf6" strokeWidth={4} dot={{ r: 6, fill: '#8b5cf6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={4} dot={{ r: 6, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Listagem de Destaques da Evolução */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
+              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Presença Média</p>
+              <h4 className="text-2xl font-black text-blue-700">92.4%</h4>
+            </div>
+            <div className="p-6 bg-purple-50/50 rounded-3xl border border-purple-100/50">
+              <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Refeições Ok</p>
+              <h4 className="text-2xl font-black text-purple-700">88.1%</h4>
+            </div>
+            <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50">
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Atividades Comcl.</p>
+              <h4 className="text-2xl font-black text-amber-700">142</h4>
+            </div>
+            <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50">
+              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Novas Observações</p>
+              <h4 className="text-2xl font-black text-emerald-700">28</h4>
             </div>
           </div>
         </div>

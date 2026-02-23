@@ -1516,6 +1516,7 @@ export default function App() {
             classes={classes}
             usersList={usersList}
             reports={reports}
+            studentRecords={studentRecords}
           />
         );
 
