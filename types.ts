@@ -201,3 +201,14 @@ export interface LessonPlan {
   createdAt: string;
   updatedAt?: string;
 }
+
+export interface StudentRecord {
+  id: string;
+  studentId: string;
+  date: string;
+  recordType: 'presenca' | 'refeicao' | 'atividade' | 'observacao';
+  value: string;
+  observation?: string;
+  createdBy: string;
+  createdAt: string;
+}

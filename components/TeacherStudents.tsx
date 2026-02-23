@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Student, Class, Attendance, User } from '../types';
+import { Student, Class, Attendance, User, StudentRecord } from '../types';
 import Table from './Table';
 
 interface TeacherStudentsProps {
@@ -8,20 +8,30 @@ interface TeacherStudentsProps {
   classes: Class[];
   attendances: Attendance[];
   onSaveAttendance: (attendance: Omit<Attendance, 'id'>) => void;
+  onSaveStudentRecord: (record: Partial<StudentRecord>) => void;
   currentUser: User;
 }
 
-const TeacherStudents: React.FC<TeacherStudentsProps> = ({ 
-  students, 
-  classes, 
-  attendances, 
+const TeacherStudents: React.FC<TeacherStudentsProps> = ({
+  students,
+  classes,
+  attendances,
   onSaveAttendance,
+  onSaveStudentRecord,
   currentUser
 }) => {
-  const [feedback, setFeedback] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [showRegisterModal, setShowRegisterModal] = useState<string | null>(null);
   const [isRegisteringAttendance, setIsRegisteringAttendance] = useState(false);
-  
+
+  // Estado para registro individual
+  const [individualRecord, setIndividualRecord] = useState({
+    type: 'atividade' as 'atividade' | 'observacao',
+    value: '',
+    observation: ''
+  });
+
   // Estado para a chamada em lote (Nova Chamada)
   const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
   const [batchStatuses, setBatchStatuses] = useState<Record<string, 'presente' | 'falta'>>({});
@@ -36,8 +46,8 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     if (isRegisteringAttendance) {
       const newBatchStatuses: Record<string, 'presente' | 'falta'> = {};
       students.forEach(student => {
-        const existing = attendances.find(a => 
-          a.studentId === student.id && 
+        const existing = attendances.find(a =>
+          a.studentId === student.id &&
           a.date.startsWith(batchDate)
         );
         if (existing) {
@@ -50,7 +60,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
 
   const handleAttendance = (studentId: string, classId: string, status: 'presente' | 'falta', customDate?: string) => {
     const selectedDate = customDate || studentAttendanceDates[studentId] || new Date().toISOString().split('T')[0];
-    
+
     const now = new Date();
     const [year, month, day] = selectedDate.split('-').map(Number);
     const dateToSave = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
@@ -91,7 +101,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
       message: `Chamada realizada com sucesso para ${studentIds.length} alunos na data ${new Date(batchDate).toLocaleDateString('pt-BR')}!`,
       type: 'success'
     });
-    
+
     setIsRegisteringAttendance(false);
     setBatchStatuses({});
     setTimeout(() => setFeedback(null), 3000);
@@ -111,6 +121,26 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     setStudentAttendanceDates(prev => ({ ...prev, [studentId]: date }));
   };
 
+  const handleSaveIndividual = (studentId: string) => {
+    if (!individualRecord.value && !individualRecord.observation) {
+      alert('Preencha pelo menos um campo do registro.');
+      return;
+    }
+
+    onSaveStudentRecord({
+      studentId,
+      date: studentAttendanceDates[studentId] || new Date().toISOString().split('T')[0],
+      recordType: individualRecord.type,
+      value: individualRecord.value,
+      observation: individualRecord.observation
+    });
+
+    setFeedback({ message: 'Registro salvo com sucesso!', type: 'success' });
+    setShowRegisterModal(null);
+    setIndividualRecord({ type: 'atividade', value: '', observation: '' });
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -123,11 +153,10 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
             <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Chamada diária e controle de frequência</p>
           </div>
         </div>
-        
+
         {feedback && (
-          <div className={`px-6 py-3 rounded-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
-            feedback.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
-          }`}>
+          <div className={`px-6 py-3 rounded-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${feedback.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+            }`}>
             <i className="fa-solid fa-circle-check"></i>
             <span className="text-[10px] font-black uppercase tracking-widest">{feedback.message}</span>
           </div>
@@ -136,13 +165,12 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
 
       {/* Botão de Cadastrar Nova Chamada */}
       <div className="flex justify-start">
-        <button 
+        <button
           onClick={() => setIsRegisteringAttendance(!isRegisteringAttendance)}
-          className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${
-            isRegisteringAttendance 
-              ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100' 
-              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100 active:scale-95'
-          }`}
+          className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${isRegisteringAttendance
+            ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100'
+            : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100 active:scale-95'
+            }`}
         >
           <i className={`fa-solid ${isRegisteringAttendance ? 'fa-xmark' : 'fa-calendar-plus'}`}></i>
           {isRegisteringAttendance ? 'Cancelar Chamada' : 'Cadastrar Nova Chamada'}
@@ -162,10 +190,10 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                 <p className="text-[9px] text-gray-400 font-bold uppercase">Preencha a frequência de todos os alunos</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3 bg-gray-100 px-5 py-3 rounded-2xl border border-gray-200 shadow-inner">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data da Chamada:</label>
-              <input 
+              <input
                 type="date"
                 value={batchDate}
                 onChange={(e) => setBatchDate(e.target.value)}
@@ -189,23 +217,21 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 ml-4">
-                    <button 
+                    <button
                       onClick={() => setBatchStatuses(prev => ({ ...prev, [student.id]: 'presente' }))}
-                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${
-                        batchStatuses[student.id] === 'presente'
-                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
-                          : 'bg-white border-gray-200 text-gray-400 hover:border-emerald-200'
-                      }`}
+                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${batchStatuses[student.id] === 'presente'
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
+                        : 'bg-white border-gray-200 text-gray-400 hover:border-emerald-200'
+                        }`}
                     >
                       Presente
                     </button>
-                    <button 
+                    <button
                       onClick={() => setBatchStatuses(prev => ({ ...prev, [student.id]: 'falta' }))}
-                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${
-                        batchStatuses[student.id] === 'falta'
-                          ? 'bg-rose-500 border-rose-500 text-white shadow-md'
-                          : 'bg-white border-gray-200 text-gray-400 hover:border-rose-200'
-                      }`}
+                      className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${batchStatuses[student.id] === 'falta'
+                        ? 'bg-rose-500 border-rose-500 text-white shadow-md'
+                        : 'bg-white border-gray-200 text-gray-400 hover:border-rose-200'
+                        }`}
                     >
                       Ausente
                     </button>
@@ -216,7 +242,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
           </div>
 
           <div className="flex justify-end pt-4 border-t border-gray-50">
-            <button 
+            <button
               onClick={handleFinishBatchAttendance}
               className="px-10 py-4 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all active:scale-95 shadow-xl shadow-emerald-100 flex items-center gap-3"
             >
@@ -258,17 +284,16 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
               accessor: (s) => {
                 const dateStr = studentAttendanceDates[s.id] || new Date().toISOString().split('T')[0];
                 const existingAttendance = getAttendanceForDate(s.id, dateStr);
-                
+
                 return (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 py-2">
                     <div className="flex items-center gap-2">
                       {existingAttendance ? (
-                        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-black uppercase ${
-                          existingAttendance.status === 'presente' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
-                        }`}>
+                        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-black uppercase ${existingAttendance.status === 'presente' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                          }`}>
                           <i className={`fa-solid ${existingAttendance.status === 'presente' ? 'fa-check' : 'fa-xmark'}`}></i>
                           {existingAttendance.status}
-                          <button 
+                          <button
                             onClick={() => handleAttendance(s.id, s.classId, existingAttendance.status === 'presente' ? 'falta' : 'presente')}
                             className="ml-2 text-[8px] underline opacity-50 hover:opacity-100"
                           >
@@ -277,13 +302,13 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                         </div>
                       ) : (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleAttendance(s.id, s.classId, 'presente')}
                             className="px-3 py-2 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-emerald-100 active:scale-90 flex items-center gap-1"
                           >
                             <i className="fa-solid fa-check"></i> Presente
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleAttendance(s.id, s.classId, 'falta')}
                             className="px-3 py-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-rose-100 active:scale-90 flex items-center gap-1"
                           >
@@ -293,7 +318,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                       )}
                     </div>
 
-                    <input 
+                    <input
                       type="date"
                       value={dateStr}
                       onChange={(e) => updateStudentDate(s.id, e.target.value)}
@@ -312,7 +337,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                 const percentage = total > 0 ? Math.round((presents / total) * 100) : 100;
 
                 return (
-                  <button 
+                  <button
                     onClick={() => setShowHistory(showHistory === s.id ? null : s.id)}
                     className="flex flex-col items-start gap-1 group"
                   >
@@ -321,18 +346,105 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                       <span className="text-[9px] font-bold text-gray-400 group-hover:text-blue-600 transition-colors uppercase">Histórico</span>
                     </div>
                     <div className="w-20 h-1 bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-500 ${percentage >= 75 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                      <div
+                        className={`h-full transition-all duration-500 ${percentage >= 75 ? 'bg-emerald-500' : 'bg-rose-500'}`}
                         style={{ width: `${percentage}%` }}
                       ></div>
                     </div>
                   </button>
-                )
+                );
               }
+            },
+            {
+              header: 'Ações',
+              accessor: (s) => (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowRegisterModal(s.id)}
+                    className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 group shadow-sm"
+                    title="Registrar Atividade/Observação"
+                  >
+                    <i className="fa-solid fa-pen-to-square"></i>
+                  </button>
+                </div>
+              )
             }
           ]}
         />
       </div>
+
+      {showRegisterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowRegisterModal(null)}></div>
+          <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in-95 duration-300 space-y-6">
+            <header className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                  <i className="fa-solid fa-file-signature"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 tracking-tight">Novo Registro de Aluno</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    {students.find(s => s.id === showRegisterModal)?.name}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowRegisterModal(null)} className="text-gray-400 hover:text-gray-900 p-2">
+                <i className="fa-solid fa-xmark text-xl"></i>
+              </button>
+            </header>
+
+            <div className="space-y-6">
+              <div className="flex gap-4 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+                {(['atividade', 'observacao'] as const).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setIndividualRecord(prev => ({ ...prev, type }))}
+                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${individualRecord.type === type
+                      ? 'bg-white text-indigo-600 shadow-sm border border-indigo-100'
+                      : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                  >
+                    {type === 'atividade' ? 'Atividade' : 'Observação'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {individualRecord.type === 'atividade' ? 'Título da Atividade' : 'Assunto'}
+                </label>
+                <input
+                  type="text"
+                  value={individualRecord.value}
+                  onChange={(e) => setIndividualRecord(prev => ({ ...prev, value: e.target.value }))}
+                  placeholder={individualRecord.type === 'atividade' ? "Ex: Exercício de Matemática" : "Ex: Comportamento em sala"}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Descrição / Notas</label>
+                <textarea
+                  value={individualRecord.observation}
+                  onChange={(e) => setIndividualRecord(prev => ({ ...prev, observation: e.target.value }))}
+                  placeholder="Detalhes adicionais..."
+                  rows={4}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none shadow-inner"
+                />
+              </div>
+
+              <button
+                onClick={() => handleSaveIndividual(showRegisterModal)}
+                className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+              >
+                <i className="fa-solid fa-save"></i>
+                Salvar Registro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showHistory && (
         <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-300">
@@ -354,7 +466,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
               {studentHistory(showHistory).length === 0 ? (
                 <div className="text-center py-20">
@@ -372,9 +484,8 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                         Registrado às {new Date(record.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${
-                      record.status === 'presente' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${record.status === 'presente' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      }`}>
                       {record.status}
                     </span>
                   </div>

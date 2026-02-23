@@ -27,7 +27,7 @@ import Settings from './components/Settings';
 import DBAnalysis from './components/DBAnalysis';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
-import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal } from './types';
+import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord } from './types';
 import { MOCK_USERS, MOCK_SCHOOLS, MOCK_STUDENTS, MOCK_MEDIATION_RECORDS, MOCK_CLASSES, MOCK_LESSON_PLANS, MOCK_MEALS } from './constants';
 import { supabase } from './lib/supabaseClient';
 
@@ -62,6 +62,7 @@ export default function App() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [teachersTable, setTeachersTable] = useState<any[]>([]);
   const [mediatorsTable, setMediatorsTable] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +150,7 @@ export default function App() {
     const mealsData = (await safeFetch('meals')) as any[];
     const reportsData = (await safeFetch('reports')) as any[];
     const lessonPlansData = (await safeFetch('lesson_plans')) as any[];
+    const studentRecordsData = (await safeFetch('student_records')) as any[];
 
     // Mapeamento resiliente
     setSchools(schoolsData.map(s => ({
@@ -257,6 +259,14 @@ export default function App() {
       createdAt: lp.criado_em,
       updatedAt: lp.atualizado_em
     })) as LessonPlan[]);
+
+    setStudentRecords(studentRecordsData.map(r => ({
+      ...r,
+      studentId: r.student_id,
+      recordType: r.record_type,
+      createdBy: r.created_by,
+      createdAt: r.created_at
+    })) as StudentRecord[]);
 
     console.log('fetchData: Carga de dados concluída.');
   }, []);
@@ -372,9 +382,39 @@ export default function App() {
       showNotification('A senha é obrigatória.', 'error');
       return;
     }
-
     setLoading(true);
     try {
+      const roleToProfileMap: Record<string, UserProfile> = {
+        'admin_geral': UserProfile.ADMIN,
+        'secretaria': UserProfile.SECRETARIA,
+        'diretor': UserProfile.DIRETOR,
+        'professor': UserProfile.PROFESSOR,
+        'mediador': UserProfile.MEDIADOR
+      };
+
+      // Suporte para senha mestra "12345" para Administrador Geral (Solicitação do Usuário)
+      if (profile === UserProfile.ADMIN && password === '12345') {
+        const { data: adminData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('role', 'admin_geral')
+          .maybeSingle();
+
+        if (adminData) {
+          setUser({
+            ...adminData,
+            profile: UserProfile.ADMIN,
+            themePreference: 'light'
+          } as unknown as User);
+          setIsLoggedIn(true);
+          setActiveTab('dashboard');
+          showNotification('Acesso via senha mestra realizado!', 'success');
+          setLoading(false);
+          fetchData();
+          return;
+        }
+      }
+
       // 1. Validar e Autenticar no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: emailOrName,
@@ -404,14 +444,6 @@ export default function App() {
         return;
       }
 
-      const roleToProfileMap: Record<string, UserProfile> = {
-        'admin_geral': UserProfile.ADMIN,
-        'secretaria': UserProfile.SECRETARIA,
-        'diretor': UserProfile.DIRETOR,
-        'professor': UserProfile.PROFESSOR,
-        'mediador': UserProfile.MEDIADOR
-      };
-
       const mappedProfile = roleToProfileMap[userData.role];
       if (mappedProfile !== profile) {
         showNotification(`Perfil selecionado (${profile}) não corresponde ao seu registro (${mappedProfile}).`, 'error');
@@ -420,13 +452,14 @@ export default function App() {
         return;
       }
 
-      // O onAuthStateChange cuidará de setar o usuário e carregar dados
-      // Mas podemos redirecionar imediatamente aqui
+      // 3. Sucesso - Carregar dados e redirecionar
+      setIsLoggedIn(true);
       if (mappedProfile === UserProfile.MEDIADOR) setActiveTab('alunos');
       else if (mappedProfile === UserProfile.PROFESSOR) setActiveTab('turmas');
       else setActiveTab('dashboard');
 
       showNotification('Login realizado com sucesso!', 'success');
+      fetchData();
 
     } catch (error) {
       console.error('Erro ao realizar login:', error);
@@ -461,33 +494,104 @@ export default function App() {
   };
 
   const handleSaveAttendance = (attendanceData: Omit<Attendance, 'id'>) => {
-    const newAttendance: Attendance = {
-      ...attendanceData,
-      id: `att_${Date.now()}`
-    };
-    setAttendances(prev => {
-      // Remove registro anterior se houver para o mesmo aluno e mesma data (YYYY-MM-DD)
-      const existingRemoved = prev.filter(a =>
-        !(a.studentId === attendanceData.studentId && a.date.startsWith(attendanceData.date.split('T')[0]))
-      );
-      return [...existingRemoved, newAttendance];
+    // Migrando para student_records
+    handleSaveStudentRecord({
+      studentId: attendanceData.studentId,
+      date: attendanceData.date.split('T')[0],
+      recordType: 'presenca',
+      value: attendanceData.status,
+      createdBy: user?.id
     });
   };
 
   const handleSaveMeal = (mealData: Omit<Meal, 'id'>) => {
-    const newMeal: Meal = {
-      ...mealData,
-      id: `meal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
-    setMeals(prev => {
-      // Remove registro anterior para o mesmo aluno, data e tipo de refeição
-      const filtered = prev.filter(m =>
-        !(m.studentId === mealData.studentId &&
-          m.date.startsWith(mealData.date.split('T')[0]) &&
-          m.type === mealData.type)
-      );
-      return [...filtered, newMeal];
+    // Migrando para student_records
+    handleSaveStudentRecord({
+      studentId: mealData.studentId,
+      date: mealData.date.split('T')[0],
+      recordType: 'refeicao',
+      value: mealData.status,
+      observation: mealData.type,
+      createdBy: user?.id
     });
+  };
+
+  const handleSaveStudentRecord = async (recordData: Partial<StudentRecord>) => {
+    if (!user) return;
+
+    try {
+      const recordToSave = {
+        student_id: recordData.studentId,
+        date: recordData.date || new Date().toISOString().split('T')[0],
+        record_type: recordData.recordType,
+        value: recordData.value,
+        observation: recordData.observation,
+        created_by: user.id
+      };
+
+      const { data, error } = await supabase
+        .from('student_records')
+        .upsert([recordToSave], {
+          onConflict: 'student_id, date, record_type'
+        })
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        const mapped = {
+          ...data[0],
+          studentId: data[0].student_id,
+          recordType: data[0].record_type,
+          createdBy: data[0].created_by,
+          createdAt: data[0].created_at
+        } as StudentRecord;
+
+        setStudentRecords(prev => {
+          const filtered = prev.filter(r =>
+            !(r.studentId === mapped.studentId && r.date === mapped.date && r.recordType === mapped.recordType)
+          );
+          return [...filtered, mapped];
+        });
+
+        // Atualizar também estados legados se necessário
+        if (mapped.recordType === 'refeicao') {
+          setMeals(prev => {
+            const filtered = prev.filter(m =>
+              !(m.studentId === mapped.studentId && m.date === mapped.date && m.type === mapped.observation)
+            );
+            return [...filtered, {
+              id: mapped.id,
+              studentId: mapped.studentId,
+              schoolId: user.schoolId || '',
+              date: mapped.date,
+              type: mapped.observation || '',
+              status: mapped.value
+            }];
+          });
+        }
+
+        if (mapped.recordType === 'presenca') {
+          setAttendances(prev => {
+            const filtered = prev.filter(a =>
+              !(a.studentId === mapped.studentId && a.date === mapped.date)
+            );
+            return [...filtered, {
+              id: mapped.id,
+              studentId: mapped.studentId,
+              date: mapped.date,
+              status: mapped.value as 'presente' | 'falta',
+              teacherId: user.id,
+              schoolId: user.schoolId || '',
+              classId: '' // We might need to look this up
+            }];
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error('Erro ao salvar registro do aluno:', err);
+      showNotification(`Erro ao salvar registro: ${err.message}`, 'error');
+    }
   };
 
   const handleSaveMediationRecord = (recordData: Omit<MediationRecord, 'id'>) => {
@@ -1738,19 +1842,25 @@ export default function App() {
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
-          return <TeacherStudents students={teacherStudents} classes={teacherClasses} attendances={attendances} onSaveAttendance={handleSaveAttendance} currentUser={user} />;
+          return <TeacherStudents students={teacherStudents} classes={teacherClasses} attendances={attendances} onSaveAttendance={handleSaveAttendance} onSaveStudentRecord={handleSaveStudentRecord} currentUser={user} />;
         }
         if (user.profile === UserProfile.MEDIADOR) {
           const mediatorStudents = students.filter(s => user.studentIds?.includes(s.id));
+          const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
+          return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} />;
+        }
+        if (user.profile === UserProfile.DIRETOR) {
+          const schoolLessonPlans = lessonPlans.filter(lp => lp.schoolId === user.schoolId);
+          const schoolStudents = students.filter(s => s.schoolId === user.schoolId);
+          const filteredStudentRecords = studentRecords.filter(r => schoolStudents.some(s => s.id === r.studentId));
           return (
-            <MediatorStudents
-              students={mediatorStudents}
+            <DirectorTeacherRecords
+              user={user}
+              lessonPlans={schoolLessonPlans}
+              studentRecords={filteredStudentRecords}
+              usersList={usersList}
               classes={classes}
-              attendances={attendances}
-              mediationRecords={mediationRecords}
-              onSaveAttendance={handleSaveAttendance}
-              onSaveMediationRecord={handleSaveMediationRecord}
-              currentUser={user}
+              students={schoolStudents}
             />
           );
         }

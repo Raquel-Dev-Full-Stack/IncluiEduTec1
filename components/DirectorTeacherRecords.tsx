@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Student, Class, User, LessonPlan } from '../types';
+import { Student, Class, User, LessonPlan, StudentRecord } from '../types';
 import ModuleWrapper from './ModuleWrapper';
 import Table from './Table';
 
@@ -13,6 +13,7 @@ interface BNCCData {
 interface DirectorTeacherRecordsProps {
   user: User;
   lessonPlans: LessonPlan[];
+  studentRecords: StudentRecord[];
   usersList: User[];
   classes: Class[];
   students: Student[];
@@ -21,10 +22,12 @@ interface DirectorTeacherRecordsProps {
 const DirectorTeacherRecords: React.FC<DirectorTeacherRecordsProps> = ({
   user,
   lessonPlans,
+  studentRecords,
   usersList,
   classes,
   students
 }) => {
+  const [viewMode, setViewMode] = useState<'pedagogico' | 'diario'>('pedagogico');
   const [selectedRecord, setSelectedRecord] = useState<LessonPlan | null>(null);
   const [bnccData, setBnccData] = useState<BNCCData[]>([]);
 
@@ -45,45 +48,113 @@ const DirectorTeacherRecords: React.FC<DirectorTeacherRecordsProps> = ({
 
   return (
     <>
-      <ModuleWrapper
-        title="Registros Pedagógicos dos Professores"
-        description="Visualize todas as anotações e registros de aula realizados pelo corpo docente da unidade. Clique em uma linha para ver os detalhes."
-      >
-        <Table<LessonPlan>
-          data={lessonPlans}
-          onRowClick={(r) => setSelectedRecord(r)}
-          columns={[
-            {
-              header: 'Data',
-              accessor: (r) => <span className="font-bold text-gray-700">{new Date(r.createdAt).toLocaleDateString('pt-BR')}</span>
-            },
-            {
-              header: 'Professor',
-              accessor: (r) => getTeacherName(r.teacherId)
-            },
-            {
-              header: 'Turma',
-              accessor: (r) => getClassName(r.classId)
-            },
-            {
-              header: 'Tema da Aula',
-              accessor: (r) => <span className="font-semibold text-indigo-600">{r.temaAula}</span>
-            },
-            {
-              header: 'BNCC',
-              accessor: (r) => (
-                <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg border border-blue-100">
-                  {r.habilidadesBNCC && r.habilidadesBNCC.length > 0 ? r.habilidadesBNCC[0] : 'N/A'}
-                </span>
-              )
-            },
-            {
-              header: 'Descrição',
-              accessor: (r) => <p className="text-xs text-gray-600 line-clamp-2 max-w-xs" title={r.description}>{r.description}</p>
-            }
-          ]}
-        />
-      </ModuleWrapper>
+      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100 shadow-inner">
+          <button
+            onClick={() => setViewMode('pedagogico')}
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'pedagogico'
+                ? 'bg-white text-indigo-600 shadow-md border border-indigo-100'
+                : 'text-gray-400 hover:text-gray-600'
+              }`}
+          >
+            Diário de Classe
+          </button>
+          <button
+            onClick={() => setViewMode('diario')}
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'diario'
+                ? 'bg-white text-indigo-600 shadow-md border border-indigo-100'
+                : 'text-gray-400 hover:text-gray-600'
+              }`}
+          >
+            Registros Diários (Alunos)
+          </button>
+        </div>
+      </header>
+
+      {viewMode === 'pedagogico' ? (
+        <ModuleWrapper
+          title="Registros Pedagógicos dos Professores"
+          description="Visualize todas as anotações e registros de aula realizados pelo corpo docente da unidade."
+        >
+          <Table<LessonPlan>
+            data={lessonPlans}
+            onRowClick={(r) => setSelectedRecord(r)}
+            columns={[
+              {
+                header: 'Data',
+                accessor: (r) => <span className="font-bold text-gray-700">{new Date(r.createdAt).toLocaleDateString('pt-BR')}</span>
+              },
+              {
+                header: 'Professor',
+                accessor: (r) => getTeacherName(r.teacherId)
+              },
+              {
+                header: 'Turma',
+                accessor: (r) => getClassName(r.classId)
+              },
+              {
+                header: 'Tema da Aula',
+                accessor: (r) => <span className="font-semibold text-indigo-600">{r.temaAula}</span>
+              },
+              {
+                header: 'BNCC',
+                accessor: (r) => (
+                  <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg border border-blue-100">
+                    {r.habilidadesBNCC && r.habilidadesBNCC.length > 0 ? r.habilidadesBNCC[0] : 'N/A'}
+                  </span>
+                )
+              },
+              {
+                header: 'Descrição',
+                accessor: (r) => <p className="text-xs text-gray-600 line-clamp-2 max-w-xs" title={r.description}>{r.description}</p>
+              }
+            ]}
+          />
+        </ModuleWrapper>
+      ) : (
+        <ModuleWrapper
+          title="Registros Diários dos Alunos"
+          description="Acompanhe a frequência, alimentação, atividades e observações individuais dos estudantes."
+        >
+          <Table<StudentRecord>
+            data={studentRecords}
+            columns={[
+              {
+                header: 'Data',
+                accessor: (r) => <span className="font-bold text-gray-700">{new Date(r.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+              },
+              {
+                header: 'Aluno',
+                accessor: (r) => <span className="font-bold text-gray-900">{students.find(s => s.id === r.studentId)?.name || 'N/A'}</span>
+              },
+              {
+                header: 'Tipo',
+                accessor: (r) => (
+                  <span className={`px-2 py-1 text-[9px] font-black uppercase rounded-lg border ${r.recordType === 'presenca' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      r.recordType === 'refeicao' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                        r.recordType === 'atividade' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                          'bg-indigo-50 text-indigo-600 border-indigo-100'
+                    }`}>
+                    {r.recordType}
+                  </span>
+                )
+              },
+              {
+                header: 'Registro',
+                accessor: (r) => <span className="font-semibold text-gray-700">{r.value}</span>
+              },
+              {
+                header: 'Observação',
+                accessor: (r) => <p className="text-xs text-gray-500 italic max-w-xs truncate" title={r.observation}>{r.observation}</p>
+              },
+              {
+                header: 'Autor',
+                accessor: (r) => <span className="text-[10px] text-gray-400 font-bold uppercase">{getTeacherName(r.createdBy)}</span>
+              }
+            ]}
+          />
+        </ModuleWrapper>
+      )}
 
       {/* Modal de Detalhes do Registro */}
       {selectedRecord && (
