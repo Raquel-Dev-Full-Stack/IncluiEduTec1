@@ -25,6 +25,7 @@ import TeacherInclusivePlans from './components/TeacherInclusivePlans';
 import DirectorTeacherRecords from './components/DirectorTeacherRecords';
 import Settings from './components/Settings';
 import DBAnalysis from './components/DBAnalysis';
+import AdminDashboard from './components/AdminDashboard';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
 import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord } from './types';
@@ -210,6 +211,7 @@ export default function App() {
           ...u,
           profile: roleToProfileMap[u.role] || UserProfile.PROFESSOR,
           schoolId: u.school_id,
+          municipio_id: u.municipio_id, // Ensure municipio_id is preserved
           studentIds: linkedStudentIds // Agora vindo da tabela de junção
         };
       }) as User[]);
@@ -453,12 +455,18 @@ export default function App() {
       }
 
       // 3. Sucesso - Carregar dados e redirecionar
-      setIsLoggedIn(true);
-      if (mappedProfile === UserProfile.MEDIADOR) setActiveTab('alunos');
-      else if (mappedProfile === UserProfile.PROFESSOR) setActiveTab('turmas');
-      else setActiveTab('dashboard');
-
       showNotification('Login realizado com sucesso!', 'success');
+
+      if (mappedProfile === UserProfile.ADMIN) {
+        setActiveTab('admin_total');
+      } else if (mappedProfile === UserProfile.MEDIADOR) {
+        setActiveTab('alunos');
+      } else if (mappedProfile === UserProfile.PROFESSOR) {
+        setActiveTab('turmas');
+      } else {
+        setActiveTab('dashboard');
+      }
+
       fetchData();
 
     } catch (error) {
@@ -1519,6 +1527,24 @@ export default function App() {
             studentRecords={studentRecords}
           />
         );
+
+      case 'admin_total':
+        if (user.profile === UserProfile.ADMIN) {
+          return (
+            <AdminDashboard
+              escolas={schools}
+              turmas={classes}
+              professores={usersList}
+              alunos={students}
+              presencas={attendances}
+              refeicoes={meals}
+              mediacao={mediationRecords}
+              relatorios={reports}
+              modo="total"
+            />
+          );
+        }
+        return null;
 
       case 'messages':
         return <Messages user={user} />;
