@@ -1525,6 +1525,9 @@ export default function App() {
             usersList={usersList}
             reports={reports}
             studentRecords={studentRecords}
+            attendances={attendances}
+            meals={meals}
+            mediationRecords={mediationRecords}
           />
         );
 

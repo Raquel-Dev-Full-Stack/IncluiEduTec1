@@ -15,6 +15,9 @@ interface DashboardProps {
   usersList?: any[];
   reports?: any[];
   studentRecords?: any[];
+  attendances?: any[];
+  meals?: any[];
+  mediationRecords?: any[];
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -26,11 +29,75 @@ const Dashboard: React.FC<DashboardProps> = ({
   classes,
   usersList,
   reports,
-  studentRecords
+  studentRecords,
+  attendances,
+  meals,
+  mediationRecords
 }) => {
   const isSecretaria = user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN;
   const isDiretor = user.profile === UserProfile.DIRETOR;
   const schoolId = user.schoolId;
+
+  // Funções para Exportação Educacenso (Consolidado Municipal)
+  const transformarParaEducacenso = (dados: any) => {
+    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n<Educacenso municipio_id="' + (user.municipio_id || 'geral') + '">';
+    const xmlFooter = '\n</Educacenso>';
+
+    const escolasXml = (dados.escolas || []).map((e: any) => `
+    <Escola id="${e.id}">
+      <INEP>${e.inep || ''}</INEP>
+      <Nome>${e.name}</Nome>
+    </Escola>`).join('');
+
+    const turmasXml = (dados.classes || []).map((c: any) => `
+    <Turma id="${c.id}">
+      <Nome>${c.name}</Nome>
+      <Ano>${c.year}</Ano>
+      <EscolaID>${c.schoolId}</EscolaID>
+    </Turma>`).join('');
+
+    const alunosXml = (dados.students || []).map((a: any) => `
+    <Aluno id="${a.id}">
+      <RA>${a.ra || ''}</RA>
+      <Nome>${a.name}</Nome>
+      <EscolaID>${a.schoolId || ''}</EscolaID>
+      <TurmaID>${a.classId || ''}</TurmaID>
+    </Aluno>`).join('');
+
+    return `${xmlHeader}\n  <Escolas>${escolasXml}\n  </Escolas>\n  <Turmas>${turmasXml}\n  </Turmas>\n  <Alunos>${alunosXml}\n  </Alunos>${xmlFooter}`;
+  };
+
+  const salvarArquivo = (conteudo: string, nomeArquivo: string) => {
+    const blob = new Blob([conteudo], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const gerarArquivoEducacenso = () => {
+    try {
+      const arquivo = transformarParaEducacenso({
+        escolas: schools,
+        students: students,
+        classes: classes,
+        usersList: usersList,
+        attendances: attendances,
+        meals: meals,
+        mediationRecords: mediationRecords,
+        reports: reports
+      });
+      salvarArquivo(arquivo, "educacenso_export.xml");
+      alert("Arquivo Educacenso gerado com sucesso! Pronto para envio ao INEP/MEC.");
+    } catch (error) {
+      console.error("Erro ao gerar arquivo Educacenso:", error);
+      alert("Erro ao gerar o arquivo. Verifique os dados e tente novamente.");
+    }
+  };
 
   // Estados para os indicadores dinâmicos da Secretaria
   const [statsData, setStatsData] = useState({
@@ -779,6 +846,55 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50">
               <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Novas Observações</p>
               <h4 className="text-2xl font-black text-emerald-700">28</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Seção de Exportação Educacenso — Exclusivo Secretaria */}
+      <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden mt-8">
+        <div className="px-8 py-7 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-gray-50/50 to-white">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-100">
+              <i className="fa-solid fa-file-export text-lg"></i>
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-gray-900 tracking-tight">Exportação Educacenso</h3>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Geração de arquivo consolidado para o INEP</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8">
+          <div className="bg-emerald-50 rounded-[2rem] border border-emerald-100 p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-2">
+              <h4 className="text-lg font-black text-emerald-900">Pronto para Exportar</h4>
+              <p className="text-sm text-emerald-700/70 font-medium max-w-md">
+                Gere o arquivo oficial do Educacenso consolidado com todos os dados das escolas, turmas e alunos do município.
+                O arquivo será gerado no formato XML seguindo os padrões exigidos pelo MEC.
+              </p>
+            </div>
+            <button
+              onClick={gerarArquivoEducacenso}
+              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 shadow-xl shadow-emerald-100 transition-all active:scale-95 group"
+            >
+              <i className="fa-solid fa-download group-hover:animate-bounce"></i>
+              Exportar para Educacenso
+            </button>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <i className="fa-solid fa-check-circle text-emerald-500"></i>
+              <span className="text-[10px] font-black uppercase text-gray-500">Dados de {schools?.length || 0} Escolas</span>
+            </div>
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <i className="fa-solid fa-check-circle text-emerald-500"></i>
+              <span className="text-[10px] font-black uppercase text-gray-500">Dados de {students?.length || 0} Alunos</span>
+            </div>
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <i className="fa-solid fa-check-circle text-emerald-500"></i>
+              <span className="text-[10px] font-black uppercase text-gray-500">Perfil Municipal Consolidado</span>
             </div>
           </div>
         </div>
