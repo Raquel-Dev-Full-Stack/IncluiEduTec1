@@ -1879,21 +1879,6 @@ export default function App() {
           const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
           return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} />;
         }
-        if (user.profile === UserProfile.DIRETOR) {
-          const schoolLessonPlans = lessonPlans.filter(lp => lp.schoolId === user.schoolId);
-          const schoolStudents = students.filter(s => s.schoolId === user.schoolId);
-          const filteredStudentRecords = studentRecords.filter(r => schoolStudents.some(s => s.id === r.studentId));
-          return (
-            <DirectorTeacherRecords
-              user={user}
-              lessonPlans={schoolLessonPlans}
-              studentRecords={filteredStudentRecords}
-              usersList={usersList}
-              classes={classes}
-              students={schoolStudents}
-            />
-          );
-        }
 
         const filteredStudents = user.profile === UserProfile.DIRETOR
           ? students.filter(s => s.schoolId === user.schoolId || classes.find(c => c.id === s.classId)?.schoolId === user.schoolId)

@@ -44,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'turmas',
       label: 'Turmas',
       icon: 'fa-users-rectangle',
-      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR, UserProfile.PROFESSOR]
     },
     {
       id: 'teachers',
@@ -148,8 +148,8 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
               key={item.id}
               onClick={() => handleTabSelection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium text-left ${activeTab === item.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                  : 'hover:bg-slate-800 hover:text-white'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                : 'hover:bg-slate-800 hover:text-white'
                 }`}
             >
               <i className={`fa-solid ${item.icon} w-5 text-center`}></i>

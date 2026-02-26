@@ -1,6 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Student, Class, User } from '../types';
+import { jsPDF } from 'jspdf';
+import { supabase } from '../lib/supabaseClient';
 
 interface TeacherInclusivePlansProps {
   students: Student[];
@@ -23,9 +25,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
     content: ''
   });
 
-  const selectedStudent = useMemo(() => 
-    students.find(s => s.id === selectedStudentId), 
-  [students, selectedStudentId]);
+  const selectedStudent = useMemo(() =>
+    students.find(s => s.id === selectedStudentId),
+    [students, selectedStudentId]);
 
   const handleSave = (type: PlanType) => {
     if (!selectedStudentId) {
@@ -36,9 +38,138 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const handleExport = () => {
-    if (!selectedStudentId) return;
-    alert('Gerando Relatório Consolidado (PEI + PDI + PAEE) em PDF...');
+  const handleExport = async () => {
+    if (!selectedStudentId || !selectedStudent) return;
+
+    setFeedback('Gerando Relatório Consolidado (PEI + PDI + PAEE)...');
+
+    try {
+      // 1. Buscar dados no Supabase (PEI, PDI, PAEE)
+      const [{ data: peiData }, { data: pdiData }, { data: paeeData }] = await Promise.all([
+        supabase.from('pei').select('*').eq('student_id', selectedStudentId).maybeSingle(),
+        supabase.from('pdi').select('*').eq('student_id', selectedStudentId).maybeSingle(),
+        supabase.from('paee').select('*').eq('student_id', selectedStudentId).maybeSingle()
+      ]);
+
+      // 2. Iniciar PDF
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPos = 20;
+
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(79, 70, 229); // Indigo 600
+      doc.setFont("helvetica", "bold");
+      doc.text("Relatório Pedagógico Consolidado", pageWidth / 2, yPos, { align: "center" });
+
+      yPos += 10;
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text("Sistema IncluiEduTec — Gestão Pedagógica em Inclusão", pageWidth / 2, yPos, { align: "center" });
+
+      yPos += 15;
+      doc.setDrawColor(229, 231, 235);
+      doc.line(20, yPos, pageWidth - 20, yPos);
+
+      // Identificação
+      yPos += 15;
+      doc.setFontSize(14);
+      doc.setTextColor(31, 41, 55); // Gray 900
+      doc.text("Identificação do Aluno", 20, yPos);
+
+      yPos += 10;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Nome: ${selectedStudent.name}`, 20, yPos);
+      doc.text(`RA: ${selectedStudent.ra}`, 120, yPos);
+
+      yPos += 7;
+      const studentClass = classes.find(c => c.id === selectedStudent.classId);
+      doc.text(`Turma: ${studentClass?.name || 'Não informada'}`, 20, yPos);
+      doc.text(`Professor(a): ${user.name}`, 120, yPos);
+
+      // --- Seção PEI ---
+      yPos += 20;
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(79, 70, 229);
+      doc.rect(20, yPos - 5, pageWidth - 40, 8, 'F');
+      doc.setTextColor(255);
+      doc.text("PEI — PLANO EDUCACIONAL INDIVIDUALIZADO", 25, yPos + 1);
+
+      yPos += 12;
+      doc.setTextColor(75);
+      doc.setFont("helvetica", "normal");
+      if (peiData) {
+        const peiLines = doc.splitTextToSize(peiData.content || peiData.metas || 'Sem registros detalhados no sistema.', pageWidth - 50);
+        doc.text(peiLines, 25, yPos);
+        yPos += (peiLines.length * 6) + 5;
+      } else {
+        doc.text("Nenhum registro de PEI encontrado para este aluno.", 25, yPos);
+        yPos += 10;
+      }
+
+      // --- Seção PDI ---
+      yPos += 10;
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(147, 51, 234); // Purple 600
+      doc.rect(20, yPos - 5, pageWidth - 40, 8, 'F');
+      doc.setTextColor(255);
+      doc.text("PDI — PLANO DE DESENVOLVIMENTO INDIVIDUAL", 25, yPos + 1);
+
+      yPos += 12;
+      doc.setTextColor(75);
+      doc.setFont("helvetica", "normal");
+      if (pdiData) {
+        const pdiLines = doc.splitTextToSize(pdiData.content || pdiData.desenvolvimento || 'Sem registros detalhados no sistema.', pageWidth - 50);
+        doc.text(pdiLines, 25, yPos);
+        yPos += (pdiLines.length * 6) + 5;
+      } else {
+        doc.text("Nenhum registro de PDI encontrado para este aluno.", 25, yPos);
+        yPos += 10;
+      }
+
+      // --- Seção PAEE ---
+      if (yPos > 240) { doc.addPage(); yPos = 20; }
+      yPos += 10;
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(5, 150, 105); // Emerald 600
+      doc.rect(20, yPos - 5, pageWidth - 40, 8, 'F');
+      doc.setTextColor(255);
+      doc.text("PAEE — PLANO DE ATENDIMENTO EDUCACIONAL ESPECIALIZADO", 25, yPos + 1);
+
+      yPos += 12;
+      doc.setTextColor(75);
+      doc.setFont("helvetica", "normal");
+      if (paeeData) {
+        const paeeLines = doc.splitTextToSize(paeeData.content || paeeData.recursos || 'Sem registros detalhados no sistema.', pageWidth - 50);
+        doc.text(paeeLines, 25, yPos);
+        yPos += (paeeLines.length * 6) + 5;
+      } else {
+        doc.text("Nenhum registro de PAEE encontrado para este aluno.", 25, yPos);
+        yPos += 10;
+      }
+
+      // Rodapé
+      if (yPos > 260) { doc.addPage(); yPos = 20; }
+      yPos += 30;
+      doc.setDrawColor(200);
+      doc.line(pageWidth / 2 - 40, yPos, pageWidth / 2 + 40, yPos);
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(user.name, pageWidth / 2, yPos + 5, { align: "center" });
+      doc.text("Professor Responsável", pageWidth / 2, yPos + 10, { align: "center" });
+
+      // Finalizar e Salvar
+      doc.save(`relatorio_consolidado_${selectedStudent.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
+
+      setFeedback("Relatório Consolidado (PEI + PDI + PAEE) exportado com sucesso!");
+      setTimeout(() => setFeedback(null), 5000);
+
+    } catch (error: any) {
+      console.error("Erro na exportação:", error);
+      setFeedback(`Falha na exportação: ${error.message || 'Desconhecido'}`);
+      setTimeout(() => setFeedback(null), 5000);
+    }
   };
 
   const handleCreatePlan = () => {
@@ -54,7 +185,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
-    
+
     setFeedback(`Novo plano ${creationData.type} criado com sucesso para o aluno!`);
     setIsCreatingNew(false);
     setSelectedStudentId(creationData.studentId);
@@ -91,20 +222,19 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
               <option key={s.id} value={s.id}>{s.name} ({classes.find(c => c.id === s.classId)?.name})</option>
             ))}
           </select>
-          
+
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={handleCreatePlan}
-              className={`px-6 py-3.5 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 shadow-lg whitespace-nowrap ${
-                isCreatingNew ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'
-              }`}
+              className={`px-6 py-3.5 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 shadow-lg whitespace-nowrap ${isCreatingNew ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'
+                }`}
             >
               <i className={`fa-solid ${isCreatingNew ? 'fa-xmark' : 'fa-file-signature'}`}></i>
               {isCreatingNew ? 'Cancelar Criação' : 'Fazer Plano Inclusivo'}
             </button>
-            
+
             {selectedStudentId && !isCreatingNew && (
-              <button 
+              <button
                 onClick={handleExport}
                 className="px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95 flex items-center gap-2"
               >
@@ -118,21 +248,21 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       {isCreatingNew ? (
         <div className="bg-white p-10 rounded-[3.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 animate-in zoom-in-95 duration-500 space-y-10">
           <div className="flex items-center gap-4 border-b border-gray-50 pb-6">
-             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-                <i className="fa-solid fa-plus-circle"></i>
-             </div>
-             <div>
-                <h2 className="text-2xl font-black text-gray-800">Elaborar Novo Plano Inclusivo</h2>
-                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Preencha os dados iniciais para o registro</p>
-             </div>
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+              <i className="fa-solid fa-plus-circle"></i>
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-gray-800">Elaborar Novo Plano Inclusivo</h2>
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Preencha os dados iniciais para o registro</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aluno Alvo *</label>
-              <select 
+              <select
                 value={creationData.studentId}
-                onChange={(e) => setCreationData({...creationData, studentId: e.target.value})}
+                onChange={(e) => setCreationData({ ...creationData, studentId: e.target.value })}
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
               >
                 <option value="">Selecione o Aluno...</option>
@@ -141,9 +271,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tipo de Documento *</label>
-              <select 
+              <select
                 value={creationData.type}
-                onChange={(e) => setCreationData({...creationData, type: e.target.value as PlanType})}
+                onChange={(e) => setCreationData({ ...creationData, type: e.target.value as PlanType })}
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
               >
                 <option value="PEI">PEI - Plano Educacional Individualizado</option>
@@ -153,9 +283,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
             </div>
             <div className="md:col-span-2 space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Conteúdo do Plano *</label>
-              <textarea 
+              <textarea
                 value={creationData.content}
-                onChange={(e) => setCreationData({...creationData, content: e.target.value})}
+                onChange={(e) => setCreationData({ ...creationData, content: e.target.value })}
                 placeholder="Descreva aqui os objetivos, metas e estratégias pedagógicas..."
                 rows={6}
                 className="w-full p-6 bg-gray-50 border border-gray-200 rounded-[2rem] text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-inner"
@@ -164,19 +294,19 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
           </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t border-gray-50">
-             <button 
-               onClick={() => setIsCreatingNew(false)}
-               className="px-8 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-rose-500 transition-colors"
-             >
-               Descartar
-             </button>
-             <button 
-               onClick={handleFinalizeCreation}
-               className="px-12 py-4 bg-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-3"
-             >
-                <i className="fa-solid fa-cloud-arrow-up"></i>
-                Finalizar e Salvar Plano
-             </button>
+            <button
+              onClick={() => setIsCreatingNew(false)}
+              className="px-8 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-rose-500 transition-colors"
+            >
+              Descartar
+            </button>
+            <button
+              onClick={handleFinalizeCreation}
+              className="px-12 py-4 bg-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-3"
+            >
+              <i className="fa-solid fa-cloud-arrow-up"></i>
+              Finalizar e Salvar Plano
+            </button>
           </div>
         </div>
       ) : selectedStudentId ? (
@@ -188,11 +318,10 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                 <button
                   key={type}
                   onClick={() => setActivePlan(type)}
-                  className={`w-full p-4 rounded-2xl text-left transition-all flex items-center justify-between group ${
-                    activePlan === type 
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
-                      : 'hover:bg-gray-50 text-gray-500'
-                  }`}
+                  className={`w-full p-4 rounded-2xl text-left transition-all flex items-center justify-between group ${activePlan === type
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+                    : 'hover:bg-gray-50 text-gray-500'
+                    }`}
                 >
                   <span className="text-xs font-black uppercase tracking-widest">{type}</span>
                   <i className={`fa-solid fa-chevron-right text-[10px] ${activePlan === type ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}></i>
@@ -207,7 +336,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                 <span className="text-[10px] font-black uppercase tracking-widest">Revisão Periódica</span>
               </div>
               <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
-                Próxima revisão agendada para: <br/>
+                Próxima revisão agendada para: <br />
                 <span className="font-black">15 de Novembro de 2024</span>
               </p>
               <div className="w-full bg-amber-200/50 h-1.5 rounded-full overflow-hidden">
@@ -263,14 +392,14 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Metas Acadêmicas Curto/Médio Prazo</label>
-                      <textarea 
+                      <textarea
                         className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[150px]"
                         placeholder="Ex: Identificar números decimais, ampliar vocabulário..."
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Adaptações Curriculares Necessárias</label>
-                      <textarea 
+                      <textarea
                         className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[150px]"
                         placeholder="Ex: Provas com letras ampliadas, tempo estendido..."
                       />
@@ -369,7 +498,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
               )}
 
               <div className="mt-12 pt-8 border-t border-gray-50 flex justify-end gap-4">
-                <button 
+                <button
                   onClick={() => handleSave(activePlan)}
                   className="px-10 py-4 bg-indigo-600 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all active:scale-95 shadow-xl shadow-indigo-100 flex items-center gap-3"
                 >
@@ -386,7 +515,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
           </div>
           <h2 className="text-xl font-black text-gray-800 tracking-tight">Inicie selecionando um aluno</h2>
           <p className="text-gray-400 text-sm max-w-xs mx-auto font-medium italic">Selecione o aluno no menu superior para visualizar seu histórico de planos inclusivos.</p>
-          <button 
+          <button
             onClick={handleCreatePlan}
             className="mt-4 px-8 py-3.5 bg-blue-50 text-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100"
           >
