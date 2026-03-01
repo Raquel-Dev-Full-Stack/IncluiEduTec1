@@ -239,8 +239,15 @@ export default function App() {
 
     setMeals(mealsData.map(m => ({
       ...m,
-      studentId: m.student_id,
-      schoolId: m.school_id
+      id: m.id || m.id,
+      studentId: m.aluno_id || m.student_id,
+      date: m.data || m.date,
+      type: m.tipo_refeicao || m.type,
+      status: m.status_consumo || m.status,
+      sono: m.sono,
+      evacuou: m.evacuou,
+      observations: m.observacoes || m.observations,
+      schoolId: m.school_id || ''
     })) as Meal[]);
 
     setReports(reportsData.map(r => ({
@@ -512,16 +519,52 @@ export default function App() {
     });
   };
 
-  const handleSaveMeal = (mealData: Omit<Meal, 'id'>) => {
-    // Migrando para student_records
-    handleSaveStudentRecord({
-      studentId: mealData.studentId,
-      date: mealData.date.split('T')[0],
-      recordType: 'refeicao',
-      value: mealData.status,
-      observation: mealData.type,
-      createdBy: user?.id
-    });
+  const handleSaveMeal = async (mealData: Omit<Meal, 'id'>) => {
+    if (!user) return;
+    try {
+      const recordToSave = {
+        aluno_id: mealData.studentId,
+        data: mealData.date.split('T')[0],
+        tipo_refeicao: mealData.type,
+        status_consumo: mealData.status,
+        sono: mealData.sono || false,
+        evacuou: mealData.evacuou || false,
+        observacoes: mealData.observations || null
+      };
+
+      const { data, error } = await supabase
+        .from('meals')
+        .upsert([recordToSave], {
+          onConflict: 'aluno_id, data, tipo_refeicao'
+        })
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        const mapped = {
+          id: data[0].id,
+          studentId: data[0].aluno_id,
+          schoolId: user.schoolId || '',
+          date: data[0].data,
+          type: data[0].tipo_refeicao,
+          status: data[0].status_consumo,
+          sono: data[0].sono,
+          evacuou: data[0].evacuou,
+          observations: data[0].observacoes
+        } as Meal;
+
+        setMeals(prev => {
+          const filtered = prev.filter(m =>
+            !(m.studentId === mapped.studentId && m.date === mapped.date && m.type === mapped.type)
+          );
+          return [...filtered, mapped];
+        });
+      }
+    } catch (err: any) {
+      console.error('Erro ao salvar refeição da saúde diária:', err);
+      showNotification(`Erro ao salvar acompanhamento: ${err.message}`, 'error');
+    }
   };
 
   const handleSaveStudentRecord = async (recordData: Partial<StudentRecord>) => {

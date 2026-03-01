@@ -302,7 +302,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
               { header: 'DATA', accessor: (m) => new Date(m.date).toLocaleDateString('pt-BR') },
               { header: 'ALUNO', accessor: (m) => schoolStudents.find(s => s.id === m.studentId)?.name || 'N/A' },
               { header: 'TIPO', accessor: 'type' },
-              { header: 'CONSUMO', accessor: 'status' }
+              { header: 'CONSUMO', accessor: 'status' },
+              { header: 'DORMIU', accessor: (m) => m.sono !== undefined && m.sono !== null ? (m.sono ? 'Sim' : 'Não') : 'Não informado' },
+              { header: 'EVACUOU', accessor: (m) => m.evacuou !== undefined && m.evacuou !== null ? (m.evacuou ? 'Sim' : 'Não') : 'Não informado' },
+              { header: 'OBSERVAÇÕES', accessor: (m) => m.observations || '-' }
             ]}
           />
         );

@@ -150,6 +150,9 @@ export interface Meal {
   date: string;
   type: string;
   status: string;
+  sono?: boolean;
+  evacuou?: boolean;
+  observations?: string;
 }
 
 export interface MediationRecord {

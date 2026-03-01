@@ -19,42 +19,58 @@ const mealTypes = [
 ];
 
 const mealStatus = [
-  { id: 'Comeu tudo', label: 'Comeu tudo', color: 'emerald', icon: 'fa-check' },
-  { id: 'Comeu metade', label: 'Comeu metade', color: 'amber', icon: 'fa-chart-pie' },
-  { id: 'Não comeu', label: 'Não comeu', color: 'rose', icon: 'fa-xmark' },
+  { id: 'comeu', label: 'Comeu tudo', color: 'emerald', icon: 'fa-check' },
+  { id: 'comeu pouco', label: 'Comeu pouco', color: 'amber', icon: 'fa-chart-pie' },
+  { id: 'não comeu', label: 'Não comeu', color: 'rose', icon: 'fa-xmark' },
 ];
 
-const TeacherMeals: React.FC<TeacherMealsProps> = ({ 
-  students, 
-  classes, 
-  meals, 
+const TeacherMeals: React.FC<TeacherMealsProps> = ({
+  students,
+  classes,
+  meals,
   onSaveMeal,
-  currentUser 
+  currentUser
 }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
-  
+
   // Estados para o modo de registro em lote
   const [batchMealType, setBatchMealType] = useState('Almoço');
   const [batchRecords, setBatchRecords] = useState<Record<string, string>>({});
 
-  const getMealStatus = (studentId: string, type: string) => {
-    return meals.find(m => 
-      m.studentId === studentId && 
-      m.type === type && 
+  const getMealData = (studentId: string, type: string) => {
+    return meals.find(m =>
+      m.studentId === studentId &&
+      m.type === type &&
       m.date.startsWith(selectedDate)
-    )?.status;
+    );
   };
 
   const handleStatusChange = (studentId: string, mealType: string, status: string) => {
+    const existing = getMealData(studentId, mealType) || {};
+    onSaveMeal({
+      ...existing,
+      studentId,
+      date: selectedDate + 'T' + new Date().toLocaleTimeString('pt-BR'),
+      type: mealType,
+      status,
+    } as Omit<Meal, 'id'>);
+    setFeedback(`Registro de ${mealType} atualizado!`);
+    setTimeout(() => setFeedback(null), 2000);
+  };
+
+  const handleCheckboxChange = (studentId: string, mealType: string, field: 'sono' | 'evacuou', value: boolean) => {
+    const existing = getMealData(studentId, mealType) || {};
     onSaveMeal({
       studentId,
       date: selectedDate + 'T' + new Date().toLocaleTimeString('pt-BR'),
       type: mealType,
-      status
+      status: existing.status || 'Não comeu',
+      sono: field === 'sono' ? value : existing.sono,
+      evacuou: field === 'evacuou' ? value : existing.evacuou,
     });
-    setFeedback(`Registro de ${mealType} atualizado!`);
+    setFeedback(`${field === 'sono' ? 'Sono' : 'Evacuação'} atualizada!`);
     setTimeout(() => setFeedback(null), 2000);
   };
 
@@ -91,20 +107,19 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
         <div className="flex flex-col md:flex-row items-center gap-4">
           <div className="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-100">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Data do Registro:</label>
-            <input 
+            <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="bg-transparent border-none text-xs font-bold text-gray-700 outline-none cursor-pointer"
             />
           </div>
-          <button 
+          <button
             onClick={() => setIsRegistering(!isRegistering)}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${
-              isRegistering 
-                ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100' 
-                : 'bg-amber-600 text-white hover:bg-amber-700 shadow-amber-100 active:scale-95'
-            }`}
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${isRegistering
+              ? 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100'
+              : 'bg-amber-600 text-white hover:bg-amber-700 shadow-amber-100 active:scale-95'
+              }`}
           >
             <i className={`fa-solid ${isRegistering ? 'fa-xmark' : 'fa-plus'}`}></i>
             {isRegistering ? 'Cancelar' : 'Fazer Registro'}
@@ -125,10 +140,10 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                 <p className="text-[9px] text-gray-400 font-bold uppercase">Preencha o consumo de todos os alunos</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3 bg-gray-100 px-5 py-3 rounded-2xl border border-gray-200 shadow-inner">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo de Refeição:</label>
-              <select 
+              <select
                 value={batchMealType}
                 onChange={(e) => setBatchMealType(e.target.value)}
                 className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-amber-500"
@@ -154,15 +169,14 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                   </div>
                   <div className="flex items-center gap-1.5 ml-4">
                     {mealStatus.map(status => (
-                      <button 
+                      <button
                         key={status.id}
                         onClick={() => setBatchRecords(prev => ({ ...prev, [student.id]: status.id }))}
                         title={status.label}
-                        className={`w-8 h-8 rounded-xl text-[8px] font-black uppercase flex items-center justify-center transition-all border ${
-                          batchRecords[student.id] === status.id
-                            ? `bg-${status.color}-500 border-${status.color}-500 text-white shadow-md`
-                            : `bg-white border-gray-200 text-gray-400 hover:border-${status.color}-200`
-                        }`}
+                        className={`w-8 h-8 rounded-xl text-[8px] font-black uppercase flex items-center justify-center transition-all border ${batchRecords[student.id] === status.id
+                          ? `bg-${status.color}-500 border-${status.color}-500 text-white shadow-md`
+                          : `bg-white border-gray-200 text-gray-400 hover:border-${status.color}-200`
+                          }`}
                       >
                         <i className={`fa-solid ${status.icon}`}></i>
                       </button>
@@ -174,7 +188,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
           </div>
 
           <div className="flex justify-end pt-4 border-t border-gray-50">
-            <button 
+            <button
               onClick={handleSaveBatch}
               className="px-10 py-4 bg-amber-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-amber-700 transition-all active:scale-95 shadow-xl shadow-amber-100 flex items-center gap-3"
             >
@@ -230,29 +244,54 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                       </div>
                     </td>
                     {mealTypes.map(meal => {
-                      const currentStatus = getMealStatus(student.id, meal.label);
+                      const mealData = getMealData(student.id, meal.label) || {};
+                      const currentStatus = mealData.status;
+
                       return (
                         <td key={meal.id} className="px-4 py-6 text-center">
-                          <div className="flex justify-center gap-1">
-                            {mealStatus.map(status => {
-                              const isActive = currentStatus === status.id;
-                              const colors: Record<string, string> = {
-                                emerald: isActive ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-emerald-500 border-emerald-100 hover:bg-emerald-50',
-                                amber: isActive ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-amber-500 border-amber-100 hover:bg-amber-50',
-                                rose: isActive ? 'bg-rose-500 text-white border-rose-600' : 'bg-white text-rose-500 border-rose-100 hover:bg-rose-50',
-                              };
-                              
-                              return (
-                                <button
-                                  key={status.id}
-                                  onClick={() => handleStatusChange(student.id, meal.label, status.id)}
-                                  title={status.label}
-                                  className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-90 shadow-sm ${colors[status.color]}`}
-                                >
-                                  <i className={`fa-solid ${status.icon} text-[10px]`}></i>
-                                </button>
-                              );
-                            })}
+                          <div className="flex flex-col gap-3">
+                            <div className="flex justify-center gap-1">
+                              {mealStatus.map(status => {
+                                const isActive = currentStatus === status.id;
+                                const colors: Record<string, string> = {
+                                  emerald: isActive ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-emerald-500 border-emerald-100 hover:bg-emerald-50',
+                                  amber: isActive ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-amber-500 border-amber-100 hover:bg-amber-50',
+                                  rose: isActive ? 'bg-rose-500 text-white border-rose-600' : 'bg-white text-rose-500 border-rose-100 hover:bg-rose-50',
+                                };
+
+                                return (
+                                  <button
+                                    key={status.id}
+                                    onClick={() => handleStatusChange(student.id, meal.label, status.id)}
+                                    title={status.label}
+                                    className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-90 shadow-sm ${colors[status.color]}`}
+                                  >
+                                    <i className={`fa-solid ${status.icon} text-[10px]`}></i>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="flex justify-center gap-3 mt-1 border-t border-gray-100 pt-2">
+                              <label className="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer hover:text-indigo-600 transition-colors" title="Dormiu">
+                                <input
+                                  type="checkbox"
+                                  checked={!!mealData.sono}
+                                  onChange={(e) => handleCheckboxChange(student.id, meal.label, 'sono', e.target.checked)}
+                                  className="w-3 h-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                                />
+                                <i className="fa-solid fa-bed text-indigo-400"></i>
+                              </label>
+                              <label className="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer hover:text-amber-600 transition-colors" title="Evacuou">
+                                <input
+                                  type="checkbox"
+                                  checked={!!mealData.evacuou}
+                                  onChange={(e) => handleCheckboxChange(student.id, meal.label, 'evacuou', e.target.checked)}
+                                  className="w-3 h-3 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                                />
+                                <i className="fa-solid fa-poop text-amber-700"></i>
+                              </label>
+                            </div>
                           </div>
                         </td>
                       );
@@ -264,7 +303,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
           </table>
         </div>
       </div>
-      
+
       <div className="bg-amber-50 p-6 rounded-[2.5rem] border border-amber-100 flex items-start gap-5 shadow-sm">
         <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-amber-500 shadow-sm flex-shrink-0">
           <i className="fa-solid fa-circle-info text-xl"></i>
@@ -272,7 +311,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
         <div className="space-y-1">
           <p className="text-xs font-black text-amber-800 uppercase tracking-widest">Informações de Consumo</p>
           <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
-            O registro da alimentação é fundamental para o acompanhamento pedagógico e de saúde. 
+            O registro da alimentação é fundamental para o acompanhamento pedagógico e de saúde.
             Em caso de alunos com AEE, estas informações são compartilhadas com o mediador e a equipe diretiva.
           </p>
         </div>

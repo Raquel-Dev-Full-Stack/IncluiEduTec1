@@ -105,7 +105,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             { header: 'Data', accessor: (m) => new Date(m.date).toLocaleDateString('pt-BR') },
                             { header: 'Aluno ID', accessor: 'studentId' },
                             { header: 'Tipo', accessor: 'type' },
-                            { header: 'Status', accessor: 'status' }
+                            { header: 'Status', accessor: 'status' },
+                            { header: 'Dormiu', accessor: (m) => m.sono !== undefined && m.sono !== null ? (m.sono ? 'Sim' : 'Não') : 'Não informado' },
+                            { header: 'Evacuou', accessor: (m) => m.evacuou !== undefined && m.evacuou !== null ? (m.evacuou ? 'Sim' : 'Não') : 'Não informado' },
+                            { header: 'Observações', accessor: (m) => m.observations || '-' }
                         ]}
                     />
                 );
@@ -154,8 +157,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
-                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         <i className={`fa-solid ${tab.icon}`}></i>
