@@ -26,13 +26,13 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'dashboard',
       label: 'Dashboard',
       icon: 'fa-house',
-      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR]
+      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
       id: 'messages',
       label: 'Mensagens',
       icon: 'fa-comments',
-      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR]
+      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR]
     },
     {
       id: 'schools',
@@ -44,19 +44,19 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'turmas',
       label: 'Turmas',
       icon: 'fa-users-rectangle',
-      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR, UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR]
     },
     {
       id: 'teachers',
       label: 'Professores',
       icon: 'fa-chalkboard-user',
-      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR]
+      profileOnly: [UserProfile.DIRETOR]
     },
     {
       id: 'alunos',
       label: 'Alunos',
       icon: 'fa-children',
-      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
       id: 'inclusive_plans',
@@ -74,7 +74,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'mediation',
       label: user.profile === UserProfile.MEDIADOR ? 'Registros de Mediação' : 'Mediação',
       icon: 'fa-hand-holding-heart',
-      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.DIRETOR, UserProfile.MEDIADOR]
     },
     {
       id: 'db_analysis',
@@ -86,7 +86,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'registros',
       label: 'Registros',
       icon: 'fa-book',
-      profileOnly: [UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.ADMIN, UserProfile.PROFESSOR]
     },
     {
       id: 'relatorios',
@@ -103,8 +103,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
-    if (user.profile === UserProfile.ADMIN) return true;
-    if (item.adminOnly) return false;
+    if (item.adminOnly && user.profile !== UserProfile.ADMIN) return false;
     if (item.profileOnly && !item.profileOnly.includes(user.profile)) return false;
     return true;
   });

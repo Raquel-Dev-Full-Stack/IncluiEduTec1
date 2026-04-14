@@ -67,5 +67,5 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 ## 7. Roadmap e Melhorias Futuras
 *   **Assistente Pedagógico IA**: Sugestões automatizadas de adaptações com base no histórico do aluno.
 *   **Modo Offline**: Permitir entrada de registros em locais com baixa conectividade (PWA).
-*   **Portal dos Responsáveis**: Acesso limitado para pais acompanharem frequência e relatórios.
+*   **Portal dos Responsáveis**: Acesso limitado para pais acompanharem frequência e relatórios. 
  

@@ -36,6 +36,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const isSecretaria = user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN;
   const isDiretor = user.profile === UserProfile.DIRETOR;
+  const isMediador = user.profile === UserProfile.MEDIADOR;
+  const isProfessor = user.profile === UserProfile.PROFESSOR;
   const schoolId = user.schoolId;
 
   // Funções para Exportação Educacenso (Consolidado Municipal)
@@ -468,14 +470,195 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
   }
 
-  const stats = [
-    { label: 'Relatórios / PDIs', count: statsData.reports, change: '+5%', icon: 'fa-file-circle-check', color: 'emerald' },
-    { label: 'Corpo Docente', count: statsData.teachers, change: 'Ativo', icon: 'fa-chalkboard-user', color: 'purple' },
-    { label: 'Turmas Ativas', count: statsData.classes, change: statsData.year, icon: 'fa-school', color: 'orange' },
-    { label: 'Escolas Monitoradas - Rede Municipal', count: statsData.schools, change: 'Ativo', icon: 'fa-city', color: 'sky' },
-    { label: 'Total Alunos PCD', count: statsData.pcdStudents, change: 'AEE', icon: 'fa-hands-holding-child', color: 'rose' },
-    { label: 'Mediadores em Campo (por escola)', count: statsData.mediators, change: 'Monitorado', icon: 'fa-person-walking-luggage', color: 'amber' },
-  ];
+  // Renderização específica para o Mediador
+  if (isMediador) {
+    const myStudents = (students || []).filter(s => user.studentIds?.includes(s.id));
+    const myRecords = (mediationRecords || []).filter(r => r.authorId === user.id);
+    const myReports = (reports || []).filter(r => myStudents.some(s => s.id === r.studentId));
+
+    const mediatorStats = [
+      { label: 'Alunos Atendidos', count: myStudents.length, icon: 'fa-graduation-cap', bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-600', iconBg: 'bg-blue-500' },
+      { label: 'Registros Realizados', count: myRecords.length, icon: 'fa-pen-to-square', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', iconBg: 'bg-emerald-500' },
+      { label: 'Relatórios Pendentes', count: myReports.filter(r => r.status === 'rascunho').length, icon: 'fa-file-lines', bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', iconBg: 'bg-rose-500' },
+      { label: 'Turmas Vinculadas', count: new Set(myStudents.map(s => s.classId)).size, icon: 'fa-users-rectangle', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-600', iconBg: 'bg-purple-500' },
+    ];
+
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Header Mediador */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white text-2xl shadow-xl shadow-indigo-100">
+              <i className="fa-solid fa-hand-holding-heart"></i>
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Painel do Mediador</h1>
+              <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Olá, {user.name} · Foco na Inclusão</p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <div className="px-5 py-3 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center min-w-[120px]">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ano Letivo</span>
+              <span className="text-xl font-black text-gray-800">2024</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Grade de Métricas Mediador */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {mediatorStats.map((stat, idx) => (
+            <div
+              key={stat.label}
+              className={`p-7 rounded-[2.5rem] ${stat.bg} ${stat.border} border shadow-sm hover:shadow-2xl hover:scale-[1.03] transition-all duration-500 group cursor-default relative overflow-hidden`}
+              style={{ animationDelay: `${idx * 100}ms` }}
+            >
+              <div className="flex justify-between items-start relative z-10">
+                <div className="space-y-1">
+                  <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${stat.text} opacity-70`}>{stat.label}</p>
+                  <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{stat.count}</h3>
+                </div>
+                <div className={`w-12 h-12 rounded-2xl ${stat.iconBg} text-white flex items-center justify-center shadow-lg group-hover:rotate-[15deg] transition-all duration-500`}>
+                  <i className={`fa-solid ${stat.icon} text-xl`}></i>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Seção Meus Alunos */}
+        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i className="fa-solid fa-users text-lg"></i>
+              </div>
+              Alunos sob sua Mediação
+            </h3>
+            <button 
+              onClick={() => setActiveTab?.('alunos')}
+              className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+            >
+              Ver Todos
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {myStudents.length > 0 ? myStudents.slice(0, 6).map(s => (
+              <div key={s.id} className="p-5 bg-gray-50 rounded-3xl border border-gray-100 flex items-center gap-4 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
+                <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-blue-500 text-xl group-hover:bg-blue-500 group-hover:text-white transition-all">
+                  <i className="fa-solid fa-user"></i>
+                </div>
+                <div>
+                  <p className="text-sm font-black text-gray-800">{s.name}</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">RA: {s.ra}</p>
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-full py-12 text-center">
+                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Nenhum aluno vinculado ao seu perfil.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Registros Recentes */}
+        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
+          <h3 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <i className="fa-solid fa-clock-rotate-left text-lg"></i>
+            </div>
+            Seus Últimos Registros
+          </h3>
+
+          <div className="space-y-4">
+            {myRecords.length > 0 ? myRecords.slice(0, 5).map(r => (
+              <div key={r.id} className="flex items-center gap-5 p-4 bg-gray-50 rounded-3xl border border-gray-100">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white ${r.behaviorStatus === 'EM CRISE' ? 'bg-rose-500' : 'bg-emerald-500'}`}>
+                  <i className={`fa-solid ${r.behaviorStatus === 'EM CRISE' ? 'fa-triangle-exclamation' : 'fa-check'}`}></i>
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between">
+                    <p className="text-sm font-black text-gray-800">{myStudents.find(s => s.id === r.studentId)?.name || 'Aluno'}</p>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-1">{r.description}</p>
+                </div>
+              </div>
+            )) : (
+              <div className="py-8 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Você ainda não possui registros salvos.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderização padrão para Professor (Simplificado)
+  if (isProfessor) {
+    const myClasses = (classes || []).filter(c => c.teacherId === user.id);
+    const myStudents = (students || []).filter(s => myClasses.some(c => c.id === s.classId));
+    
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-5">
+           <div className="w-16 h-16 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-2xl shadow-xl shadow-blue-100">
+              <i className="fa-solid fa-chalkboard-user"></i>
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Painel do Professor</h1>
+              <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Olá, {user.name} · Suas Turmas e Alunos</p>
+            </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           <div className="p-8 bg-blue-50 rounded-[3rem] border border-blue-100 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 text-2xl shadow-sm">
+                <i className="fa-solid fa-users-rectangle"></i>
+              </div>
+              <div>
+                <h4 className="text-4xl font-black text-blue-700 tracking-tighter">{myClasses.length}</h4>
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Suas Turmas</p>
+              </div>
+           </div>
+           <div className="p-8 bg-purple-50 rounded-[3rem] border border-purple-100 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-purple-600 text-2xl shadow-sm">
+                <i className="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div>
+                <h4 className="text-4xl font-black text-purple-700 tracking-tighter">{myStudents.length}</h4>
+                <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Seus Alunos</p>
+              </div>
+           </div>
+        </div>
+        
+        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
+          <h3 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i className="fa-solid fa-school text-lg"></i>
+            </div>
+            Acesso Rápido às Turmas
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {myClasses.map(c => (
+              <div key={c.id} onClick={() => setActiveTab?.('turmas')} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 hover:bg-white hover:shadow-xl transition-all cursor-pointer group">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-lg font-black text-gray-800">{c.name}</h4>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{c.level} · {c.shift}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-sm">
+                    <i className="fa-solid fa-arrow-right"></i>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Métricas de assistência por escola para a Secretaria (Formatado para o Gráfico)
   const chartData = (schools || []).map(school => {

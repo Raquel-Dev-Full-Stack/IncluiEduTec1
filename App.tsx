@@ -126,32 +126,52 @@ export default function App() {
   const fetchData = useCallback(async () => {
     console.log('fetchData: Iniciando carga de dados resiliente...');
 
-    // Função auxiliar para busca segura
-    const safeFetch = async (table: string, query = '*') => {
-      try {
-        const { data, error } = await supabase.from(table).select(query);
-        if (error) {
-          console.error(`fetchData: Erro na tabela ${table}:`, error);
-          return [];
+    const safeFetch = async (tables: string | string[], query = '*') => {
+      const tableList = Array.isArray(tables) ? tables : [tables];
+      for (const table of tableList) {
+        try {
+          const { data, error } = await supabase.from(table).select(query);
+          if (error) {
+            console.warn(`fetchData: Tentativa na tabela ${table} falhou ou restrita:`, error.message);
+            continue;
+          }
+          if (data && data.length > 0) return data;
+          if (tableList.length > 1) continue;
+          return data || [];
+        } catch (e) {
+          console.error(`fetchData: Erro crítico na tabela ${table}:`, e);
         }
-        return data || [];
-      } catch (err) {
-        console.error(`fetchData: Falha crítica na tabela ${table}:`, err);
-        return [];
       }
+      return [];
     };
 
-    const schoolsData = (await safeFetch('schools')) as any[];
-    const studentsData = (await safeFetch('students')) as any[];
-    const classesData = (await safeFetch('classes')) as any[];
-    const usersData = (await safeFetch('users')) as any[];
-    const mediatorStudentsData = (await safeFetch('mediator_students')) as any[];
-    const mediationData = (await safeFetch('mediator_records')) as any[];
-    const attendancesData = (await safeFetch('attendance')) as any[];
-    const mealsData = (await safeFetch('meals')) as any[];
-    const reportsData = (await safeFetch('reports')) as any[];
-    const lessonPlansData = (await safeFetch('lesson_plans')) as any[];
-    const studentRecordsData = (await safeFetch('student_records')) as any[];
+    console.log('fetchData: Iniciando carregamento de dados multilingue...');
+
+    const [
+      schoolsData,
+      studentsData,
+      classesData,
+      usersData,
+      mediatorStudentsData,
+      mediationData,
+      attendancesData,
+      mealsData,
+      reportsData,
+      lessonPlansData,
+      studentRecordsData
+    ] = await Promise.all([
+      safeFetch(['schools', 'escolas']),
+      safeFetch(['students', 'alunos']),
+      safeFetch(['classes', 'turmas']),
+      safeFetch(['users', 'usuarios']),
+      safeFetch(['mediator_students', 'mediadores_alunos', 'vinculo_mediador']),
+      safeFetch(['mediator_records', 'mediacao', 'registros_mediacao']),
+      safeFetch(['attendance', 'presenca', 'presenca_alunos']),
+      safeFetch(['meals', 'refeicoes']),
+      safeFetch(['reports', 'relatorios']),
+      safeFetch(['lesson_plans', 'planejamento', 'planejamento_diario']),
+      safeFetch(['student_records', 'historico_aluno'])
+    ]);
 
     // Mapeamento resiliente
     setSchools(schoolsData.map(s => ({
@@ -198,30 +218,46 @@ export default function App() {
         'secretaria': UserProfile.SECRETARIA,
         'diretor': UserProfile.DIRETOR,
         'professor': UserProfile.PROFESSOR,
-        'mediador': UserProfile.MEDIADOR
+        'mediador': UserProfile.MEDIADOR,
+        'admin': UserProfile.ADMIN
       };
 
-      setUsersList(usersData.map(u => {
-        // Agrupar IDs de alunos da tabela de junção mediator_students
+      const enrichedUsers = usersData.map(u => {
         const linkedStudentIds = mediatorStudentsData
-          .filter((ms: any) => ms.mediator_id === u.id)
-          .map((ms: any) => ms.student_id);
+          .filter((ms: any) => (ms.mediator_id || ms.mediador_id) === u.id)
+          .map((ms: any) => ms.student_id || ms.aluno_id);
 
-        // Inferência de município para Secretaria se a coluna estiver faltando no banco
-        let userMunicipioId = u.municipio_id;
-        if (!userMunicipioId && u.role === 'secretaria' && u.school_id) {
-          const linkedSchool = schoolsData.find((s: any) => s.id === u.school_id);
+        let userMunicipioId = u.municipio_id || u.municipioId;
+        if (!userMunicipioId && (u.role === 'secretaria' || u.profile === UserProfile.SECRETARIA) && (u.school_id || u.schoolId)) {
+          const linkedSchool = schoolsData.find((s: any) => s.id === (u.school_id || u.schoolId));
           if (linkedSchool) userMunicipioId = linkedSchool.municipio_id;
         }
 
         return {
           ...u,
-          profile: roleToProfileMap[u.role] || UserProfile.PROFESSOR,
-          schoolId: u.school_id,
+          id: u.id,
+          name: u.name || u.nome || u.email,
+          profile: roleToProfileMap[u.role] || (u.profile as UserProfile) || UserProfile.PROFESSOR,
+          schoolId: u.school_id || u.schoolId,
           municipio_id: userMunicipioId,
           studentIds: linkedStudentIds
         };
-      }) as User[]);
+      }) as User[];
+
+      setUsersList(enrichedUsers);
+
+      // Sincronizar o usuário logado com os dados enriquecidos (vínculos de alunos, etc)
+      if (user) {
+        const currentUserEnriched = enrichedUsers.find(u => 
+          u.auth_user_id === user.auth_user_id || 
+          u.id === user.id || 
+          u.email === user.email
+        );
+        if (currentUserEnriched) {
+          console.log('fetchData: Sincronizando usuário logado com dados enriquecidos:', currentUserEnriched.name);
+          setUser(prev => prev ? ({ ...prev, ...currentUserEnriched }) : null);
+        }
+      }
     }
 
     setMediationRecords(mediationData.map(r => ({
