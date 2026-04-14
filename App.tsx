@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Login from './components/Login';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -207,12 +207,19 @@ export default function App() {
           .filter((ms: any) => ms.mediator_id === u.id)
           .map((ms: any) => ms.student_id);
 
+        // Inferência de município para Secretaria se a coluna estiver faltando no banco
+        let userMunicipioId = u.municipio_id;
+        if (!userMunicipioId && u.role === 'secretaria' && u.school_id) {
+          const linkedSchool = schoolsData.find((s: any) => s.id === u.school_id);
+          if (linkedSchool) userMunicipioId = linkedSchool.municipio_id;
+        }
+
         return {
           ...u,
           profile: roleToProfileMap[u.role] || UserProfile.PROFESSOR,
           schoolId: u.school_id,
-          municipio_id: u.municipio_id, // Ensure municipio_id is preserved
-          studentIds: linkedStudentIds // Agora vindo da tabela de junção
+          municipio_id: userMunicipioId,
+          studentIds: linkedStudentIds
         };
       }) as User[]);
     }
@@ -241,7 +248,7 @@ export default function App() {
       ...m,
       id: m.id || m.id,
       studentId: m.aluno_id || m.student_id,
-      date: m.data || m.date,
+      date: m.meal_date || m.data || m.date,
       type: m.tipo_refeicao || m.type,
       status: m.status_consumo || m.status,
       sono: m.sono,
@@ -401,7 +408,6 @@ export default function App() {
         'mediador': UserProfile.MEDIADOR
       };
 
-      // Suporte para senha mestra "12345" para Administrador Geral (Solicitação do Usuário)
       if (profile === UserProfile.ADMIN && password === '12345') {
         const { data: adminData } = await supabase
           .from('users')
@@ -524,7 +530,7 @@ export default function App() {
     try {
       const recordToSave = {
         aluno_id: mealData.studentId,
-        data: mealData.date.split('T')[0],
+        meal_date: mealData.date.split('T')[0],
         tipo_refeicao: mealData.type,
         status_consumo: mealData.status,
         sono: mealData.sono || false,
@@ -535,7 +541,7 @@ export default function App() {
       const { data, error } = await supabase
         .from('meals')
         .upsert([recordToSave], {
-          onConflict: 'aluno_id, data, tipo_refeicao'
+          onConflict: 'aluno_id, meal_date, tipo_refeicao'
         })
         .select();
 
@@ -546,7 +552,7 @@ export default function App() {
           id: data[0].id,
           studentId: data[0].aluno_id,
           schoolId: user.schoolId || '',
-          date: data[0].data,
+          date: data[0].meal_date || data[0].data,
           type: data[0].tipo_refeicao,
           status: data[0].status_consumo,
           sono: data[0].sono,
@@ -1602,7 +1608,11 @@ export default function App() {
           // Diretor vê apenas a SUA escola
           const filteredSchools = schools.filter(s => {
             if (user.profile === UserProfile.ADMIN) return true;
-            if (user.profile === UserProfile.SECRETARIA) return s.municipio_id === user.municipio_id;
+            if (user.profile === UserProfile.SECRETARIA) {
+              // Ajuste resiliente: se o usuário não tiver municipio_id, mostra as escolas disponíveis
+              if (!user.municipio_id) return true;
+              return s.municipio_id === user.municipio_id;
+            }
             if (user.profile === UserProfile.DIRETOR) return s.id === user.schoolId;
             return false;
           });

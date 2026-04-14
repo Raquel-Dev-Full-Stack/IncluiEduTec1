@@ -1,18 +1,18 @@
 import { UserProfile, User, School, Class, Student, Report, Meal, MediationRecord, BNCCSkill, LessonPlan, Message } from './types';
 
 export const MOCK_USERS: User[] = [
-  { id: '1', name: 'Ricardo Santos', email: 'ricardo@marica.rj.gov.br', profile: UserProfile.ADMIN, municipio_id: 'm1', active: true },
-  { id: '2', name: 'Ana Souza', email: 'ana.direcao@escola.br', profile: UserProfile.DIRETOR, municipio_id: 'm1', schoolId: 's1', active: true },
-  { id: '3', name: 'Carlos Lima', email: 'carlos.prof@escola.br', profile: UserProfile.PROFESSOR, municipio_id: 'm1', schoolId: 's1', active: true },
-  { id: '4', name: 'Mariana Silva', email: 'mariana.med@escola.br', profile: UserProfile.MEDIADOR, municipio_id: 'm1', schoolId: 's1', active: true },
-  { id: '5', name: 'João Medeiros', email: 'joao.med@escola.br', profile: UserProfile.MEDIADOR, municipio_id: 'm1', schoolId: 's1', active: true },
-  { id: 'prof_raquel', name: 'raquelelezabcd', email: 'raquel.prof@escola.br', profile: UserProfile.PROFESSOR, municipio_id: 'm1', schoolId: 's1', active: true },
+  { id: '1', name: 'Ricardo Santos', email: 'ricardo@marica.rj.gov.br', profile: UserProfile.ADMIN, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', active: true },
+  { id: '2', name: 'Ana Souza', email: 'ana.direcao@escola.br', profile: UserProfile.DIRETOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
+  { id: '3', name: 'Carlos Lima', email: 'carlos.prof@escola.br', profile: UserProfile.PROFESSOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
+  { id: '4', name: 'Mariana Silva', email: 'mariana.med@escola.br', profile: UserProfile.MEDIADOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
+  { id: '5', name: 'João Medeiros', email: 'joao.med@escola.br', profile: UserProfile.MEDIADOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
+  { id: 'prof_raquel', name: 'raquelelezabcd', email: 'raquel.prof@escola.br', profile: UserProfile.PROFESSOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
 ];
 
 export const MOCK_SCHOOLS: School[] = [
-  { id: 's1', name: 'Escola Municipal Joana Benedicta Rangel', inep: '33012456', address: 'Centro, Maricá', municipio_id: 'm1' },
-  { id: 's2', name: 'C.E.M. Felisberto Rodrigues da Cunha', inep: '33012888', address: 'Itaipuaçu, Maricá', municipio_id: 'm1' },
-  { id: 's3', name: 'E.M. Darcy Ribeiro', inep: '33012999', address: 'Inoã, Maricá', municipio_id: 'm2' },
+  { id: 's1', name: 'Escola Municipal Joana Benedicta Rangel', inep: '33012456', address: 'Centro, Maricá', municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3' },
+  { id: 's2', name: 'C.E.M. Felisberto Rodrigues da Cunha', inep: '33012888', address: 'Itaipuaçu, Maricá', municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3' },
+  { id: 's3', name: 'E.M. Darcy Ribeiro', inep: '33012999', address: 'Inoã, Maricá', municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3' },
 ];
 
 export const MOCK_CLASSES: Class[] = [

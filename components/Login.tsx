@@ -8,13 +8,14 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('last_login_email') || '');
   const [password, setPassword] = useState('');
   const [profile, setProfile] = useState<UserProfile>(UserProfile.SECRETARIA);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password && !isLoading) {
+      localStorage.setItem('last_login_email', email);
       onLogin(email, profile, password);
     }
   };
@@ -126,6 +127,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
                   <i className="fa-solid fa-envelope text-gray-400"></i>
                 </div>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -144,6 +147,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
                   <i className="fa-solid fa-lock text-gray-400"></i>
                 </div>
                 <input
+                  id="password"
+                  name="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
