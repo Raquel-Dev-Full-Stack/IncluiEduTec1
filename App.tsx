@@ -35,11 +35,21 @@ import { supabase } from './lib/supabaseClient';
 
 // Função para buscar perfil do usuário no public.users via auth_user_id
 const fetchUserProfile = async (authUserId: string) => {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('id', authUserId)
     .maybeSingle();
+
+  if (!data && !error) {
+    const fallback = await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error('Erro ao buscar perfil do usuário:', error);
@@ -604,11 +614,21 @@ export default function App() {
         return;
       }
 
-      const { data: userData, error: userError } = await supabase
+      let { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', authData.user?.id)
         .maybeSingle();
+
+      if (!userData && !userError) {
+        const { data: byAuthId, error: authIdError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_user_id', authData.user?.id)
+          .maybeSingle();
+        userData = byAuthId;
+        userError = authIdError;
+      }
 
       if (userError || !userData) {
         await supabase.auth.signOut();
