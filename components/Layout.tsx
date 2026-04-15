@@ -29,6 +29,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
+      id: 'admin_total',
+      label: 'Sistema',
+      icon: 'fa-shield-halved',
+      profileOnly: [UserProfile.ADMIN]
+    },
+    {
       id: 'messages',
       label: 'Mensagens',
       icon: 'fa-comments',
@@ -44,19 +50,19 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'turmas',
       label: 'Turmas',
       icon: 'fa-users-rectangle',
-      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR]
     },
     {
       id: 'teachers',
       label: 'Professores',
       icon: 'fa-chalkboard-user',
-      profileOnly: [UserProfile.DIRETOR]
+      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR]
     },
     {
       id: 'alunos',
       label: 'Alunos',
       icon: 'fa-children',
-      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
       id: 'inclusive_plans',
@@ -98,7 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'configuracoes',
       label: 'Configurações',
       icon: 'fa-gear',
-      profileOnly: [UserProfile.ADMIN, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
   ];
 
@@ -161,7 +167,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
           <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white uppercase">
-                {user.name.charAt(0)}
+                {(user.name || 'Usuário').charAt(0)}
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-semibold text-white truncate">{user.name}</p>

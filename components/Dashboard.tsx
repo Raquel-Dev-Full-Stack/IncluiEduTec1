@@ -705,6 +705,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     return null;
   };
 
+  const stats = [
+    { label: 'Turmas Inclusivas', count: statsData.classes, change: '+12%', icon: 'fa-users-rectangle', color: 'purple' },
+    { label: 'Corpo Docente', count: statsData.teachers, change: '100% ativo', icon: 'fa-chalkboard-user', color: 'sky' },
+    { label: 'Unidades Escolares', count: statsData.schools, change: 'Mapeadas', icon: 'fa-school', color: 'emerald' },
+    { label: 'Alunos Público-Alvo', count: statsData.pcdStudents, change: 'Apoio Ativo', icon: 'fa-graduation-cap', color: 'orange' },
+    { label: 'Mediadores Mobilizados', count: statsData.mediators, change: '1 por 3 alunos', icon: 'fa-hand-holding-heart', color: 'rose' },
+    { label: 'Relatórios PDIs', count: statsData.reports, change: 'Status 2024', icon: 'fa-file-lines', color: 'amber' }
+  ];
+
   return (
     <div className="space-y-8">
       {/* Hero Header com Gradiente */}

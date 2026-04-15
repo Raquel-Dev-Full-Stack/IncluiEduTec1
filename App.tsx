@@ -26,6 +26,7 @@ import DirectorTeacherRecords from './components/DirectorTeacherRecords';
 import Settings from './components/Settings';
 import DBAnalysis from './components/DBAnalysis';
 import AdminDashboard from './components/AdminDashboard';
+import AdminRegistros from './components/AdminRegistros';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
 import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord } from './types';
@@ -37,7 +38,7 @@ const fetchUserProfile = async (authUserId: string) => {
   const { data, error } = await supabase
     .from('users')
     .select('*')
-    .eq('auth_user_id', authUserId)
+    .eq('id', authUserId)
     .maybeSingle();
 
   if (error) {
@@ -51,6 +52,10 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  // Rastreia se o login foi feito via bypass (sem sessão Supabase Auth)
+  const isBypassLogin = React.useRef(false);
+  // Evita que o onAuthStateChange sobreponha o login manual em andamento
+  const isHandlingLogin = React.useRef(false);
   const [teacherSubTab, setTeacherSubTab] = useState<'list' | 'records'>('list');
 
   // Estados Locais Reativos (Iniciados vazios para carregar do Supabase)
@@ -233,10 +238,11 @@ export default function App() {
           if (linkedSchool) userMunicipioId = linkedSchool.municipio_id;
         }
 
+        const nameValue = u.name || u.nome || u.email || 'Usuário';
         return {
           ...u,
           id: u.id,
-          name: u.name || u.nome || u.email,
+          name: nameValue,
           profile: roleToProfileMap[u.role] || (u.profile as UserProfile) || UserProfile.PROFESSOR,
           schoolId: u.school_id || u.schoolId,
           municipio_id: userMunicipioId,
@@ -249,7 +255,6 @@ export default function App() {
       // Sincronizar o usuário logado com os dados enriquecidos (vínculos de alunos, etc)
       if (user) {
         const currentUserEnriched = enrichedUsers.find(u => 
-          u.auth_user_id === user.auth_user_id || 
           u.id === user.id || 
           u.email === user.email
         );
@@ -345,12 +350,13 @@ export default function App() {
       };
 
       // Define o usuário IMEDIATAMENTE usando metadados do Auth/JWT
+      const mappedProfile = roleToProfileMap[metadata.role] || UserProfile.PROFESSOR;
       const initialUser = {
         id: authUser.id, // Fallback se não encontrar o ID do public.users
         auth_user_id: authUser.id,
         name: metadata.name || 'Usuário',
         role: metadata.role || 'professor',
-        profile: roleToProfileMap[metadata.role] || UserProfile.PROFESSOR,
+        profile: mappedProfile,
         schoolId: metadata.school_id,
         municipio_id: metadata.municipio_id,
         themePreference: 'light' // Padrão inicial
@@ -358,18 +364,26 @@ export default function App() {
 
       setUser(initialUser);
       setIsLoggedIn(true);
+      // Se for Admin, sempre vai para admin_total
+      if (mappedProfile === UserProfile.ADMIN) {
+        setActiveTab('admin_total');
+      }
       setLoading(false); // Libera a tela de "Iniciando..." imediatamente
 
       // Agora, em background, busca o perfil real no banco para dados extras e consistência
       fetchUserProfile(authUser.id).then(userData => {
         if (userData && mounted) {
           const savedTheme = localStorage.getItem(`incluiedutec_theme_user_${userData.id}`) as 'light' | 'dark' | null;
-          setUser(prev => ({
-            ...prev,
-            ...userData,
-            profile: roleToProfileMap[userData.role] || userData.role,
-            themePreference: savedTheme || 'light'
-          } as unknown as User));
+          setUser(prev => {
+            const nameValue = userData.name || userData.nome || prev?.name || 'Usuário';
+            return {
+              ...prev,
+              ...userData,
+              name: nameValue,
+              profile: (roleToProfileMap[userData.role] || userData.role) as UserProfile,
+              themePreference: savedTheme || 'light'
+            } as unknown as User;
+          });
         }
       });
 
@@ -397,13 +411,29 @@ export default function App() {
     initialize();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('App: Evento Auth:', event);
+      console.log('App: Evento Auth:', event, '| bypass:', isBypassLogin.current, '| handlingLogin:', isHandlingLogin.current);
       if (!mounted) return;
 
-      // Responde apenas ao login explícito do usuário
+      // Ignora eventos durante o processamento manual de login
+      if (isHandlingLogin.current) {
+        console.log('App: Ignorando evento Auth durante handleLogin:', event);
+        return;
+      }
+
+      // Responde apenas ao login explícito do usuário (não disparado por nossa lógica interna)
       if (event === 'SIGNED_IN' && session) {
+        // Se já estamos logados via bypass, não sobrescreve o estado
+        if (isBypassLogin.current) {
+          console.log('App: Ignorando SIGNED_IN — sessão bypass ativa');
+          return;
+        }
         await processUserSession(session);
       } else if (event === 'SIGNED_OUT') {
+        // Só faz o logout se NÃO for bypass e não estiver em processo de login
+        if (isBypassLogin.current) {
+          console.log('App: Ignorando SIGNED_OUT — sessão bypass ativa');
+          return;
+        }
         setUser(null);
         setIsLoggedIn(false);
         setLoading(false);
@@ -434,39 +464,133 @@ export default function App() {
       showNotification('A senha é obrigatória.', 'error');
       return;
     }
+
+    // Sinaliza que estamos processando login — bloqueia onAuthStateChange
+    isHandlingLogin.current = true;
+    isBypassLogin.current = false;
     setLoading(true);
+
     try {
       const roleToProfileMap: Record<string, UserProfile> = {
         'admin_geral': UserProfile.ADMIN,
         'secretaria': UserProfile.SECRETARIA,
         'diretor': UserProfile.DIRETOR,
         'professor': UserProfile.PROFESSOR,
-        'mediador': UserProfile.MEDIADOR
+        'mediador': UserProfile.MEDIADOR,
+        'admin': UserProfile.ADMIN
       };
 
-      if (profile === UserProfile.ADMIN && password === '12345') {
-        const { data: adminData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('role', 'admin_geral')
-          .maybeSingle();
+      // ── FLUXO ADMIN ──
+      if (profile === UserProfile.ADMIN) {
+        // 1. Tenta autenticar via Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: emailOrName,
+          password: password
+        });
 
-        if (adminData) {
-          setUser({
-            ...adminData,
-            profile: UserProfile.ADMIN,
-            themePreference: 'light'
-          } as unknown as User);
-          setIsLoggedIn(true);
-          setActiveTab('dashboard');
-          showNotification('Acesso via senha mestra realizado!', 'success');
-          setLoading(false);
-          fetchData();
-          return;
+        if (!authError && authData?.user) {
+          // Auth OK — busca perfil na tabela users por id ou auth_user_id
+          let userData: any = null;
+
+          const { data: byId } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', authData.user.id)
+            .maybeSingle();
+
+          if (byId) {
+            userData = byId;
+          } else {
+            const { data: byAuthId } = await supabase
+              .from('users')
+              .select('*')
+              .eq('auth_user_id', authData.user.id)
+              .maybeSingle();
+            if (byAuthId) userData = byAuthId;
+          }
+
+          if (userData) {
+            const mappedRole = roleToProfileMap[userData.role];
+            if (mappedRole === UserProfile.ADMIN) {
+              const nameValue = userData.name || userData.nome || userData.email || 'Admin Geral';
+              // NÃO é bypass — sessão Supabase Auth real existe
+              isBypassLogin.current = false;
+              setUser({
+                ...userData,
+                name: nameValue,
+                profile: UserProfile.ADMIN,
+                themePreference: 'light'
+              } as unknown as User);
+              setIsLoggedIn(true);
+              setActiveTab('admin_total');
+              showNotification('Login de Administrador realizado com sucesso!', 'success');
+              fetchData();
+              return;
+            } else {
+              await supabase.auth.signOut();
+              showNotification(`Perfil Admin não corresponde ao seu registro no banco (${mappedRole || userData.role}).`, 'error');
+              return;
+            }
+          } else {
+            // Auth OK mas sem registro em public.users — usa metadados do JWT
+            const metadata = authData.user.user_metadata || {};
+            const roleFromMeta = metadata.role || 'admin_geral';
+            const mappedFromMeta = roleToProfileMap[roleFromMeta] || UserProfile.ADMIN;
+            const nameValue = metadata.name || authData.user.email || 'Admin Geral';
+            isBypassLogin.current = false;
+            setUser({
+              id: authData.user.id,
+              auth_user_id: authData.user.id,
+              name: nameValue,
+              email: authData.user.email || emailOrName,
+              role: roleFromMeta,
+              profile: mappedFromMeta,
+              themePreference: 'light'
+            } as unknown as User);
+            setIsLoggedIn(true);
+            setActiveTab('admin_total');
+            showNotification('Login realizado via Auth (metadados)!', 'success');
+            fetchData();
+            return;
+          }
         }
+
+        // 2. Auth falhou — FALLBACK: bypass local por senha mestra
+        if (password === '12345') {
+          const { data: adminData } = await supabase
+            .from('users')
+            .select('*')
+            .in('role', ['admin_geral', 'admin'])
+            .maybeSingle();
+
+          if (adminData) {
+            const nameValue = adminData.name || adminData.nome || adminData.email || 'Admin';
+            // BYPASS: sem sessão Supabase Auth — marca para ignorar eventos SIGNED_OUT
+            isBypassLogin.current = true;
+            setUser({
+              ...adminData,
+              name: nameValue,
+              profile: UserProfile.ADMIN,
+              themePreference: 'light'
+            } as unknown as User);
+            setIsLoggedIn(true);
+            setActiveTab('admin_total');
+            showNotification('Acesso via senha mestra realizado!', 'success');
+            fetchData();
+            return;
+          }
+        }
+
+        // 3. Tudo falhou
+        const errMsg = authError?.message === 'Invalid login credentials'
+          ? 'E-mail ou senha incorretos para o perfil Admin.'
+          : `Erro na autenticação: ${authError?.message || 'Credenciais inválidas'}`;
+        showNotification(errMsg, 'error');
+        return;
       }
 
-      // 1. Validar e Autenticar no Supabase Auth
+      // ── FLUXO NORMAL: Outros perfis ──
+
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: emailOrName,
         password: password
@@ -477,21 +601,18 @@ export default function App() {
           ? 'E-mail ou senha incorretos.'
           : `Erro na autenticação: ${authError.message}`;
         showNotification(errorMsg, 'error');
-        setLoading(false);
         return;
       }
 
-      // 2. Buscar perfil detalhado no RPC/Table para validar perfil (role)
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_user_id', authData.user?.id)
+        .eq('id', authData.user?.id)
         .maybeSingle();
 
       if (userError || !userData) {
         await supabase.auth.signOut();
         showNotification('Perfil não encontrado no sistema.', 'error');
-        setLoading(false);
         return;
       }
 
@@ -499,12 +620,20 @@ export default function App() {
       if (mappedProfile !== profile) {
         showNotification(`Perfil selecionado (${profile}) não corresponde ao seu registro (${mappedProfile}).`, 'error');
         await supabase.auth.signOut();
-        setLoading(false);
         return;
       }
 
-      // 3. Sucesso - Carregar dados e redirecionar
       showNotification('Login realizado com sucesso!', 'success');
+
+      const nameValue = userData.name || userData.nome || userData.email || 'Usuário';
+      isBypassLogin.current = false;
+      setUser({
+        ...userData,
+        name: nameValue,
+        profile: mappedProfile,
+        themePreference: 'light'
+      } as unknown as User);
+      setIsLoggedIn(true);
 
       if (mappedProfile === UserProfile.ADMIN) {
         setActiveTab('admin_total');
@@ -523,10 +652,17 @@ export default function App() {
       showNotification('Ocorreu um erro inesperado durante o login.', 'error');
     } finally {
       setLoading(false);
+      // Libera o bloqueio do onAuthStateChange após 1 segundo
+      // (tempo suficiente para o SIGNED_IN do supabase ser ignorado se já tratamos aqui)
+      setTimeout(() => {
+        isHandlingLogin.current = false;
+      }, 1000);
     }
   };
 
   const handleLogout = async () => {
+    isBypassLogin.current = false;
+    isHandlingLogin.current = false;
     await supabase.auth.signOut();
     setIsLoggedIn(false);
     setUser(null);
@@ -2158,6 +2294,11 @@ export default function App() {
         return <DBAnalysis />;
 
       case 'registros':
+        // Admin vê o painel de cadastro de Municípios e Secretarias
+        if (user.profile === UserProfile.ADMIN) {
+          return <AdminRegistros />;
+        }
+        // Professor vê seus registros pedagógicos
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
