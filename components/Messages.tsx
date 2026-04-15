@@ -13,10 +13,12 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
   const [conteudo, setConteudo] = useState('');
 
   const isDiretor = user.profile === UserProfile.DIRETOR;
+  const isAdmin = user.profile === UserProfile.ADMIN;
 
   // Filtra os destinatários com base no perfil:
   // Se Diretor, o destino é exclusivamente a Secretaria do município.
   const recipients = useMemo(() => {
+    if (isAdmin) return []; // Admin não possui recipients específicos, usa a lista de perfis do formulário.
     if (isDiretor) {
       // Para Diretores, apenas Secretaria de Educação ou Admin Geral (atuando como Secretaria) do mesmo município
       return MOCK_USERS.filter(u =>
@@ -25,12 +27,12 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
         u.id !== user.id
       );
     }
-    // Para Secretaria/Admin, o destino são os Diretores do mesmo município
+    // Para Secretaria, o destino são os Diretores do mesmo município
     return MOCK_USERS.filter(u =>
       u.profile === UserProfile.DIRETOR &&
       u.municipio_id === user.municipio_id
     );
-  }, [user.municipio_id, user.profile, user.id, isDiretor]);
+  }, [user.municipio_id, user.profile, user.id, isDiretor, isAdmin]);
 
   // Efeito para auto-selecionar o destinatário se for Diretor e houver apenas um (Secretaria)
   useEffect(() => {
@@ -43,6 +45,11 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
   const filteredConversas = useMemo(() => {
     return messages
       .filter(m => {
+        if (isAdmin) {
+          // Admin Geral visualiza o próprio histórico de mensagens enviadas
+          return m.remetente_id === user.id;
+        }
+
         // Regra para Diretor: Ver apenas mensagens entre ele e membros da Secretaria/Admin
         if (isDiretor) {
           const isRelatedToMe = m.remetente_id === user.id || m.destinatario_id === user.id;
@@ -54,11 +61,11 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
           return otherParty && (otherParty.profile === UserProfile.SECRETARIA || otherParty.profile === UserProfile.ADMIN);
         }
 
-        // Regra para Secretaria/Admin: Ver todas as mensagens do município
+        // Regra para Secretaria: Ver todas as mensagens do município
         return m.municipio_id === user.municipio_id;
       })
       .sort((a, b) => new Date(a.data_envio).getTime() - new Date(b.data_envio).getTime());
-  }, [messages, user.municipio_id, user.id, isDiretor]);
+  }, [messages, user.municipio_id, user.id, isDiretor, isAdmin]);
 
   const unreadCount = useMemo(() =>
     messages.filter(m => !m.lido && m.destinatario_id === user.id).length
@@ -67,6 +74,26 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!destinatarioId || !conteudo.trim()) return;
+
+    if (isAdmin) {
+      const destEmail = destinatarioId === 'Todos' ? 'Todos os Perfis' : `Perfil: ${destinatarioId}`;
+      const newMessage: Message = {
+        id: `msg_${Date.now()}`,
+        remetente_id: user.id,
+        remetente_email: user.email,
+        destinatario_id: `broadcast_${destinatarioId}`,
+        destinatario_email: destEmail,
+        conteudo: conteudo.trim(),
+        data_envio: new Date().toISOString(),
+        lido: false,
+        municipio_id: user.municipio_id || 'geral'
+      };
+
+      setMessages([...messages, newMessage]);
+      setConteudo('');
+      setDestinatarioId('');
+      return;
+    }
 
     const target = recipients.find(r => r.id === destinatarioId);
     if (!target) return;
@@ -104,13 +131,13 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
             <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
               <i className="fa-solid fa-paper-plane text-sm"></i>
             </div>
-            {isDiretor ? 'Contatar Secretaria' : 'Compor Mensagem'}
+            {isAdmin ? 'Comunicado da Rede' : (isDiretor ? 'Contatar Secretaria' : 'Compor Mensagem')}
           </h2>
 
           <form onSubmit={handleSendMessage} className="space-y-6">
             <div className="flex flex-col space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                {isDiretor ? 'Destinatário (Secretaria)' : 'Destinatário (Diretor)'}
+                {isAdmin ? 'Perfil Destinatário' : (isDiretor ? 'Destinatário (Secretaria)' : 'Destinatário (Diretor)')}
               </label>
               <div className="relative">
                 <select
@@ -119,17 +146,30 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
                   required
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
                 >
-                  {/* Removemos a opção vazia para Diretores se houver destinatários, forçando a seleção da Secretaria */}
-                  {(!isDiretor || (isDiretor && recipients.length === 0)) && (
-                    <option value="">{isDiretor ? 'Selecione a Secretaria...' : 'Selecione um Diretor...'}</option>
+                  {isAdmin ? (
+                    <>
+                      <option value="">Selecione o perfil...</option>
+                      <option value="Todos">Todos os Perfis</option>
+                      <option value="Secretaria de Educação">Secretaria de Educação</option>
+                      <option value="Diretor">Diretor</option>
+                      <option value="Professor">Professor</option>
+                      <option value="Mediador">Mediador</option>
+                    </>
+                  ) : (
+                    <>
+                      {/* Removemos a opção vazia para Diretores se houver destinatários, forçando a seleção da Secretaria */}
+                      {(!isDiretor || (isDiretor && recipients.length === 0)) && (
+                        <option value="">{isDiretor ? 'Selecione a Secretaria...' : 'Selecione um Diretor...'}</option>
+                      )}
+                      {recipients.map(recipient => {
+                        return (
+                          <option key={recipient.id} value={recipient.id}>
+                            {isDiretor ? 'Secretaria de Educação' : recipient.name}
+                          </option>
+                        );
+                      })}
+                    </>
                   )}
-                  {recipients.map(recipient => {
-                    return (
-                      <option key={recipient.id} value={recipient.id}>
-                        {isDiretor ? 'Secretaria de Educação' : recipient.name}
-                      </option>
-                    );
-                  })}
                 </select>
                 <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"></i>
               </div>
@@ -152,7 +192,7 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
               className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <i className="fa-solid fa-paper-plane"></i>
-              {isDiretor ? 'Enviar para Secretaria' : 'Enviar para Rede'}
+              {isAdmin ? 'Enviar para Rede' : (isDiretor ? 'Enviar para Secretaria' : 'Enviar para Rede')}
             </button>
           </form>
         </div>
@@ -165,9 +205,11 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
             <div>
               <p className="text-xs font-bold text-blue-800">Canais de Auditabilidade</p>
               <p className="text-[10px] text-blue-600 leading-relaxed font-medium">
-                {isDiretor
-                  ? 'Suas conversas com a Secretaria são registradas para fins de protocolo.'
-                  : 'Todas as mensagens são registradas no log do município.'}
+                {isAdmin 
+                  ? 'Todas as mensagens enviadas são registradas no log de auditabilidade do sistema para acompanhamento do administrador.'
+                  : (isDiretor
+                    ? 'Suas conversas com a Secretaria são registradas para fins de protocolo.'
+                    : 'Todas as mensagens são registradas no log do município.')}
               </p>
             </div>
           </div>
@@ -179,9 +221,9 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/20 rounded-t-3xl">
           <div className="flex items-center gap-3">
             <h2 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
-              {isDiretor ? 'Minhas Conversas com a Secretaria' : 'Histórico do Município'}
+              {isAdmin ? 'Histórico de Envios' : (isDiretor ? 'Minhas Conversas com a Secretaria' : 'Histórico do Município')}
             </h2>
-            {unreadCount > 0 && (
+            {unreadCount > 0 && !isAdmin && (
               <span className="bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse">
                 {unreadCount} Novas
               </span>
@@ -200,7 +242,7 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
                 <i className="fa-solid fa-comments-slash"></i>
               </div>
               <p className="text-gray-400 text-sm font-medium italic">
-                {isDiretor ? 'Nenhuma conversa ativa com a Secretaria.' : 'Nenhuma comunicação registrada neste município.'}
+                {isAdmin ? 'Nenhum comunicado enviado pelo administrador.' : (isDiretor ? 'Nenhuma conversa ativa com a Secretaria.' : 'Nenhuma comunicação registrada neste município.')}
               </p>
             </div>
           ) : (

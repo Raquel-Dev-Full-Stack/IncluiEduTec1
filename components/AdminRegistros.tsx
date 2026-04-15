@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabaseClient';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Municipio {
   id: string;
-  nome: string;
-  estado: string;
+  nome: string;      // Armazenado como "Cidade — UF"
+  estado?: string;   // Extraído do nome, não salvo como coluna separada
   created_at?: string;
 }
 
@@ -421,26 +421,47 @@ const AdminRegistros: React.FC = () => {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  // Extrai UF do nome salvo no formato "Cidade — UF"
+  const extrairUF = (nome: string) => {
+    const match = nome.match(/—\s*([A-Z]{2})$/);
+    return match ? match[1] : '';
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [{ data: muns }, { data: secs }] = await Promise.all([
-        supabase.from('municipios').select('*').order('nome'),
-        supabase.from('users').select('*').eq('role', 'secretaria').order('nome')
-      ]);
+      // Carregar municipios (pode falhar por RLS — tratar graciosamente)
+      let muns: any[] = [];
+      try {
+        const { data: munsData } = await supabase
+          .from('municipios').select('id,nome,created_at').order('nome');
+        muns = munsData || [];
+      } catch (_) { /* tabela pode não existir ou RLS */ }
 
-      setMunicipios((muns || []) as Municipio[]);
+      const parsedMuns = muns.map((m: any) => ({
+        ...m,
+        estado: extrairUF(m.nome)
+      })) as Municipio[];
+      setMunicipios(parsedMuns);
+
+      // Carregar secretarias
+      const { data: secs } = await supabase
+        .from('users')
+        .select('id,name,email,municipio_id,role,created_at')
+        .eq('role', 'secretaria')
+        .order('name');
 
       const enriched = (secs || []).map((s: any) => {
-        const mun = (muns || []).find((m: any) => m.id === s.municipio_id);
+        const mun = parsedMuns.find((m: any) => m.id === s.municipio_id);
+        const nomeMunicipio = mun?.nome || '—';
         return {
           id: s.id,
-          nome: s.name || s.nome || s.email,
+          nome: s.name || 'Sem nome',
           email: s.email,
           municipio_id: s.municipio_id,
-          municipio_nome: mun?.nome || '—',
-          estado: mun?.estado || '',
-          active: s.active !== false,
+          municipio_nome: nomeMunicipio,
+          estado: mun?.estado || extrairUF(nomeMunicipio),
+          active: true,
           created_at: s.created_at
         };
       }) as Secretaria[];
@@ -456,18 +477,22 @@ const AdminRegistros: React.FC = () => {
   useEffect(() => { loadData(); }, []);
 
   // ── Salvar Município (via IBGE) ─────────────────────────────────────────────
+  // O nome é salvo no formato "Cidade — UF" (sem coluna estado separada)
   const handleSaveMunicipio = async (data: Omit<Municipio, 'id' | 'created_at'>) => {
     try {
+      // Combinar nome + estado num único campo
+      const nomeCompleto = data.estado ? `${data.nome} — ${data.estado}` : data.nome;
+
       if (editingMunicipio) {
-        const { error } = await supabase.from('municipios').update(data).eq('id', editingMunicipio.id);
+        const { error } = await supabase.from('municipios').update({ nome: nomeCompleto }).eq('id', editingMunicipio.id);
         if (error) throw error;
         showMsg('Município atualizado com sucesso!');
       } else {
-        // Verificar se já existe
+        // Verificar se já existe (buscar pelo nome completo)
         const { data: exist } = await supabase
-          .from('municipios').select('id').eq('nome', data.nome).eq('estado', data.estado).maybeSingle();
+          .from('municipios').select('id').eq('nome', nomeCompleto).maybeSingle();
         if (exist) { showMsg('Este município já está cadastrado.', 'error'); return; }
-        const { error } = await supabase.from('municipios').insert([data]);
+        const { error } = await supabase.from('municipios').insert([{ nome: nomeCompleto }]);
         if (error) throw error;
         showMsg('Município cadastrado com sucesso!');
       }
@@ -475,70 +500,111 @@ const AdminRegistros: React.FC = () => {
       setEditingMunicipio(null);
       await loadData();
     } catch (err: any) {
-      showMsg(`Erro: ${err.message}`, 'error');
+      if (err.message?.includes('row-level security')) {
+        showMsg('Permissão negada. Acesse o painel Supabase e desabilite o RLS da tabela "municipios", ou use a aba Secretarias para cadastrar diretamente.', 'error');
+      } else {
+        showMsg(`Erro: ${err.message}`, 'error');
+      }
     }
   };
 
   // ── Salvar Secretaria ───────────────────────────────────────────────────────
+  // Salva direto na tabela users SEM depender da tabela municipios (evita RLS)
   const handleSaveSecretaria = async (data: {
     nome: string; email: string; senha: string;
     municipio_nome: string; municipio_estado: string;
   }) => {
     try {
-      // 1. Garantir que o município existe (ou criar)
-      let municipioId = '';
-      const { data: munExist } = await supabase
-        .from('municipios').select('id').eq('nome', data.municipio_nome).eq('estado', data.municipio_estado).maybeSingle();
+      const nomeCompleto = data.municipio_estado
+        ? `${data.municipio_nome} — ${data.municipio_estado}`
+        : data.municipio_nome;
 
-      if (munExist) {
-        municipioId = munExist.id;
-      } else {
-        const { data: novoMun, error: munErr } = await supabase
-          .from('municipios')
-          .insert([{ nome: data.municipio_nome, estado: data.municipio_estado }])
-          .select('id').single();
-        if (munErr) throw munErr;
-        municipioId = novoMun.id;
-      }
+      // Tenta encontrar o município no cache local (sem insert)
+      const munLocal = municipios.find(m => m.nome === nomeCompleto || m.nome === data.municipio_nome);
+      const municipioId = munLocal?.id || null;
 
       if (editingSecretaria) {
-        const { error } = await supabase.from('users').update({
-          name: data.nome, nome: data.nome,
-          email: data.email,
-          municipio_id: municipioId,
-          updated_at: new Date().toISOString()
-        }).eq('id', editingSecretaria.id);
-        if (error) throw error;
+        // Para EDIÇÃO usamos a RPC segura criada no banco para atualizar logica de email/senha
+        const { error: rpcError } = await supabase.rpc('admin_update_user_credentials', {
+          p_user_id: editingSecretaria.id,
+          p_new_email: data.email,
+          p_new_password: data.senha || null
+        });
+        
+        if (rpcError) {
+          console.error("Erro na rpc update credentials:", rpcError);
+          throw new Error(`Erro: ${rpcError.message}`);
+        }
+
+        // Atualizar também o public.users (name e municipio)
+        const updatePayload: Record<string, any> = {
+          name: data.nome
+        };
+        if (municipioId) updatePayload.municipio_id = municipioId;
+
+        const { error } = await supabase.from('users')
+          .update(updatePayload)
+          .eq('id', editingSecretaria.id);
+        
+        if (error) {
+          console.error('Erro no update public users:', error);
+          throw error;
+        }
+
         showMsg('Secretaria atualizada com sucesso!');
+
       } else {
-        // Tenta via Edge Function primeiro
-        let criado = false;
+        // Para CRIAÇÃO: Edge Function
+        let sucesso = false;
         try {
           const { data: { session } } = await supabase.auth.getSession();
           const jwt = session?.access_token;
           const url = (import.meta as any).env.VITE_SUPABASE_URL;
+
           if (jwt && url) {
             const resp = await fetch(`${url}/functions/v1/upsert-user`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
-              body: JSON.stringify({ email: data.email, password: data.senha, name: data.nome, role: 'secretaria', municipio_id: municipioId })
+              body: JSON.stringify({
+                email: data.email, 
+                password: data.senha,
+                name: data.nome, 
+                role: 'secretaria',
+                municipio_id: municipioId
+              })
             });
-            if (resp.ok) criado = true;
+            
+            if (resp.ok) {
+              sucesso = true;
+            } else {
+              console.warn('Falha na Edge Function, response status:', resp.status);
+              try {
+                const errData = await resp.json();
+                if (errData.error) console.error('Erro da Edge Function:', errData.error);
+              } catch (e) { /* ignora */ }
+            }
           }
-        } catch (_) { /* fallback */ }
+        } catch (err) {
+          console.error('Erro ao chamar upsert-user:', err);
+        }
 
-        if (!criado) {
-          // Fallback: inserir direto na tabela
-          const { error } = await supabase.from('users').insert([{
-            id: crypto.randomUUID(),
-            name: data.nome, nome: data.nome,
+        if (!sucesso) {
+          console.log('Usando fallback via client supabase...');
+          // Fallback para inserção
+          const insertPayload: Record<string, any> = {
+            name: data.nome,
             email: data.email,
             role: 'secretaria',
-            municipio_id: municipioId,
-            active: true,
             created_at: new Date().toISOString()
-          }]);
-          if (error) throw error;
+          };
+          if (municipioId) insertPayload.municipio_id = municipioId;
+
+          const { error } = await supabase.from('users').insert([insertPayload]);
+          
+          if (error) {
+            console.error('Erro no insert fallback:', error);
+            throw error;
+          }
         }
 
         showMsg('Secretaria cadastrada com sucesso!');
