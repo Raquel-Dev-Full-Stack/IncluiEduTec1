@@ -433,10 +433,13 @@ const AdminRegistros: React.FC = () => {
       // Carregar municipios (pode falhar por RLS — tratar graciosamente)
       let muns: any[] = [];
       try {
-        const { data: munsData } = await supabase
+        const { data: munsData, error: munsError } = await supabase
           .from('municipios').select('id,nome,created_at').order('nome');
+        if (munsError) throw munsError;
         muns = munsData || [];
-      } catch (_) { /* tabela pode não existir ou RLS */ }
+      } catch (err: any) { 
+        console.error('Erro ao buscar municipios no loadData:', err);
+      }
 
       let schs: any[] = [];
       try {
