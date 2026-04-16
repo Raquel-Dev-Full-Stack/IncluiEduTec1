@@ -1801,8 +1801,8 @@ export default function App() {
           const filteredSchools = schools.filter(s => {
             if (user.profile === UserProfile.ADMIN) return true;
             if (user.profile === UserProfile.SECRETARIA) {
-              // Ajuste resiliente: se o usuário não tiver municipio_id, mostra as escolas disponíveis
-              if (!user.municipio_id) return true;
+              // Isolamento por município: sem municipio_id a secretaria não deve ver nenhuma escola.
+              if (!user.municipio_id) return false;
               return s.municipio_id === user.municipio_id;
             }
             if (user.profile === UserProfile.DIRETOR) return s.id === user.schoolId;

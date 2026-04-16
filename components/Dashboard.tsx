@@ -130,9 +130,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       try {
         // 1. Busca os IDs das escolas do município da Secretaria
-        const { data: schoolsData, count: schoolsCount } = await supabase
-          .from('schools')
-          .select('id', { count: 'exact' });
+        let schoolsQuery = supabase.from('schools').select('id', { count: 'exact' });
+        
+        // Se for Secretaria, DEVE filtrar por município
+        if (user.profile === 'secretaria' && user.municipio_id) {
+          schoolsQuery = schoolsQuery.eq('municipio_id', user.municipio_id);
+        }
+        
+        const { data: schoolsData, count: schoolsCount } = await schoolsQuery;
 
         const schoolIds = schoolsData?.map(s => s.id) || [];
         const schoolFilter = schoolIds.length > 0 ? schoolIds : ['none'];

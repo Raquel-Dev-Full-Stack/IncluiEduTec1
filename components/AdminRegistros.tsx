@@ -407,7 +407,6 @@ const SecretariaForm: React.FC<{
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 const AdminRegistros: React.FC = () => {
-  const [subTab, setSubTab] = useState<SubTab>('municipios');
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [secretarias, setSecretarias] = useState<Secretaria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -501,7 +500,7 @@ const AdminRegistros: React.FC = () => {
         const { data: exist } = await supabase
           .from('municipios').select('id').eq('nome', nomeCompleto).maybeSingle();
         if (exist) { showMsg('Este município já está cadastrado.', 'error'); return; }
-        const { error } = await supabase.from('municipios').insert([{ nome: nomeCompleto }]);
+        const { data: novoMunId, error } = await supabase.rpc('admin_create_municipio', { p_nome: nomeCompleto });
         if (error) throw error;
         showMsg('Município cadastrado com sucesso!');
       }
@@ -528,9 +527,33 @@ const AdminRegistros: React.FC = () => {
         ? `${data.municipio_nome} — ${data.municipio_estado}`
         : data.municipio_nome;
 
-      // Tenta encontrar o município no cache local (sem insert)
+      // Tenta encontrar o município no cache local
       const munLocal = municipios.find(m => m.nome === nomeCompleto || m.nome === data.municipio_nome);
-      const municipioId = munLocal?.id || null;
+      let municipioId = munLocal?.id || null;
+
+      if (!municipioId) {
+        // Auto-criação do município para facilitar a UX
+        const { data: novoMunId, error: insertError } = await supabase
+          .rpc('admin_create_municipio', { p_nome: nomeCompleto });
+
+        if (insertError) {
+          showMsg('Erro: Falha na RPC para auto-criação do Município.', 'error');
+          return;
+        }
+        municipioId = novoMunId;
+      }
+
+      if (!municipioId) {
+        showMsg('Erro inesperado: Falha ao obter o ID do escopo municipal.', 'error');
+        return;
+      }
+
+      // Validar para garantir que cada município tenha apenas uma Secretaria vinculada
+      const isMunicipioTaken = secretarias.some(sec => sec.municipio_id === municipioId && sec.id !== editingSecretaria?.id);
+      if (isMunicipioTaken) {
+        showMsg('Erro: Já existe uma Secretaria vinculada a este município. Apenas uma Secretaria por município é permitida.', 'error');
+        return;
+      }
 
       if (editingSecretaria) {
         // Para EDIÇÃO usamos a RPC segura criada no banco para atualizar logica de email/senha
@@ -547,7 +570,8 @@ const AdminRegistros: React.FC = () => {
 
         // Atualizar também o public.users (name e municipio)
         const updatePayload: Record<string, any> = {
-          name: data.nome
+          name: data.nome,
+          school_id: null
         };
         if (municipioId) updatePayload.municipio_id = municipioId;
 
@@ -579,7 +603,8 @@ const AdminRegistros: React.FC = () => {
                 password: data.senha,
                 name: data.nome, 
                 role: 'secretaria',
-                municipio_id: municipioId
+                municipio_id: municipioId,
+                school_id: null
               })
             });
             
@@ -604,11 +629,13 @@ const AdminRegistros: React.FC = () => {
             name: data.nome,
             email: data.email,
             role: 'secretaria',
+            school_id: null,
             created_at: new Date().toISOString()
           };
           if (municipioId) insertPayload.municipio_id = municipioId;
 
           const { error } = await supabase.from('users').insert([insertPayload]);
+
           
           if (error) {
             console.error('Erro no insert fallback:', error);
@@ -651,7 +678,7 @@ const AdminRegistros: React.FC = () => {
     }
   };
 
-  const handleCancel = () => { setShowForm(false); setEditingMunicipio(null); setEditingSecretaria(null); };
+  const handleCancel = () => { setShowForm(false); setEditingSecretaria(null); };
 
   return (
     <div className="space-y-8">
@@ -663,38 +690,13 @@ const AdminRegistros: React.FC = () => {
         </div>
         {!showForm && (
           <button
-            onClick={() => { setEditingMunicipio(null); setEditingSecretaria(null); setShowForm(true); }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-100 transition-all text-sm"
+            onClick={() => { setEditingSecretaria(null); setShowForm(true); }}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-100 transition-all text-sm"
           >
             <i className="fa-solid fa-plus"></i>
-            {subTab === 'municipios' ? 'Novo Município' : 'Nova Secretaria'}
+            Nova Secretaria de Educação
           </button>
         )}
-      </div>
-
-      {/* Sub-tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-        {(['municipios', 'secretarias'] as SubTab[]).map(tab => (
-          <button
-            key={tab}
-            onClick={() => { setSubTab(tab); setShowForm(false); }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-              subTab === tab
-                ? tab === 'municipios' ? 'bg-white text-blue-600 shadow-sm' : 'bg-white text-emerald-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <i className={`fa-solid ${tab === 'municipios' ? 'fa-city' : 'fa-building-columns'}`}></i>
-            {tab === 'municipios' ? 'Municípios' : 'Secretarias de Educação'}
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-              subTab === tab
-                ? tab === 'municipios' ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
-                : 'bg-gray-200 text-gray-500'
-            }`}>
-              {tab === 'municipios' ? municipios.length : secretarias.length}
-            </span>
-          </button>
-        ))}
       </div>
 
       {/* Notificação */}
@@ -708,89 +710,13 @@ const AdminRegistros: React.FC = () => {
       )}
 
       {/* Formulários */}
-      {showForm && subTab === 'municipios' && (
-        <MunicipioForm onSave={handleSaveMunicipio} onCancel={handleCancel} initial={editingMunicipio} />
-      )}
-      {showForm && subTab === 'secretarias' && (
+      {showForm && (
         <SecretariaForm onSave={handleSaveSecretaria} onCancel={handleCancel} initial={editingSecretaria} />
       )}
 
-      {/* ─── LISTA DE MUNICÍPIOS ──────────────────────────────────────────── */}
-      {!showForm && subTab === 'municipios' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="p-16 flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-400 text-sm">Carregando municípios...</p>
-            </div>
-          ) : municipios.length === 0 ? (
-            <div className="p-16 text-center">
-              <i className="fa-solid fa-city text-gray-200 text-5xl mb-4 block"></i>
-              <h3 className="text-gray-500 font-bold mb-1">Nenhum município cadastrado</h3>
-              <p className="text-gray-400 text-sm mb-5">Use o botão acima para adicionar um município brasileiro.</p>
-              <button onClick={() => setShowForm(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700">
-                <i className="fa-solid fa-plus mr-2"></i>Adicionar Município
-              </button>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Município</th>
-                  <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
-                  <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Escolas</th>
-                  <th className="text-right px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {municipios.map((m, i) => {
-                  const count = m.escolas_count || 0;
-                  return (
-                    <tr key={m.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${i % 2 !== 0 ? 'bg-gray-50/30' : ''}`}>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <i className="fa-solid fa-city text-blue-500 text-xs"></i>
-                          </div>
-                          <span className="font-bold text-gray-800">{m.nome}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-black rounded-lg">{m.estado}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${count > 0 ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
-                          {count} escola{count !== 1 ? 's' : ''}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 justify-end">
-                          <button onClick={() => { setEditingMunicipio(m); setShowForm(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
-                            <i className="fa-solid fa-pen text-xs"></i>
-                          </button>
-                          {deleteConfirm === m.id ? (
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => handleDeleteMunicipio(m.id)} className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-lg">Confirmar</button>
-                              <button onClick={() => setDeleteConfirm(null)} className="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-lg">Cancelar</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setDeleteConfirm(m.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Remover">
-                              <i className="fa-solid fa-trash text-xs"></i>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
       {/* ─── LISTA DE SECRETARIAS ─────────────────────────────────────────── */}
-      {!showForm && subTab === 'secretarias' && (
+      {!showForm && (
+
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-16 flex flex-col items-center gap-4">
