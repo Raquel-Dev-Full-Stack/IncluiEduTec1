@@ -7,6 +7,7 @@ interface Municipio {
   nome: string;      // Armazenado como "Cidade — UF"
   estado?: string;   // Extraído do nome, não salvo como coluna separada
   created_at?: string;
+  escolas_count?: number;
 }
 
 interface Secretaria {
@@ -438,9 +439,17 @@ const AdminRegistros: React.FC = () => {
         muns = munsData || [];
       } catch (_) { /* tabela pode não existir ou RLS */ }
 
+      let schs: any[] = [];
+      try {
+        const { data: schsData } = await supabase
+          .from('schools').select('id, municipio_id');
+        schs = schsData || [];
+      } catch (_) {}
+
       const parsedMuns = muns.map((m: any) => ({
         ...m,
-        estado: extrairUF(m.nome)
+        estado: extrairUF(m.nome),
+        escolas_count: schs.filter((s: any) => s.municipio_id === m.id).length
       })) as Municipio[];
       setMunicipios(parsedMuns);
 
@@ -729,13 +738,13 @@ const AdminRegistros: React.FC = () => {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Município</th>
                   <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
-                  <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Secretarias</th>
+                  <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Escolas</th>
                   <th className="text-right px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {municipios.map((m, i) => {
-                  const count = secretarias.filter(s => s.municipio_id === m.id).length;
+                  const count = m.escolas_count || 0;
                   return (
                     <tr key={m.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${i % 2 !== 0 ? 'bg-gray-50/30' : ''}`}>
                       <td className="px-6 py-4">
@@ -750,8 +759,8 @@ const AdminRegistros: React.FC = () => {
                         <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-black rounded-lg">{m.estado}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${count > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                          {count} secretaria{count !== 1 ? 's' : ''}
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${count > 0 ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                          {count} escola{count !== 1 ? 's' : ''}
                         </span>
                       </td>
                       <td className="px-6 py-4">
