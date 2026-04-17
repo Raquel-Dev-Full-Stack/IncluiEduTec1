@@ -1,0 +1,9 @@
+/* Estilos globais do projeto IncluiEduTec */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+}
