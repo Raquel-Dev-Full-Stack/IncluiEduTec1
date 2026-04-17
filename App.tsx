@@ -29,7 +29,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminRegistros from './components/AdminRegistros';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
-import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord } from './types';
+import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord, Report } from './types';
 import { MOCK_USERS, MOCK_SCHOOLS, MOCK_STUDENTS, MOCK_MEDIATION_RECORDS, MOCK_CLASSES, MOCK_LESSON_PLANS, MOCK_MEALS } from './constants';
 import { supabase } from './lib/supabaseClient';
 
@@ -130,7 +130,8 @@ export default function App() {
         console.error(`Erro ao processar ${role} (${email}):`, err.error);
         return { error: err.error, email };
       }
-      return { success: true };
+      const data = await response.json();
+      return { success: true, data };
     } catch (e: any) {
       console.error(`Erro na chamada da função para ${email}:`, e);
       return { error: e.message, email };
@@ -758,6 +759,9 @@ export default function App() {
           );
           return [...filtered, mapped];
         });
+        setRefreshKey(prev => prev + 1);
+        fetchData();
+        showNotification('Acompanhamento de saúde registrado com sucesso!', 'success');
       }
     } catch (err: any) {
       console.error('Erro ao salvar refeição da saúde diária:', err);
@@ -837,6 +841,9 @@ export default function App() {
           });
         }
       }
+      setRefreshKey(prev => prev + 1);
+      fetchData();
+      showNotification('Registro geral do aluno atualizado!', 'success');
     } catch (err: any) {
       console.error('Erro ao salvar registro do aluno:', err);
       showNotification(`Erro ao salvar registro: ${err.message}`, 'error');
@@ -1092,6 +1099,8 @@ export default function App() {
 
       setSchoolToEdit(null);
       setActiveTab('schools');
+      setRefreshKey(prev => prev + 1);
+      fetchData();
       showNotification("Unidade Escolar atualizada com sucesso! Todos os perfis e turmas foram vinculados.", 'success');
 
     } catch (error: any) {
@@ -1129,7 +1138,7 @@ export default function App() {
 
       if (error) {
         console.error('Erro ao atualizar turma:', error);
-        alert('Erro ao atualizar turma. Tente novamente.');
+        showNotification('Erro ao atualizar turma. Verifique sua conexão.', 'error');
         return;
       }
 
@@ -1144,7 +1153,9 @@ export default function App() {
         } as Class) : c));
         setClassToEdit(null);
         setActiveTab('turmas');
-        alert('Turma atualizada com sucesso!');
+        setRefreshKey(prev => prev + 1);
+        fetchData();
+        showNotification('Turma atualizada com sucesso!', 'success');
       }
     } else {
       // Modo Cadastro
@@ -1164,7 +1175,7 @@ export default function App() {
 
       if (error) {
         console.error('Erro ao salvar turma:', error);
-        alert('Erro ao salvar turma. Tente novamente.');
+        showNotification('Erro ao salvar a nova turma. Verifique os dados.', 'error');
         return;
       }
 
@@ -1178,7 +1189,9 @@ export default function App() {
           shift: data[0].shift
         } as Class]);
         setActiveTab('turmas');
-        alert('Turma cadastrada com sucesso!');
+        setRefreshKey(prev => prev + 1);
+        fetchData();
+        showNotification('Turma cadastrada com sucesso e vinculada à escola!', 'success');
       }
     }
   };
@@ -1198,7 +1211,9 @@ export default function App() {
     }
 
     setClasses(prev => prev.filter(c => c.id !== classItem.id));
-    alert('Turma excluída com sucesso!');
+    setRefreshKey(prev => prev + 1);
+    fetchData();
+    showNotification('Turma excluída com sucesso!', 'success');
   };
 
   const handleDeleteSchool = async (school: School) => {
@@ -1206,22 +1221,15 @@ export default function App() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('schools')
-        .delete()
-        .eq('id', school.id);
-
-      if (error) {
-        console.error('Erro ao excluir escola:', error);
-        alert('Erro ao excluir unidade escolar. Certifique-se de que não existem turmas, alunos ou registros vinculados a ela.');
-        return;
-      }
-
+      const { error } = await supabase.from('schools').delete().eq('id', school.id);
+      if (error) throw error;
       setSchools(prev => prev.filter(s => s.id !== school.id));
-      alert('Unidade escolar excluída com sucesso!');
-    } catch (err) {
-      console.error('Erro inesperado ao excluir escola:', err);
-      alert('Ocorreu um erro inesperado ao tentar excluir a unidade escolar.');
+      setRefreshKey(prev => prev + 1);
+      fetchData();
+      showNotification('Unidade escolar excluída com sucesso!', 'success');
+    } catch (err: any) {
+      console.error('Erro ao excluir escola:', err);
+      showNotification(`Erro ao excluir unidade escolar: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -1271,6 +1279,8 @@ export default function App() {
           } as Student) : s));
           setStudentToEdit(null);
           setActiveTab('alunos');
+          setRefreshKey(prev => prev + 1);
+          fetchData();
           showNotification('Dados do aluno atualizados com sucesso!', 'success');
         }
       } else {
@@ -1307,12 +1317,34 @@ export default function App() {
             birthDate: data[0].birth_date
           } as Student]);
           setActiveTab('alunos');
+          setRefreshKey(prev => prev + 1);
+          fetchData();
           showNotification('Matrícula do aluno realizada com sucesso!', 'success');
         }
       }
     } catch (err: any) {
       console.error('Erro ao salvar aluno:', err);
       alert(`Erro ao salvar aluno: ${err.message || 'Tente novamente.'} ${err.details || ''}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteStudent = async (s: Student) => {
+    if (!window.confirm(`Tem certeza que deseja remover o aluno ${s.name}?`)) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('students').delete().eq('id', s.id);
+      if (error) throw error;
+      
+      setStudents(prev => prev.filter(item => item.id !== s.id));
+      setRefreshKey(prev => prev + 1);
+      fetchData();
+      showNotification('Aluno removido com sucesso!', 'success');
+    } catch (err: any) {
+      console.error('Erro ao excluir aluno:', err);
+      showNotification(`Erro ao excluir aluno: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -1329,14 +1361,24 @@ export default function App() {
 
     setLoading(true);
     try {
-      // 1. Processar credenciais no Auth via Edge Function (se houver email/senha)
-      if (newMediatorData.email) {
+      const mediatorId = newMediatorData.id;
+
+      // Resolver id da escola (Diretor usa o seu próprio, Secretaria/Admin usa a escola selecionada)
+      const targetSchoolId = user.profile === UserProfile.DIRETOR ? user.schoolId : (newMediatorData.schoolId || selectedSchoolId);
+      
+      // Resolver município (Secretaria usa o seu, Admin usa o da escola)
+      // Como não temos a escola inteira aqui fácil, podemos buscar na lista de escolas
+      const targetSchool = schools.find(s => s.id === targetSchoolId);
+      const targetMunicipioId = user.profile === UserProfile.SECRETARIA ? user.municipio_id : (targetSchool?.municipio_id || user.municipio_id);
+
+      // 1. Processar credenciais no Auth via Edge Function apenas no Modo Criação
+      if (!mediatorId && newMediatorData.email) {
         const res = await callUpsertUser(
           newMediatorData.email,
           newMediatorData.name || 'Mediador',
           'mediador',
           newMediatorData.password || undefined,
-          user.schoolId
+          targetSchoolId
         );
 
         if (res.error) {
@@ -1347,14 +1389,14 @@ export default function App() {
       }
 
       // 2. Atualizar dados no public.users (incluindo senha_hash via RPC se houver senha)
-      const mediatorId = newMediatorData.id;
 
       const userUpdatePayload = {
         name: newMediatorData.name,
         email: newMediatorData.email,
         phone_number: newMediatorData.phone?.trim() || null,
         active: newMediatorData.active ?? true,
-        school_id: user.schoolId
+        school_id: targetSchoolId,
+        municipio_id: targetMunicipioId
       };
 
       let savedUser;
@@ -1391,11 +1433,13 @@ export default function App() {
 
       } else {
         // MODO NOVO CADASTRO
+        // Atualizar a linha pré-inserida pela edge function com os detalhes faltantes
         const { data, error } = await supabase
           .from('users')
-          .select('*')
+          .update(userUpdatePayload)
           .eq('email', newMediatorData.email!)
-          .maybeSingle();
+          .select('*')
+          .single();
 
         if (error) throw error;
         savedUser = data;
@@ -1409,7 +1453,7 @@ export default function App() {
 
         // Validação de escola: Garante que os alunos vinculados pertencem à escola do mediador
         const invalidStudents = students.filter(s =>
-          selectedStudentIds.includes(s.id) && s.schoolId !== (savedUser.school_id || user.schoolId)
+          selectedStudentIds.includes(s.id) && s.schoolId !== (savedUser.school_id || targetSchoolId)
         );
 
         if (invalidStudents.length > 0) {
@@ -1445,6 +1489,8 @@ export default function App() {
           profile: savedUser.role as UserProfile,
           email: savedUser.email,
           phone: savedUser.phone_number,
+          schoolId: savedUser.school_id || targetSchoolId,
+          municipio_id: savedUser.municipio_id || targetMunicipioId,
           studentIds: selectedStudentIds // Persiste localmente para o UI
         } as User;
 
@@ -1458,8 +1504,9 @@ export default function App() {
         setIsAddingMediator(false);
         setMediatorToEdit(null);
         setRefreshKey(prev => prev + 1);
+        fetchData();
 
-        showNotification(`Dados do(a) mediador(a) ${mappedMediator.name} salvos com sucesso!`, 'success');
+        showNotification(!!mediatorId ? `Dados do(a) mediador(a) atualizados com sucesso!` : `Mediador cadastrado com sucesso!`, 'success');
       }
     } catch (err: any) {
       console.error('Erro ao salvar mediador:', err);
@@ -1507,6 +1554,8 @@ export default function App() {
         setUsersList(prev => prev.map(u => u.id === teacherToEdit.id ? updatedTeacher : u));
         setTeacherToEdit(null);
         setActiveTab('teachers');
+        setRefreshKey(prev => prev + 1);
+        fetchData();
         showNotification(`Dados do professor ${updatedTeacher.name} atualizados!`, 'success');
       }
     } else {
@@ -1583,8 +1632,9 @@ export default function App() {
           const savedTeacher = {
             ...finalUserData,
             profile: finalUserData.role as UserProfile,
-            email: finalUserData.email,
-            phone: finalUserData.phone_number
+            email: finalUserData.email || newTeacherData.email,
+            phone: finalUserData.phone_number || newTeacherData.phone,
+            schoolId: finalUserData.school_id || user.schoolId
           } as User;
 
           setUsersList(prev => {
@@ -1595,14 +1645,15 @@ export default function App() {
 
           // Disparar atualização dos contadores do Dashboard
           setRefreshKey(prev => prev + 1);
+          fetchData();
 
           setTeacherToEdit(null);
           setActiveTab('teachers');
-          showNotification(`Professor ${savedTeacher.name} salvo com sucesso!`, 'success');
+          showNotification('Professor cadastrado com sucesso e credenciais criadas.', 'success');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Erro ao salvar professor:', err);
-        alert('Ocorreu um erro inesperado.');
+        showNotification(`Erro ao cadastrar professor: ${err.message}`, 'error');
       } finally {
         setLoading(false);
       }
@@ -1648,6 +1699,7 @@ export default function App() {
       showNotification(`Professor(a) ${teacher.name} removido(a) com sucesso!`, 'success');
 
       // Forçar atualização do dashboard ao voltar
+      setRefreshKey(prev => prev + 1);
       fetchData();
 
     } catch (err: any) {
@@ -1659,7 +1711,10 @@ export default function App() {
   };
 
   const handleDeleteMediator = async (mediator: User) => {
-    if (!user || user.profile !== UserProfile.DIRETOR) return;
+    if (!user || (user.profile !== UserProfile.DIRETOR && user.profile !== UserProfile.SECRETARIA)) {
+      alert('Você não tem permissão para remover mediadores.');
+      return;
+    }
 
     if (!window.confirm(`Tem certeza que deseja remover o mediador ${mediator.name}? Esta ação não pode ser desfeita.`)) {
       return;
@@ -1667,41 +1722,53 @@ export default function App() {
 
     setLoading(true);
     try {
-      // 1. Limpar registros de mediação e vínculos
+      // 1. Limpar dependências em outras tabelas (Foreign Keys)
+      
+      // 1.1 Desvincular de turmas
+      await supabase
+        .from('classes')
+        .update({ mediator_id: null })
+        .eq('mediator_id', mediator.id);
+
+      // 1.2 Desvincular de alunos (coluna direta se houver)
+      await supabase
+        .from('students')
+        .update({ mediator_id: null })
+        .eq('mediator_id', mediator.id);
+
+      // 1.3 Limpar registros de mediação
       const { error: recordError } = await supabase
         .from('mediator_records')
         .delete()
         .eq('mediator_id', mediator.id);
 
-      if (recordError) {
-        console.warn('Aviso: Erro ao remover registros de mediação:', recordError.message);
-      }
+      if (recordError) console.warn('Erro ao remover registros:', recordError.message);
 
+      // 1.4 Limpar vínculos na tabela de junção
       const { error: linkageError } = await supabase
         .from('mediator_students')
         .delete()
         .eq('mediator_id', mediator.id);
 
-      if (linkageError) {
-        console.warn('Aviso: Erro ao remover vínculos de alunos:', linkageError.message);
-      }
+      if (linkageError) console.warn('Erro ao remover vínculos:', linkageError.message);
 
-      // 2. Remover o usuário
+      // 2. Remover o usuário da tabela pública
       const { error: userError } = await supabase
         .from('users')
         .delete()
-        .eq('id', mediator.id)
-        .eq('school_id', user.schoolId); // Segurança extra
+        .eq('id', mediator.id);
 
       if (userError) throw userError;
 
       // 3. Atualizar estado local
       setUsersList(prev => prev.filter(u => u.id !== mediator.id));
       showNotification(`Mediador(a) ${mediator.name} removido(a) com sucesso!`, 'success');
-
-      // Forçar atualização do dashboard
       setRefreshKey(prev => prev + 1);
+      fetchData();
 
+    } catch (err: any) {
+      console.error('Erro ao excluir mediador:', err);
+      showNotification(`Falha ao excluir mediador: ${err.message || 'Verifique se existem registros vinculados.'}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -1827,10 +1894,10 @@ export default function App() {
                   const hydratedSchool: School = {
                     ...s,
                     teachers: usersList
-                      .filter(u => u.schoolId === s.id && u.profile === UserProfile.PROFESSOR)
+                      .filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.teacherId === u.id)))
                       .map(u => ({ name: u.name, subject: 'Geral', contact: u.phone || '' })), // Mapeamento básico
                     mediators: usersList
-                      .filter(u => u.schoolId === s.id && u.profile === UserProfile.MEDIADOR)
+                      .filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.mediatorId === u.id)))
                       .map(u => ({ name: u.name, area: 'Inclusão', contact: u.phone || '' })),
                     classes: classes
                       .filter(c => c.schoolId === s.id)
@@ -2004,7 +2071,7 @@ export default function App() {
         }
 
         const schoolTeachers = user.profile === UserProfile.DIRETOR
-          ? usersList.filter(u => u.profile === UserProfile.PROFESSOR && u.schoolId === user.schoolId)
+          ? usersList.filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === user.schoolId || classes.some(c => c.teacherId === u.id && c.schoolId === user.schoolId)))
           : (user.profile === UserProfile.SECRETARIA
             ? usersList.filter(u => u.profile === UserProfile.PROFESSOR && schools.find(s => s.id === u.schoolId)?.municipio_id === user.municipio_id)
             : usersList.filter(u => u.profile === UserProfile.PROFESSOR));
@@ -2140,13 +2207,7 @@ export default function App() {
             <Table<Student>
               data={filteredStudents}
               onEdit={user.profile === UserProfile.DIRETOR ? (s) => { setStudentToEdit(s); setActiveTab('student_registration'); } : undefined}
-              onDelete={user.profile === UserProfile.DIRETOR ? async (s) => {
-                if (window.confirm(`Tem certeza que deseja remover o aluno ${s.name}?`)) {
-                  const { error } = await supabase.from('students').delete().eq('id', s.id);
-                  if (error) alert('Erro ao excluir aluno.');
-                  else setStudents(prev => prev.filter(item => item.id !== s.id));
-                }
-              } : undefined}
+              onDelete={user.profile === UserProfile.DIRETOR ? handleDeleteStudent : undefined}
               columns={[
                 { header: 'Nome', accessor: (s) => <span className="font-bold text-gray-800">{s.name}</span> },
                 {
@@ -2160,6 +2221,10 @@ export default function App() {
                 {
                   header: 'Status',
                   accessor: () => <span className="text-emerald-500 font-black text-[10px] uppercase">Matriculado</span>
+                },
+                {
+                  header: 'Mediador',
+                  accessor: (s) => usersList.find(u => u.id === s.mediatorId)?.name || <span className="text-gray-300 italic">Sem mediador</span>
                 }
               ]}
             />
@@ -2210,103 +2275,103 @@ export default function App() {
           );
         }
 
-        if (selectedMediatorId && user.profile === UserProfile.DIRETOR) {
-          const mediator = usersList.find(u => u.id === selectedMediatorId);
-          if (mediator) {
-            return (
-              <MediatorDetails
-                mediator={mediator}
-                students={students}
-                records={mediationRecords.filter(r => r.authorId === selectedMediatorId)}
-                onBack={() => setSelectedMediatorId(null)}
-              />
-            );
-          }
-        }
-
         const schoolMediators = user.profile === UserProfile.DIRETOR
-          ? usersList.filter(u => u.profile === UserProfile.MEDIADOR && u.schoolId === user.schoolId)
+          ? usersList.filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === user.schoolId || classes.some(c => c.mediatorId === u.id && c.schoolId === user.schoolId)))
+          : (user.profile === UserProfile.SECRETARIA
+            ? usersList.filter(u => u.profile === UserProfile.MEDIADOR && schools.find(s => s.id === u.schoolId)?.municipio_id === user.municipio_id)
+            : usersList.filter(u => u.profile === UserProfile.MEDIADOR));
+
+        const selectedMediator = selectedMediatorId ? usersList.find(u => u.id === selectedMediatorId) : null;
+        const filteredMediationRecords = selectedMediatorId 
+          ? mediationRecords.filter(r => r.authorId === selectedMediatorId)
           : [];
 
         return (
           <div className="space-y-8">
-            {user.profile === UserProfile.DIRETOR && (
-              <ModuleWrapper
-                title="Mediadores da Unidade"
-                description="Gestão do quadro de mediadores e credenciais de acesso."
-                onAdd={() => setIsAddingMediator(true)}
-              >
-                <Table<User>
-                  data={schoolMediators}
-                  onEdit={(u) => { setMediatorToEdit(u); setIsAddingMediator(true); }}
-                  onDelete={handleDeleteMediator}
-                  columns={[
-                    {
-                      header: 'Mediador', accessor: (u) => (
-                        <button
-                          onClick={() => setSelectedMediatorId(u.id)}
-                          className="flex items-center gap-3 text-left hover:bg-gray-50 p-2 rounded-2xl transition-all group w-full"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                            <i className="fa-solid fa-user"></i>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-gray-800 group-hover:text-indigo-600 transition-all">{u.name}</span>
-                            <span className="text-[9px] font-black uppercase text-gray-400 tracking-tighter">Ver Histórico de Registros</span>
-                          </div>
-                        </button>
-                      )
-                    },
-                    { header: 'E-mail', accessor: 'email' },
-                    {
-                      header: 'Turma',
-                      accessor: (u) => {
-                        const mediatorClass = classes.find(c => c.mediatorId === u.id);
-                        return mediatorClass ? (
-                          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-bold rounded-lg border border-blue-100">
-                            {mediatorClass.name}
-                          </span>
-                        ) : <span className="text-gray-300 italic">Não vinculado</span>;
-                      }
-                    },
-                    {
-                      header: 'Alunos Vinculados', accessor: (u) => {
-                        const linked = students.filter(s => u.studentIds?.includes(s.id));
-                        if (linked.length === 0) return <span className="text-gray-300 italic">Nhum vínculo</span>;
-                        return (
-                          <div className="flex flex-wrap gap-1">
-                            {linked.map(s => (
-                              <span key={s.id} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded-lg border border-indigo-100">
-                                {s.name.split(' ')[0]}
-                              </span>
-                            ))}
-                          </div>
-                        );
-                      }
-                    },
-                    {
-                      header: 'Status', accessor: (u) => (
-                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${u.active ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                          {u.active ? 'Ativo' : 'Inativo'}
-                        </span>
-                      )
-                    }
-                  ]}
-                />
-              </ModuleWrapper>
-            )}
-
-            <ModuleWrapper title="Registros de Mediação" description="Anotações diárias de acompanhamento inclusivo.">
-              <Table<MediationRecord>
-                data={mediationRecords}
+            <ModuleWrapper
+              title={user.profile === UserProfile.DIRETOR ? "Mediadores da Unidade" : "Mediadores da Rede"}
+              description="Gestão do quadro de mediadores e histórico de registros."
+              onAdd={user.profile === UserProfile.DIRETOR ? () => setIsAddingMediator(true) : undefined}
+            >
+              <Table<User>
+                data={schoolMediators}
+                onEdit={user.profile === UserProfile.DIRETOR ? (u) => { setMediatorToEdit(u); setIsAddingMediator(true); } : undefined}
+                onDelete={user.profile === UserProfile.DIRETOR ? handleDeleteMediator : undefined}
                 columns={[
-                  { header: 'Data', accessor: (r) => new Date(r.date).toLocaleDateString('pt-BR') },
-                  { header: 'Aluno', accessor: (r) => students.find(s => s.id === r.studentId)?.name || 'N/A' },
-                  { header: 'Status', accessor: (r) => <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg uppercase">{r.status}</span> },
-                  { header: 'Comportamento', accessor: 'behaviorStatus' }
+                  {
+                    header: 'Mediador', accessor: (u) => (
+                      <button
+                        onClick={() => setSelectedMediatorId(selectedMediatorId === u.id ? null : u.id)}
+                        className={`flex items-center gap-3 text-left p-2 rounded-2xl transition-all group w-full ${selectedMediatorId === u.id ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-gray-50'}`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${selectedMediatorId === u.id ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'}`}>
+                          <i className="fa-solid fa-user"></i>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className={`font-bold transition-all ${selectedMediatorId === u.id ? 'text-indigo-700' : 'text-gray-800 group-hover:text-indigo-600'}`}>{u.name}</span>
+                          <span className="text-[9px] font-black uppercase text-gray-400 tracking-tighter">
+                            {selectedMediatorId === u.id ? 'Ocultar Registros' : 'Ver Histórico de Registros'}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  },
+                  { header: 'E-mail', accessor: 'email' },
+                  {
+                    header: 'Escola / Unidade',
+                    accessor: (u) => {
+                      const school = schools.find(s => s.id === u.schoolId);
+                      return school ? (
+                        <span className="text-gray-600 font-medium">{school.name}</span>
+                      ) : <span className="text-gray-300 italic">Não vinculado</span>;
+                    }
+                  },
+                  {
+                    header: 'Status', accessor: (u) => (
+                      <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${u.active ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                        {u.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    )
+                  }
                 ]}
               />
             </ModuleWrapper>
+
+            {selectedMediatorId && (
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <ModuleWrapper 
+                  title={`Registros de Mediação: ${selectedMediator?.name}`} 
+                  description={`Histórico de anotações diárias do(a) mediador(a).`}
+                >
+                  {filteredMediationRecords.length > 0 ? (
+                    <Table<MediationRecord>
+                      data={filteredMediationRecords}
+                      columns={[
+                        { header: 'Data', accessor: (r) => new Date(r.date).toLocaleDateString('pt-BR') },
+                        { header: 'Aluno', accessor: (r) => students.find(s => s.id === r.studentId)?.name || 'N/A' },
+                        { header: 'Status', accessor: (r) => (
+                          <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${
+                            r.status === 'Crítico' || r.status === 'Alerta' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
+                          }`}>
+                            {r.status}
+                          </span>
+                        )},
+                        { header: 'Comportamento', accessor: 'behaviorStatus' },
+                        { header: 'Observação', accessor: (r) => <span className="text-xs text-gray-500 italic max-w-xs truncate block" title={r.description}>{r.description}</span> }
+                      ]}
+                    />
+                  ) : (
+                    <div className="p-12 text-center bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-100">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                        <i className="fa-solid fa-folder-open text-xl"></i>
+                      </div>
+                      <p className="text-gray-500 font-bold">Nenhum registro encontrado</p>
+                      <p className="text-gray-400 text-xs mt-1">Este mediador ainda não realizou anotações no sistema.</p>
+                    </div>
+                  )}
+                </ModuleWrapper>
+              </div>
+            )}
           </div>
         );
 

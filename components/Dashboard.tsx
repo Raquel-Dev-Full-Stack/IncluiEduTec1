@@ -237,7 +237,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const filteredTeachers = isDiretor ? (usersList || []).filter(u =>
     u.profile === UserProfile.PROFESSOR &&
-    filteredClasses.some(c => c.teacherId === u.id)
+    (u.schoolId === schoolId || filteredClasses.some(c => c.teacherId === u.id))
   ) : (usersList || []).filter(u => u.profile === UserProfile.PROFESSOR);
 
   const filteredMediators = isDiretor ? (usersList || []).filter(u =>
@@ -261,7 +261,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       { label: 'Alunos Atendidos', count: directorData.alunos_atendidos, icon: 'fa-graduation-cap', bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-600', iconBg: 'bg-blue-500' },
       { label: 'Professores', count: directorData.professores, icon: 'fa-chalkboard-user', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', iconBg: 'bg-emerald-500' },
       { label: 'Turmas Ativas', count: directorData.turmas_ativas, icon: 'fa-users-rectangle', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-600', iconBg: 'bg-purple-500' },
-      { label: 'Mediadores', count: directorData.mediadores, icon: 'fa-hand-holding-heart', bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-600', iconBg: 'bg-indigo-500' },
+      { label: 'Mediadores', count: filteredMediators.length, icon: 'fa-hand-holding-heart', bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-600', iconBg: 'bg-indigo-500' },
       { label: 'Relatórios Pendentes', count: directorData.relatorios_pendentes, icon: 'fa-file-lines', bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', iconBg: 'bg-rose-500' },
       { label: 'Taxa de Presença', count: 94, suffix: '%', icon: 'fa-chart-simple', bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-600', iconBg: 'bg-amber-500' },
     ];
@@ -715,7 +715,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     { label: 'Corpo Docente', count: statsData.teachers, change: '100% ativo', icon: 'fa-chalkboard-user', color: 'sky' },
     { label: 'Unidades Escolares', count: statsData.schools, change: 'Mapeadas', icon: 'fa-school', color: 'emerald' },
     { label: 'Alunos Público-Alvo', count: statsData.pcdStudents, change: 'Apoio Ativo', icon: 'fa-graduation-cap', color: 'orange' },
-    { label: 'Mediadores Mobilizados', count: statsData.mediators, change: '1 por 3 alunos', icon: 'fa-hand-holding-heart', color: 'rose' },
+    { label: 'Mediadores Mobilizados', count: filteredMediators.length, change: '1 por 3 alunos', icon: 'fa-hand-holding-heart', color: 'rose' },
     { label: 'Relatórios PDIs', count: statsData.reports, change: 'Status 2024', icon: 'fa-file-lines', color: 'amber' }
   ];
 

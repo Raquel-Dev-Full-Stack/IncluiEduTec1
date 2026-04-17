@@ -11,7 +11,11 @@ interface ClassRegistrationProps {
 }
 
 const ClassRegistration: React.FC<ClassRegistrationProps> = ({ onSave, onCancel, teachers, mediators, initialData }) => {
-  const [formData, setFormData] = useState<Partial<Class>>(initialData || {
+  const [formData, setFormData] = useState<Partial<Class>>(initialData ? {
+    ...initialData,
+    teacherId: initialData.teacherId || '',
+    mediatorId: initialData.mediatorId || ''
+  } : {
     name: '',
     year: new Date().getFullYear().toString(),
     teacherId: '',
@@ -23,7 +27,7 @@ const ClassRegistration: React.FC<ClassRegistrationProps> = ({ onSave, onCancel,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.year || !formData.level || !formData.shift) {
-      alert('Por favor, preencha todos os campos obrigatórios (*).');
+      alert('Os campos Nome da Turma, Ano Letivo, Nível e Turno são obrigatórios.');
       return;
     }
     onSave(formData);
@@ -53,7 +57,7 @@ const ClassRegistration: React.FC<ClassRegistrationProps> = ({ onSave, onCancel,
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ano Letivo</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ano Letivo *</label>
             <input
               type="text"
               value={formData.year}

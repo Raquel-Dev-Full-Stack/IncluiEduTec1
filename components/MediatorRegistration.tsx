@@ -56,9 +56,7 @@ const MediatorRegistration: React.FC<MediatorRegistrationProps> = ({ onSave, onC
     }
 
     const selectedCount = formData.studentIds?.length || 0;
-    if (selectedCount === 0) {
-      newErrors.students = 'Selecione pelo menos 1 aluno para acompanhamento.';
-    } else if (selectedCount > 3) {
+    if (selectedCount > 3) {
       newErrors.students = 'Selecione no máximo 3 alunos por mediador.';
     }
 
