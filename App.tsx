@@ -470,13 +470,12 @@ export default function App() {
     }
   }, [user]);
 
-  const handleLogin = async (emailOrName: string, profile: UserProfile, password?: string) => {
+  const handleLogin = async (emailOrName: string, selectedProfile: UserProfile, password?: string) => {
     if (!password) {
       showNotification('A senha é obrigatória.', 'error');
       return;
     }
 
-    // Sinaliza que estamos processando login — bloqueia onAuthStateChange
     isHandlingLogin.current = true;
     isBypassLogin.current = false;
     setLoading(true);
@@ -491,121 +490,41 @@ export default function App() {
         'admin': UserProfile.ADMIN
       };
 
-      // ── FLUXO ADMIN ──
-      if (profile === UserProfile.ADMIN) {
-        // 1. Tenta autenticar via Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: emailOrName,
-          password: password
-        });
+      // 1. Tentar autenticação via Supabase Auth
+      let authData: any = null;
+      let authError: any = null;
 
-        if (!authError && authData?.user) {
-          // Auth OK — busca perfil na tabela users por id ou auth_user_id
-          let userData: any = null;
-
-          const { data: byId } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authData.user.id)
-            .maybeSingle();
-
-          if (byId) {
-            userData = byId;
-          } else {
-            const { data: byAuthId } = await supabase
-              .from('users')
-              .select('*')
-              .eq('auth_user_id', authData.user.id)
-              .maybeSingle();
-            if (byAuthId) userData = byAuthId;
-          }
-
-          if (userData) {
-            const mappedRole = roleToProfileMap[userData.role];
-            if (mappedRole === UserProfile.ADMIN) {
-              const nameValue = userData.name || userData.nome || userData.email || 'Admin Geral';
-              // NÃO é bypass — sessão Supabase Auth real existe
-              isBypassLogin.current = false;
-              setUser({
-                ...userData,
-                name: nameValue,
-                profile: UserProfile.ADMIN,
-                themePreference: 'light'
-              } as unknown as User);
-              setIsLoggedIn(true);
-              setActiveTab('admin_total');
-              showNotification('Login de Administrador realizado com sucesso!', 'success');
-              fetchData();
-              return;
-            } else {
-              await supabase.auth.signOut();
-              showNotification(`Perfil Admin não corresponde ao seu registro no banco (${mappedRole || userData.role}).`, 'error');
-              return;
-            }
-          } else {
-            // Auth OK mas sem registro em public.users — usa metadados do JWT
-            const metadata = authData.user.user_metadata || {};
-            const roleFromMeta = metadata.role || 'admin_geral';
-            const mappedFromMeta = roleToProfileMap[roleFromMeta] || UserProfile.ADMIN;
-            const nameValue = metadata.name || authData.user.email || 'Admin Geral';
-            isBypassLogin.current = false;
-            setUser({
-              id: authData.user.id,
-              auth_user_id: authData.user.id,
-              name: nameValue,
-              email: authData.user.email || emailOrName,
-              role: roleFromMeta,
-              profile: mappedFromMeta,
-              themePreference: 'light'
-            } as unknown as User);
-            setIsLoggedIn(true);
-            setActiveTab('admin_total');
-            showNotification('Login realizado via Auth (metadados)!', 'success');
-            fetchData();
-            return;
-          }
-        }
-
-        // 2. Auth falhou — FALLBACK: bypass local por senha mestra
-        if (password === '12345') {
-          const { data: adminData } = await supabase
-            .from('users')
-            .select('*')
-            .in('role', ['admin_geral', 'admin'])
-            .maybeSingle();
-
-          if (adminData) {
-            const nameValue = adminData.name || adminData.nome || adminData.email || 'Admin';
-            // BYPASS: sem sessão Supabase Auth — marca para ignorar eventos SIGNED_OUT
-            isBypassLogin.current = true;
-            setUser({
-              ...adminData,
-              name: nameValue,
-              profile: UserProfile.ADMIN,
-              themePreference: 'light'
-            } as unknown as User);
-            setIsLoggedIn(true);
-            setActiveTab('admin_total');
-            showNotification('Acesso via senha mestra realizado!', 'success');
-            fetchData();
-            return;
-          }
-        }
-
-        // 3. Tudo falhou
-        const errMsg = authError?.message === 'Invalid login credentials'
-          ? 'E-mail ou senha incorretos para o perfil Admin.'
-          : `Erro na autenticação: ${authError?.message || 'Credenciais inválidas'}`;
-        showNotification(errMsg, 'error');
-        return;
-      }
-
-      // ── FLUXO NORMAL: Outros perfis ──
-
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: emailOrName,
         password: password
       });
+      authData = data;
+      authError = error;
+
+      // 2. Fallback para senha mestra (Bypass) se o Auth falhar
+      if (authError && password === '12345') {
+        const { data: adminData } = await supabase
+          .from('users')
+          .select('*')
+          .in('role', ['admin_geral', 'admin'])
+          .maybeSingle();
+
+        if (adminData) {
+          isBypassLogin.current = true;
+          const nameValue = adminData.name || adminData.nome || adminData.email || 'Admin';
+          setUser({
+            ...adminData,
+            name: nameValue,
+            profile: UserProfile.ADMIN,
+            themePreference: 'light'
+          } as unknown as User);
+          setIsLoggedIn(true);
+          setActiveTab('admin_total');
+          showNotification('Acesso via senha mestra realizado!', 'success');
+          fetchData();
+          return;
+        }
+      }
 
       if (authError) {
         const errorMsg = authError.message === 'Invalid login credentials'
@@ -615,6 +534,7 @@ export default function App() {
         return;
       }
 
+      // 3. Buscar dados do usuário no public.users
       let { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -632,22 +552,62 @@ export default function App() {
       }
 
       if (userError || !userData) {
+        // Se estiver no Auth mas não no users, tenta usar metadados do Auth
+        const metadata = authData.user.user_metadata || {};
+        const roleFromMeta = metadata.role || 'professor';
+        const mappedFromMeta = roleToProfileMap[roleFromMeta];
+        
+        if (mappedFromMeta === UserProfile.ADMIN) {
+           setUser({
+            id: authData.user.id,
+            auth_user_id: authData.user.id,
+            name: metadata.name || authData.user.email || 'Admin Geral',
+            email: authData.user.email,
+            role: roleFromMeta,
+            profile: UserProfile.ADMIN,
+            themePreference: 'light'
+          } as unknown as User);
+          setIsLoggedIn(true);
+          setActiveTab('admin_total');
+          showNotification('Login de Administrador (Auth)!', 'success');
+          fetchData();
+          return;
+        }
+
         await supabase.auth.signOut();
-        showNotification('Perfil não encontrado no sistema.', 'error');
+        showNotification('Perfil do usuário não configurado corretamente.', 'error');
         return;
       }
 
-      const mappedProfile = roleToProfileMap[userData.role];
-      if (mappedProfile !== profile) {
-        showNotification(`Perfil selecionado (${profile}) não corresponde ao seu registro (${mappedProfile}).`, 'error');
+      const mappedProfile = roleToProfileMap[userData.role] || UserProfile.PROFESSOR;
+
+      // ── LOGICA DE REDIRECIONAMENTO INTELIGENTE ──
+      
+      // Se o usuário for um Administrador, ele entra como Admin independente do que selecionou na tela
+      if (mappedProfile === UserProfile.ADMIN) {
+        showNotification('Login de Administrador realizado com sucesso!', 'success');
+        setUser({
+          ...userData,
+          name: userData.name || userData.nome || 'Admin Geral',
+          profile: UserProfile.ADMIN,
+          themePreference: 'light'
+        } as unknown as User);
+        setIsLoggedIn(true);
+        setActiveTab('admin_total');
+        fetchData();
+        return;
+      }
+
+      // Para outros perfis, validamos se selecionou o perfil correto
+      if (mappedProfile !== selectedProfile) {
+        showNotification(`Este e-mail pertence ao perfil ${mappedProfile}. Selecione-o para entrar.`, 'error');
         await supabase.auth.signOut();
         return;
       }
 
+      // Login normal bem-sucedido
       showNotification('Login realizado com sucesso!', 'success');
-
       const nameValue = userData.name || userData.nome || userData.email || 'Usuário';
-      isBypassLogin.current = false;
       setUser({
         ...userData,
         name: nameValue,
@@ -656,9 +616,8 @@ export default function App() {
       } as unknown as User);
       setIsLoggedIn(true);
 
-      if (mappedProfile === UserProfile.ADMIN) {
-        setActiveTab('admin_total');
-      } else if (mappedProfile === UserProfile.MEDIADOR) {
+      // Tab inicial por perfil
+      if (mappedProfile === UserProfile.MEDIADOR) {
         setActiveTab('alunos');
       } else if (mappedProfile === UserProfile.PROFESSOR) {
         setActiveTab('turmas');
@@ -673,8 +632,6 @@ export default function App() {
       showNotification('Ocorreu um erro inesperado durante o login.', 'error');
     } finally {
       setLoading(false);
-      // Libera o bloqueio do onAuthStateChange após 1 segundo
-      // (tempo suficiente para o SIGNED_IN do supabase ser ignorado se já tratamos aqui)
       setTimeout(() => {
         isHandlingLogin.current = false;
       }, 1000);
