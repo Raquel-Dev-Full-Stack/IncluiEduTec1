@@ -65,6 +65,12 @@ export interface SchoolStudentDetail {
   class_name: string;
 }
 
+export interface Municipio {
+  id: string;
+  nome: string;
+  created_at?: string;
+}
+
 export interface School {
   id: string;
   name: string;

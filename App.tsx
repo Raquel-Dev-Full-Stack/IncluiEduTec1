@@ -29,7 +29,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminRegistros from './components/AdminRegistros';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
-import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord, Report } from './types';
+import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord, Report, Municipio } from './types';
 import { MOCK_USERS, MOCK_SCHOOLS, MOCK_STUDENTS, MOCK_MEDIATION_RECORDS, MOCK_CLASSES, MOCK_LESSON_PLANS, MOCK_MEALS } from './constants';
 import { supabase } from './lib/supabaseClient';
 
@@ -81,6 +81,8 @@ export default function App() {
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [teachersTable, setTeachersTable] = useState<any[]>([]);
   const [mediatorsTable, setMediatorsTable] = useState<any[]>([]);
+  const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [selectedMunicipioId, setSelectedMunicipioId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const [selectedMediatorId, setSelectedMediatorId] = useState<string | null>(null);
@@ -174,7 +176,8 @@ export default function App() {
       mealsData,
       reportsData,
       lessonPlansData,
-      studentRecordsData
+      studentRecordsData,
+      municipiosData
     ] = await Promise.all([
       safeFetch(['schools', 'escolas']),
       safeFetch(['students', 'alunos']),
@@ -186,7 +189,8 @@ export default function App() {
       safeFetch(['meals', 'refeicoes']),
       safeFetch(['reports', 'relatorios']),
       safeFetch(['lesson_plans', 'planejamento', 'planejamento_diario']),
-      safeFetch(['student_records', 'historico_aluno'])
+      safeFetch(['student_records', 'historico_aluno']),
+      safeFetch(['municipios', 'escopo_municipal'])
     ]);
 
     // Mapeamento resiliente
@@ -335,6 +339,8 @@ export default function App() {
       createdBy: r.created_by,
       createdAt: r.created_at
     })) as StudentRecord[]);
+
+    setMunicipios(municipiosData as Municipio[]);
 
     console.log('fetchData: Carga de dados concluída.');
   }, []);
@@ -1819,13 +1825,12 @@ export default function App() {
 
       case 'schools':
         if (!selectedSchoolId) {
-          // FILTRO POR MUNICÍPIO E PERFIL
-          // Secretaria vê apenas escolas do SEU município
-          // Diretor vê apenas a SUA escola
           const filteredSchools = schools.filter(s => {
-            if (user.profile === UserProfile.ADMIN) return true;
+            if (user.profile === UserProfile.ADMIN) {
+              if (selectedMunicipioId) return s.municipio_id === selectedMunicipioId;
+              return true;
+            }
             if (user.profile === UserProfile.SECRETARIA) {
-              // Isolamento por município: sem municipio_id a secretaria não deve ver nenhuma escola.
               if (!user.municipio_id) return false;
               return s.municipio_id === user.municipio_id;
             }
@@ -1839,6 +1844,30 @@ export default function App() {
               description="Gerenciamento das unidades escolares municipais e monitoramento operacional."
               onAdd={user.profile === UserProfile.SECRETARIA ? () => { setSchoolToEdit(null); setActiveTab('school_registration'); } : undefined}
             >
+              {user.profile === UserProfile.ADMIN && (
+                <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                      <i className="fa-solid fa-location-dot text-blue-600"></i>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filtro de Jurisdição</p>
+                      <h4 className="font-bold text-gray-800">Filtrar por Município</h4>
+                    </div>
+                  </div>
+                  <select 
+                    value={selectedMunicipioId}
+                    onChange={(e) => setSelectedMunicipioId(e.target.value)}
+                    className="flex-1 md:max-w-md px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                  >
+                    <option value="">Todos os Municípios cadastrados</option>
+                    {municipios.map(m => (
+                      <option key={m.id} value={m.id}>{m.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <Table<School>
                 data={filteredSchools}
                 onEdit={user.profile === UserProfile.SECRETARIA ? (s) => {
@@ -1847,12 +1876,11 @@ export default function App() {
                     return;
                   }
 
-                  // HIDRATAÇÃO: Anexar dados relacionados para que apareçam no formulário
                   const hydratedSchool: School = {
                     ...s,
                     teachers: usersList
                       .filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.teacherId === u.id)))
-                      .map(u => ({ name: u.name, subject: 'Geral', contact: u.phone || '' })), // Mapeamento básico
+                      .map(u => ({ name: u.name, subject: 'Geral', contact: u.phone || '' })), 
                     mediators: usersList
                       .filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.mediatorId === u.id)))
                       .map(u => ({ name: u.name, area: 'Inclusão', contact: u.phone || '' })),
@@ -1874,13 +1902,21 @@ export default function App() {
                     accessor: (s) => (
                       <button
                         onClick={() => setSelectedSchoolId(s.id)}
-                        className="font-black text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2 group transition-all"
+                        className="font-black text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2 group transition-all text-left"
                       >
                         <i className="fa-solid fa-school opacity-30 group-hover:opacity-100 transition-opacity"></i>
                         {s.name}
                       </button>
                     )
                   },
+                  ...(user.profile === UserProfile.ADMIN ? [{
+                    header: 'Município',
+                    accessor: (s: School) => (
+                      <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider border border-blue-100">
+                        {municipios.find(m => m.id === s.municipio_id)?.nome || 'Não vinculado'}
+                      </span>
+                    )
+                  }] : []),
                   { header: 'INEP', accessor: (s) => <span className="font-mono text-xs font-bold text-gray-500">{s.inep}</span> },
                   {
                     header: 'Diretor(a)',
