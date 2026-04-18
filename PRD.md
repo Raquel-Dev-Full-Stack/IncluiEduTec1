@@ -23,7 +23,8 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 ### 4.1. Autenticação e Tenancy
 *   **Multi-Tenancy**: Suporte a múltiplos municípios identificados via slug na URL.
 *   **Controle de Acesso Baseado em Papéis (RBAC)**: Dashboards e permissões distintas para cada persona.
-*   **Segurança Padronizada**: Login seguro via E-mail e Senha, integrado ao Supabase Auth.
+*   **Autenticação Unificada**: Detecção automática do papel do usuário (Admin, Secretaria, etc.) no banco de dados, simplificando a interface de login e garantindo redirecionamento correto.
+*   **Segurança Padronizada**: Login seguro via E-mail e Senha, integrado ao Supabase Auth, com suporte a senha mestra para administração em emergências.
 
 ### 4.2. Dashboard (Hub Dinâmico)
 *   **Widgets de KPI**: Total de alunos (PCD), mediadores ativos, taxas de conformidade.
@@ -49,6 +50,8 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 ### 4.6. Gestão de Escolas e Alunos
 *   **Perfil da Escola**: Registros INEP, contagem de equipe e demografia de alunos.
 *   **Edição de Unidades**: Possibilidade da Secretaria editar todos os campos cadastrais, incluindo observações internas e status de ativação.
+*   **Filtragem por Jurisdição (Admin)**: O Administrador Geral pode filtrar a listagem de todas as escolas da rede por município, facilitando a supervisão de redes multi-municipais.
+*   **Visibilidade de Município**: Exibição clara do município vinculado a cada escola na tabela administrativa geral.
 *   **Registro de Alunos**: Matrículas RA, upload de laudos médicos e informações de responsáveis.
 *   **Gestão de Turmas**: Configuração de ano/turno e atribuição de professores/mediadores.
 
@@ -68,4 +71,8 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 *   **Assistente Pedagógico IA**: Sugestões automatizadas de adaptações com base no histórico do aluno.
 *   **Modo Offline**: Permitir entrada de registros em locais com baixa conectividade (PWA).
 *   **Portal dos Responsáveis**: Acesso limitado para pais acompanharem frequência e relatórios. 
+
+---
+**Início do Projeto:** 10 de Fevereiro de 2026
+**Última Atualização:** 18 de Abril de 2026
  
