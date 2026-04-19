@@ -19,6 +19,7 @@ interface Secretaria {
   estado?: string;
   active?: boolean;
   created_at?: string;
+  escolas_count?: number;
 }
 
 interface IbgeMunicipio {
@@ -405,8 +406,290 @@ const SecretariaForm: React.FC<{
   );
 };
 
+// ─── Painel Detalhado da Secretaria ──────────────────────────────────────────
+const SecretariaDetailPanel: React.FC<{ 
+  secretaria: Secretaria; 
+  onClose: () => void;
+  onSelectSchool: (id: string) => void;
+}> = ({ secretaria, onClose, onSelectSchool }) => {
+  const [data, setData] = useState<{
+    schools: any[];
+    teachers: any[];
+    mediators: any[];
+    classes: any[];
+    plans: any[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setLoading(true);
+      try {
+        // 1. Escolas do Município
+        const { data: schools } = await supabase
+          .from('schools')
+          .select('id, name, inep, address, active')
+          .eq('municipio_id', secretaria.municipio_id);
+        
+        const schoolIds = (schools || []).map(s => s.id);
+
+        // 2. Professores e Mediadores do Município
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, name, role')
+          .eq('municipio_id', secretaria.municipio_id)
+          .in('role', ['professor', 'mediador']);
+
+        // 3. Turmas vinculadas às escolas do município
+        let classes: any[] = [];
+        if (schoolIds.length > 0) {
+          const { data: classesData } = await supabase
+            .from('classes')
+            .select('*')
+            .in('school_id', schoolIds);
+          classes = classesData || [];
+        }
+
+        // 4. Planejamentos vinculados às escolas do município
+        let plans: any[] = [];
+        if (schoolIds.length > 0) {
+          const { data: plansData } = await supabase
+            .from('lesson_plans')
+            .select('*')
+            .in('school_id', schoolIds);
+          plans = plansData || [];
+        }
+
+        setData({
+          schools: schools || [],
+          teachers: (users || []).filter(u => u.role === 'professor'),
+          mediators: (users || []).filter(u => u.role === 'mediador'),
+          classes,
+          plans
+        });
+      } catch (err) {
+        console.error('Erro ao buscar detalhes da secretaria:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetails();
+  }, [secretaria.municipio_id]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-end bg-black/40 backdrop-blur-sm transition-all duration-300">
+      <div 
+        className="w-full max-w-2xl h-full bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col"
+      >
+        <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-100 p-6 flex items-center justify-between z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
+              <i className="fa-solid fa-building-columns text-emerald-600 text-xl"></i>
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-gray-800 tracking-tight">{secretaria.nome}</h2>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">
+                {secretaria.municipio_nome} {secretaria.estado ? `— ${secretaria.estado}` : ''}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
+          >
+            <i className="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div className="p-8 space-y-10 flex-1">
+          {loading ? (
+            <div className="py-20 flex flex-col items-center gap-4">
+              <div className="w-10 h-10 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-400 text-sm">Carregando informações detalhadas...</p>
+            </div>
+          ) : data ? (
+            <>
+              {/* Escolas */}
+              <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                    <i className="fa-solid fa-school text-emerald-500 text-xs"></i>
+                  </div>
+                  <h3 className="font-black text-gray-700 uppercase text-xs tracking-widest">Escolas Cadastradas</h3>
+                  <span className="ml-auto bg-emerald-50 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full">{data.schools.length}</span>
+                </div>
+                {data.schools.length === 0 ? (
+                  <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
+                    <p className="text-gray-400 text-xs italic">Nenhum registro encontrado</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="text-left px-4 py-3 font-bold text-gray-400 uppercase tracking-tighter text-[9px]">Escola</th>
+                          <th className="text-left px-4 py-3 font-bold text-gray-400 uppercase tracking-tighter text-[9px]">INEP</th>
+                          <th className="text-center px-4 py-3 font-bold text-gray-400 uppercase tracking-tighter text-[9px]">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.schools.map((s, i) => (
+                          <tr key={s.id} className={`border-b border-gray-50 last:border-0 ${i % 2 !== 0 ? 'bg-gray-50/20' : ''}`}>
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={() => {
+                                  onSelectSchool(s.id);
+                                  onClose();
+                                }}
+                                className="text-left group"
+                              >
+                                <p className="font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{s.name}</p>
+                                <p className="text-[10px] text-gray-400 line-clamp-1 group-hover:text-blue-400 transition-colors">{s.address || 'Sem endereço informado'}</p>
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 font-mono tracking-tighter">{s.inep || '—'}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${s.active ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                                {s.active ? 'Ativo' : 'Inativo'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              {/* Professores e Mediadores */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <i className="fa-solid fa-chalkboard-user text-blue-500 text-xs"></i>
+                    </div>
+                    <h3 className="font-black text-gray-700 uppercase text-xs tracking-widest">Professores</h3>
+                    <span className="ml-auto bg-blue-50 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full">{data.teachers.length}</span>
+                  </div>
+                  {data.teachers.length === 0 ? (
+                    <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
+                      <p className="text-gray-400 text-xs italic">Nenhum registro encontrado</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                      {data.teachers.map(t => (
+                        <div key={t.id} className="flex items-center gap-3 p-3 bg-blue-50/20 rounded-xl border border-blue-50 hover:bg-blue-50/40 transition-colors">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-sm">
+                            {t.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs font-bold text-gray-700">{t.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                      <i className="fa-solid fa-user-group text-amber-500 text-xs"></i>
+                    </div>
+                    <h3 className="font-black text-gray-700 uppercase text-xs tracking-widest">Mediadores</h3>
+                    <span className="ml-auto bg-amber-50 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-full">{data.mediators.length}</span>
+                  </div>
+                  {data.mediators.length === 0 ? (
+                    <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
+                      <p className="text-gray-400 text-xs italic">Nenhum registro encontrado</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                      {data.mediators.map(m => (
+                        <div key={m.id} className="flex items-center gap-3 p-3 bg-amber-50/20 rounded-xl border border-amber-50 hover:bg-amber-50/40 transition-colors">
+                          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-sm">
+                            {m.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs font-bold text-gray-700">{m.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Turmas */}
+              <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <i className="fa-solid fa-users-rectangle text-purple-500 text-xs"></i>
+                  </div>
+                  <h3 className="font-black text-gray-700 uppercase text-xs tracking-widest">Turmas Vinculadas</h3>
+                  <span className="ml-auto bg-purple-50 text-purple-600 text-[10px] font-black px-2 py-0.5 rounded-full">{data.classes.length}</span>
+                </div>
+                {data.classes.length === 0 ? (
+                  <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
+                    <p className="text-gray-400 text-xs italic">Nenhum registro encontrado</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {data.classes.map(c => (
+                      <div key={c.id} className="group relative">
+                        <span className="px-3 py-2 bg-white text-purple-700 text-[11px] font-bold rounded-xl border border-purple-100 shadow-sm flex items-center gap-2 hover:border-purple-300 transition-all">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                          {c.name} — {c.year}º ano ({c.shift})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Planejamentos */}
+              <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
+                    <i className="fa-solid fa-list-check text-rose-500 text-xs"></i>
+                  </div>
+                  <h3 className="font-black text-gray-700 uppercase text-xs tracking-widest">Planejamentos Pedagógicos</h3>
+                  <span className="ml-auto bg-rose-50 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full">{data.plans.length}</span>
+                </div>
+                {data.plans.length === 0 ? (
+                  <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
+                    <p className="text-gray-400 text-xs italic">Nenhum registro encontrado</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    {data.plans.map(p => (
+                      <div key={p.id} className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between hover:border-rose-100 hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-8 bg-rose-100 rounded-full group-hover:bg-rose-500 transition-colors"></div>
+                          <div>
+                            <p className="text-xs font-bold text-gray-800">{p.tema_aula || 'Sem título'}</p>
+                            <p className="text-[10px] text-gray-400">Criado em {new Date(p.criado_em).toLocaleDateString('pt-BR')}</p>
+                          </div>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-[10px] text-gray-300 group-hover:text-rose-400 group-hover:translate-x-1 transition-all"></i>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          ) : null}
+        </div>
+        
+        <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">IncluiEduTec — Gestão Centralizada</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Componente Principal ─────────────────────────────────────────────────────
-const AdminRegistros: React.FC = () => {
+const AdminRegistros: React.FC<{ 
+  onSelectSchool: (id: string) => void,
+  onSelectSecretaria: (s: Secretaria) => void
+}> = ({ onSelectSchool, onSelectSecretaria }) => {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [secretarias, setSecretarias] = useState<Secretaria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -415,7 +698,7 @@ const AdminRegistros: React.FC = () => {
   const [editingSecretaria, setEditingSecretaria] = useState<Secretaria | null>(null);
   const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
+  
   const showMsg = (msg: string, type: 'success' | 'error' = 'success') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 4000);
@@ -473,7 +756,8 @@ const AdminRegistros: React.FC = () => {
           municipio_nome: nomeMunicipio,
           estado: mun?.estado || extrairUF(nomeMunicipio),
           active: true,
-          created_at: s.created_at
+          created_at: s.created_at,
+          escolas_count: mun?.escolas_count || 0
         };
       }) as Secretaria[];
 
@@ -741,6 +1025,7 @@ const AdminRegistros: React.FC = () => {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Secretaria</th>
                   <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">E-mail / Login</th>
+                  <th className="text-center px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Nº de Escolas</th>
                   <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Município</th>
                   <th className="text-left px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Status</th>
                   <th className="text-right px-6 py-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Ações</th>
@@ -750,21 +1035,29 @@ const AdminRegistros: React.FC = () => {
                 {secretarias.map((s, i) => (
                   <tr key={s.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${i % 2 !== 0 ? 'bg-gray-50/30' : ''}`}>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                      <button 
+                        onClick={() => onSelectSecretaria(s)}
+                        className="flex items-center gap-3 text-left hover:opacity-80 transition-all group"
+                      >
+                        <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
                           <span className="text-emerald-600 font-black text-sm">{(s.nome || 'S').charAt(0).toUpperCase()}</span>
                         </div>
                         <div>
-                          <p className="font-bold text-gray-800 text-sm">{s.nome}</p>
+                          <p className="font-bold text-gray-800 text-sm group-hover:text-emerald-700 transition-colors">{s.nome}</p>
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide">Secretaria de Educação</p>
                         </div>
-                      </div>
+                      </button>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <i className="fa-solid fa-envelope text-gray-300 text-xs"></i>
                         <span className="text-gray-600 text-sm font-medium">{s.email}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border border-gray-100 text-gray-700 text-xs font-black shadow-sm">
+                        {s.escolas_count || 0}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg">
@@ -800,6 +1093,7 @@ const AdminRegistros: React.FC = () => {
           )}
         </div>
       )}
+
     </div>
   );
 };

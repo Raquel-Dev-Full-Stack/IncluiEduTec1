@@ -1,17 +1,35 @@
 
 import React, { useState, useEffect } from 'react';
-import { User } from '../types';
+import { User, SystemSettings } from '../types';
 
 interface SettingsProps {
   user: User;
   onUpdateTheme: (theme: 'light' | 'dark') => void;
+  systemSettings: SystemSettings;
+  onUpdateSystemSettings: (settings: SystemSettings) => Promise<void>;
 }
 
-const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme }) => {
-  const [language, setLanguage] = useState('pt-br');
+const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings, onUpdateSystemSettings }) => {
+  const [language, setLanguage] = useState(systemSettings.activeLanguage || 'pt-br');
   const [notifications, setNotifications] = useState(true);
   const [exportFormat, setExportFormat] = useState('pdf');
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Estados locais para edição das configurações do sistema
+  const [localButtonColor, setLocalButtonColor] = useState(systemSettings.buttonColor);
+  const [localFontFamily, setLocalFontFamily] = useState(systemSettings.fontFamily);
+  const [localFontSize, setLocalFontSize] = useState(systemSettings.fontSize);
+  const [localStudentLimit, setLocalStudentLimit] = useState(systemSettings.studentLimit);
+  const [localMediatorRatio, setLocalMediatorRatio] = useState(systemSettings.mediatorRatio);
+
+  useEffect(() => {
+    setLocalButtonColor(systemSettings.buttonColor);
+    setLocalFontFamily(systemSettings.fontFamily);
+    setLocalFontSize(systemSettings.fontSize);
+    setLocalStudentLimit(systemSettings.studentLimit);
+    setLocalMediatorRatio(systemSettings.mediatorRatio);
+    setLanguage(systemSettings.activeLanguage);
+  }, [systemSettings]);
 
   const currentTheme = user.themePreference || 'light';
 
@@ -138,12 +156,60 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme }) => {
                 <option value="es">Español</option>
               </select>
             </div>
-            <button 
-              onClick={() => showFeedback('Interface de customização de widgets ativada. Arraste os elementos para reorganizar.')}
-              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-            >
-              Ajustar Layout da Dashboard
-            </button>
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cor Global dos Botões</label>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="color" 
+                    value={localButtonColor}
+                    onChange={(e) => setLocalButtonColor(e.target.value)}
+                    className="w-12 h-12 rounded-xl cursor-pointer border-none p-0 bg-transparent"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-gray-700">{localButtonColor.toUpperCase()}</span>
+                    <span className="text-[9px] text-gray-400 uppercase font-black tracking-wider">Seletor de cor hexadecimal</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fonte do Sistema</label>
+                  <select 
+                    value={localFontFamily}
+                    onChange={(e) => setLocalFontFamily(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="Inter">Inter (Padrão)</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Outfit">Outfit</option>
+                    <option value="Montserrat">Montserrat</option>
+                    <option value="Open Sans">Open Sans</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tamanho da Fonte</label>
+                  <select 
+                    value={localFontSize}
+                    onChange={(e) => setLocalFontSize(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="12px">Pequena (12px)</option>
+                    <option value="14px">Média (14px)</option>
+                    <option value="16px">Grande (16px)</option>
+                    <option value="18px">Extra (18px)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => showFeedback('Interface de customização de widgets ativada. Arraste os elementos para reorganizar.')}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
+              >
+                Ajustar Layout da Dashboard
+              </button>
+            </div>
           </div>
         </section>
 
@@ -161,7 +227,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme }) => {
               <div className="relative">
                 <input 
                   type="number" 
-                  defaultValue={25}
+                  value={localStudentLimit}
+                  onChange={(e) => setLocalStudentLimit(parseInt(e.target.value))}
                   className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">MAX</span>
@@ -182,7 +249,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme }) => {
               <div className="relative">
                 <input 
                   type="number" 
-                  defaultValue={3}
+                  value={localMediatorRatio}
+                  onChange={(e) => setLocalMediatorRatio(parseInt(e.target.value))}
                   className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">1:N</span>
@@ -295,13 +363,32 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme }) => {
         </div>
         <div className="flex gap-4">
           <button 
-            onClick={() => showFeedback('Alterações descartadas.')}
+            onClick={() => {
+              setLocalButtonColor(systemSettings.buttonColor);
+              setLocalFontFamily(systemSettings.fontFamily);
+              setLocalFontSize(systemSettings.fontSize);
+              setLocalStudentLimit(systemSettings.studentLimit);
+              setLocalMediatorRatio(systemSettings.mediatorRatio);
+              setLanguage(systemSettings.activeLanguage);
+              showFeedback('Alterações descartadas.');
+            }}
             className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all"
           >
             Descartar
           </button>
           <button 
-            onClick={() => showFeedback('Configurações aplicadas com sucesso!')}
+            onClick={async () => {
+              await onUpdateSystemSettings({
+                ...systemSettings,
+                buttonColor: localButtonColor,
+                fontFamily: localFontFamily,
+                fontSize: localFontSize,
+                studentLimit: localStudentLimit,
+                mediatorRatio: localMediatorRatio,
+                activeLanguage: language
+              });
+              showFeedback('Configurações aplicadas com sucesso!');
+            }}
             className="px-10 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
           >
             Aplicar Configurações

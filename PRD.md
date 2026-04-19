@@ -73,6 +73,6 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 *   **Portal dos Responsáveis**: Acesso limitado para pais acompanharem frequência e relatórios. 
 
 ---
-**Início do Projeto:** 10 de Fevereiro de 2026
+**Início do Projeto:** 10 de Janeiro de 2026
 **Última Atualização:** 18 de Abril de 2026
  

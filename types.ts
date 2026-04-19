@@ -24,6 +24,19 @@ export interface User {
   observations?: string;
   themePreference?: 'light' | 'dark';
   selectedClassIds?: string[];
+  buttonColor?: string;
+  fontFamily?: string;
+  fontSize?: string;
+}
+
+export interface SystemSettings {
+  id?: string;
+  buttonColor: string;
+  fontFamily: string;
+  fontSize: string;
+  studentLimit: number;
+  mediatorRatio: number;
+  activeLanguage: string;
 }
 
 export interface Message {
@@ -227,4 +240,15 @@ export interface StudentRecord {
   createdBy: string;
   createdAt: string;
   shift?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  user_id: string;
+  perfil: string;
+  acao: string;
+  detalhes: any;
+  municipio_id?: string;
+  school_id?: string;
+  criado_em: string;
 }

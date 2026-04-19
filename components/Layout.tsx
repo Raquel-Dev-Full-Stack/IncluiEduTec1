@@ -101,6 +101,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       profileOnly: [UserProfile.MEDIADOR]
     },
     {
+      id: 'activity_logs',
+      label: 'Registro de Atividades',
+      icon: 'fa-clock-rotate-left',
+      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+    },
+    {
       id: 'configuracoes',
       label: 'Configurações',
       icon: 'fa-gear',

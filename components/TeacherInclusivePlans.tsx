@@ -8,11 +8,12 @@ interface TeacherInclusivePlansProps {
   students: Student[];
   classes: Class[];
   user: User;
+  logActivity?: (log: any) => void;
 }
 
 type PlanType = 'PEI' | 'PDI' | 'PAEE';
 
-const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students, classes, user }) => {
+const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students, classes, user, logActivity }) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [activePlan, setActivePlan] = useState<PlanType>('PEI');
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -35,6 +36,16 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       return;
     }
     setFeedback(`Plano ${type} atualizado com sucesso!`);
+    
+    if (logActivity) {
+      logActivity(
+        `Atualizar Plano ${type}`,
+        `Atualizou o plano ${type} para o aluno ID: ${selectedStudentId}`,
+        user.municipio_id,
+        user.schoolId
+      );
+    }
+
     setTimeout(() => setFeedback(null), 3000);
   };
 
@@ -163,6 +174,16 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       doc.save(`relatorio_consolidado_${selectedStudent.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
 
       setFeedback("Relatório Consolidado (PEI + PDI + PAEE) exportado com sucesso!");
+
+      if (logActivity) {
+        logActivity(
+          'Exportar Relatório Consolidado',
+          `Exportou PDF consolidado para o aluno: ${selectedStudent.name}`,
+          user.municipio_id,
+          user.schoolId
+        );
+      }
+
       setTimeout(() => setFeedback(null), 5000);
 
     } catch (error: any) {

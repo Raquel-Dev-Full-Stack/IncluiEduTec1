@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Login from './components/Login';
 import Layout from './components/Layout';
+import ActivityLogDashboard from './components/ActivityLogDashboard';
+import ActivityLogsTab from './components/ActivityLogsTab';
 import Dashboard from './components/Dashboard';
 import Messages from './components/Messages';
 import SchoolDetails from './components/SchoolDetails';
@@ -97,6 +99,57 @@ export default function App() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedClassIdForActivity, setSelectedClassIdForActivity] = useState<string | null>(null);
+  const [selectedSecretariaId, setSelectedSecretariaId] = useState<string | null>(null);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+
+  // Monitorar ações do sistema
+  const logActivity = async (acao: string, detalhes: any, forced_municipio_id?: string, forced_school_id?: string) => {
+    if (!user) return;
+    try {
+      const logData = {
+        user_id: user.id,
+        perfil: user.profile,
+        acao,
+        detalhes: typeof detalhes === 'string' ? detalhes : JSON.stringify(detalhes),
+        municipio_id: forced_municipio_id || user.municipio_id || null,
+        school_id: forced_school_id || user.schoolId || null
+      };
+
+      await supabase.from('user_activity_logs').insert([logData]);
+      if (activeTab === 'admin_total' || activeTab === 'activity_logs') fetchActivityLogs();
+    } catch (err) {
+      console.error('Erro ao registrar log:', err);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_activity_logs')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao buscar logs:', error);
+        return;
+      }
+      
+      if (data) {
+        console.log(`Logs buscados: ${data.length} registros`);
+        setActivityLogs(data);
+      }
+    } catch (err) {
+      console.error('Erro inesperado ao buscar logs:', err);
+    }
+  };
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>({
+    buttonColor: '#2563eb',
+    fontFamily: 'Inter',
+    fontSize: '14px',
+    studentLimit: 25,
+    mediatorRatio: 3,
+    activeLanguage: 'pt-br'
+  });
 
   // Helper para mostrar notificações
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -192,6 +245,17 @@ export default function App() {
       safeFetch(['student_records', 'historico_aluno']),
       safeFetch(['municipios', 'escopo_municipal'])
     ]);
+
+    // Busca direta e prioritária para logs de auditoria
+    const { data: logsData, error: logsError } = await supabase
+      .from('user_activity_logs')
+      .select('*')
+      .order('criado_em', { ascending: false });
+
+    if (logsError) {
+      console.warn('fetchData: Erro ao buscar user_activity_logs:', logsError.message);
+    }
+    setActivityLogs(logsData || []);
 
     // Mapeamento resiliente
     setSchools(schoolsData.map(s => ({
@@ -469,23 +533,44 @@ export default function App() {
 
       // Responde apenas ao login explícito do usuário (não disparado por nossa lógica interna)
       if (event === 'SIGNED_IN' && session) {
-        // Se já estamos logados via bypass, não sobrescreve o estado
-        if (isBypassLogin.current) {
-          console.log('App: Ignorando SIGNED_IN — sessão bypass ativa');
-          return;
-        }
+        if (isBypassLogin.current) return;
         await processUserSession(session);
+        loadSettings();
       } else if (event === 'SIGNED_OUT') {
-        // Só faz o logout se NÃO for bypass e não estiver em processo de login
-        if (isBypassLogin.current) {
-          console.log('App: Ignorando SIGNED_OUT — sessão bypass ativa');
-          return;
-        }
+        if (isBypassLogin.current) return;
         setUser(null);
         setIsLoggedIn(false);
         setLoading(false);
       }
     });
+
+    const loadSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('*')
+          .maybeSingle();
+
+        if (data && !error) {
+          setSystemSettings({
+            id: data.id,
+            buttonColor: data.button_color,
+            fontFamily: data.font_family,
+            fontSize: data.font_size,
+            studentLimit: data.student_limit,
+            mediatorRatio: data.mediator_ratio,
+            activeLanguage: data.active_language
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao carregar configurações:', err);
+      }
+    };
+
+    if (isLoggedIn) {
+      fetchData();
+      loadSettings();
+    }
 
     return () => {
       mounted = false;
@@ -700,7 +785,46 @@ export default function App() {
     setUser(prev => prev ? { ...prev, themePreference: newTheme } : null);
   };
 
-  const handleSaveAttendance = (attendanceData: Omit<Attendance, 'id'>) => {
+  const handleUpdateSystemSettings = async (newSettings: SystemSettings) => {
+    try {
+      setLoading(true);
+      const dataToSave = {
+        button_color: newSettings.buttonColor,
+        font_family: newSettings.fontFamily,
+        font_size: newSettings.fontSize,
+        student_limit: newSettings.studentLimit,
+        mediator_ratio: newSettings.mediatorRatio,
+        active_language: newSettings.activeLanguage,
+        updated_at: new Date().toISOString()
+      };
+
+      let error;
+      if (newSettings.id) {
+        const { error: updateError } = await supabase
+          .from('system_settings')
+          .update(dataToSave)
+          .eq('id', newSettings.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('system_settings')
+          .insert([dataToSave]);
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      setSystemSettings(newSettings);
+      showNotification('Configurações do sistema atualizadas com sucesso!', 'success');
+    } catch (err: any) {
+      console.error('Erro ao salvar configurações:', err);
+      showNotification(`Erro ao salvar: ${err.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveAttendance = (attendanceData: any) => {
     // Migrando para student_records
     handleSaveStudentRecord({
       studentId: attendanceData.studentId,
@@ -712,7 +836,7 @@ export default function App() {
     });
   };
 
-  const handleSaveMeal = async (mealData: Omit<Meal, 'id'>) => {
+  const handleSaveMeal = async (mealData: any) => {
     if (!user) return;
     try {
       const recordToSave = {
@@ -839,6 +963,15 @@ export default function App() {
       setRefreshKey(prev => prev + 1);
       fetchData();
       showNotification('Registro geral do aluno atualizado!', 'success');
+
+      if (user) {
+        logActivity(
+          'Lançar Registro de Aluno',
+          `Lançou registro tipo "${recordData.recordType}" para o aluno ID: ${recordData.studentId}. Valor: ${recordData.value}`,
+          user.municipio_id,
+          user.schoolId
+        );
+      }
     } catch (err: any) {
       console.error('Erro ao salvar registro do aluno:', err);
       showNotification(`Erro ao salvar registro: ${err.message}`, 'error');
@@ -851,6 +984,15 @@ export default function App() {
       id: `med_${Date.now()}`
     };
     setMediationRecords(prev => [...prev, newRecord]);
+
+    if (user) {
+      logActivity(
+        'Lançar Registro de Mediação',
+        `Lançou registro de mediação para o aluno ID: ${recordData.studentId}`,
+        user.municipio_id,
+        user.schoolId
+      );
+    }
   };
 
   const handleSaveSchool = async (newSchoolData: School) => {
@@ -1095,6 +1237,12 @@ export default function App() {
       setSchoolToEdit(null);
       setActiveTab('schools');
       setRefreshKey(prev => prev + 1);
+      await logActivity(
+        schoolToEdit ? 'Editar Escola' : 'Criar Escola',
+        `${schoolToEdit ? 'Editou' : 'Criou'} a escola: ${newSchoolData.name}`,
+        schoolToEdit ? user.municipio_id : newSchoolData.municipio_id,
+        currentSchoolId
+      );
       fetchData();
       showNotification("Unidade Escolar atualizada com sucesso! Todos os perfis e turmas foram vinculados.", 'success');
 
@@ -1149,6 +1297,13 @@ export default function App() {
         setClassToEdit(null);
         setActiveTab('turmas');
         setRefreshKey(prev => prev + 1);
+        await logActivity(
+          'Editar Turma',
+          `Editou a turma: ${classData.name}`,
+          user.municipio_id,
+          data[0].school_id,
+          classData.id
+        );
         fetchData();
         showNotification('Turma atualizada com sucesso!', 'success');
       }
@@ -1185,6 +1340,13 @@ export default function App() {
         } as Class]);
         setActiveTab('turmas');
         setRefreshKey(prev => prev + 1);
+        await logActivity(
+          'Criar Turma',
+          `Criou a turma: ${classData.name}`,
+          user.municipio_id,
+          data[0].school_id,
+          data[0].id
+        );
         fetchData();
         showNotification('Turma cadastrada com sucesso e vinculada à escola!', 'success');
       }
@@ -1207,6 +1369,12 @@ export default function App() {
 
     setClasses(prev => prev.filter(c => c.id !== classItem.id));
     setRefreshKey(prev => prev + 1);
+    await logActivity(
+      'Excluir Turma',
+      `Excluiu a turma: ${classItem.name}`,
+      user.municipio_id,
+      classItem.schoolId
+    );
     fetchData();
     showNotification('Turma excluída com sucesso!', 'success');
   };
@@ -1220,6 +1388,12 @@ export default function App() {
       if (error) throw error;
       setSchools(prev => prev.filter(s => s.id !== school.id));
       setRefreshKey(prev => prev + 1);
+      await logActivity(
+        'Excluir Escola',
+        `Excluiu a escola: ${school.name}`,
+        school.municipio_id,
+        school.id
+      );
       fetchData();
       showNotification('Unidade escolar excluída com sucesso!', 'success');
     } catch (err: any) {
@@ -1275,6 +1449,13 @@ export default function App() {
           setStudentToEdit(null);
           setActiveTab('alunos');
           setRefreshKey(prev => prev + 1);
+          await logActivity(
+            'Editar Aluno',
+            `Editou o aluno: ${studentData.name}`,
+            user.municipio_id,
+            data[0].school_id,
+            data[0].id
+          );
           fetchData();
           showNotification('Dados do aluno atualizados com sucesso!', 'success');
         }
@@ -1313,6 +1494,13 @@ export default function App() {
           } as Student]);
           setActiveTab('alunos');
           setRefreshKey(prev => prev + 1);
+          await logActivity(
+            'Criar Aluno',
+            `Matriculou o novo aluno: ${studentData.name}`,
+            user.municipio_id,
+            data[0].school_id,
+            data[0].id
+          );
           fetchData();
           showNotification('Matrícula do aluno realizada com sucesso!', 'success');
         }
@@ -1335,6 +1523,13 @@ export default function App() {
       
       setStudents(prev => prev.filter(item => item.id !== s.id));
       setRefreshKey(prev => prev + 1);
+      await logActivity(
+        'Excluir Aluno',
+        `Excluiu o aluno: ${s.name}`,
+        user.municipio_id,
+        s.schoolId,
+        s.id
+      );
       fetchData();
       showNotification('Aluno removido com sucesso!', 'success');
     } catch (err: any) {
@@ -1502,6 +1697,13 @@ export default function App() {
         fetchData();
 
         showNotification(!!mediatorId ? `Dados do(a) mediador(a) atualizados com sucesso!` : `Mediador cadastrado com sucesso!`, 'success');
+
+        logActivity(
+          !!mediatorId ? 'Editar Mediador' : 'Criar Mediador',
+          `${!!mediatorId ? 'Editou' : 'Criou'} mediador: ${mappedMediator.name}`,
+          user.municipio_id,
+          mappedMediator.schoolId
+        );
       }
     } catch (err: any) {
       console.error('Erro ao salvar mediador:', err);
@@ -1550,6 +1752,12 @@ export default function App() {
         setTeacherToEdit(null);
         setActiveTab('teachers');
         setRefreshKey(prev => prev + 1);
+        await logActivity(
+          'Editar Professor',
+          `Editou o professor: ${updatedTeacher.name}`,
+          user.municipio_id,
+          updatedTeacher.schoolId
+        );
         fetchData();
         showNotification(`Dados do professor ${updatedTeacher.name} atualizados!`, 'success');
       }
@@ -1640,6 +1848,12 @@ export default function App() {
 
           // Disparar atualização dos contadores do Dashboard
           setRefreshKey(prev => prev + 1);
+          await logActivity(
+            'Criar Professor',
+            `Cadastrou o professor: ${savedTeacher.name}`,
+            user.municipio_id,
+            savedTeacher.schoolId
+          );
           fetchData();
 
           setTeacherToEdit(null);
@@ -1695,6 +1909,12 @@ export default function App() {
 
       // Forçar atualização do dashboard ao voltar
       setRefreshKey(prev => prev + 1);
+      await logActivity(
+        'Excluir Professor',
+        `Removeu o professor: ${teacher.name}`,
+        user.municipio_id,
+        teacher.schoolId
+      );
       fetchData();
 
     } catch (err: any) {
@@ -1759,6 +1979,12 @@ export default function App() {
       setUsersList(prev => prev.filter(u => u.id !== mediator.id));
       showNotification(`Mediador(a) ${mediator.name} removido(a) com sucesso!`, 'success');
       setRefreshKey(prev => prev + 1);
+      await logActivity(
+        'Excluir Mediador',
+        `Removeu o mediador: ${mediator.name}`,
+        user.municipio_id,
+        mediator.schoolId
+      );
       fetchData();
 
     } catch (err: any) {
@@ -1805,6 +2031,12 @@ export default function App() {
       if (error) throw error;
 
       showNotification(plan.id ? 'Planejamento atualizado com sucesso!' : 'Registro pedagógico salvo com sucesso!', 'success');
+      await logActivity(
+        plan.id ? 'Editar Planejamento' : 'Criar Planejamento',
+        `${plan.id ? 'Editou' : 'Criou'} planejamento: ${plan.temaAula}`,
+        user.municipio_id,
+        user.schoolId
+      );
       fetchData();
       setActiveTab('registros');
     } catch (err: any) {
@@ -1840,20 +2072,24 @@ export default function App() {
       case 'admin_total':
         if (user.profile === UserProfile.ADMIN) {
           return (
-            <AdminDashboard
-              escolas={schools}
-              turmas={classes}
-              professores={usersList}
-              alunos={students}
-              presencas={attendances}
-              refeicoes={meals}
-              mediacao={mediationRecords}
-              relatorios={reports}
-              modo="total"
+            <ActivityLogDashboard
+              logs={activityLogs}
+              municipios={municipios}
+              schools={schools}
+              users={usersList}
+              onRefresh={fetchActivityLogs}
             />
           );
         }
         return null;
+
+      case 'activity_logs':
+        return (
+          <ActivityLogsTab 
+            logs={activityLogs}
+            userId={user.id}
+          />
+        );
 
       case 'messages':
         return <Messages user={user} />;
@@ -1895,6 +2131,10 @@ export default function App() {
 
         if (!selectedSchoolId) {
           const filteredSchools = schools.filter(s => {
+            if (selectedSecretariaId) {
+              const sec = usersList.find(u => u.id === selectedSecretariaId);
+              return s.municipio_id === sec?.municipio_id;
+            }
             if (user.profile === UserProfile.ADMIN) {
               if (selectedMunicipioId) return s.municipio_id === selectedMunicipioId;
               return true;
@@ -1906,128 +2146,160 @@ export default function App() {
             return false;
           });
 
+          const selectedSecName = selectedSecretariaId ? usersList.find(u => u.id === selectedSecretariaId)?.name : null;
+
           return (
             <ModuleWrapper
-              title="Escolas"
-              description="Gerenciamento das unidades escolares municipais e monitoramento operacional."
+              title={selectedSecName ? `Escolas — Secretaria ${selectedSecName}` : "Escolas"}
+              description={selectedSecName ? `Visualizando unidades vinculadas à secretaria selecionada.` : "Gerenciamento das unidades escolares municipais e monitoramento operacional."}
               onAdd={user.profile === UserProfile.SECRETARIA ? () => { setSchoolToEdit(null); setActiveTab('school_registration'); } : undefined}
             >
-              {user.profile === UserProfile.ADMIN && (
-                <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                      <i className="fa-solid fa-location-dot text-blue-600"></i>
+              <div className="flex flex-col gap-6">
+                {user.profile === UserProfile.ADMIN && (
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <i className="fa-solid fa-location-dot text-blue-600"></i>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filtro de Jurisdição</p>
+                        <h4 className="font-bold text-gray-800">Filtrar por Município</h4>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filtro de Jurisdição</p>
-                      <h4 className="font-bold text-gray-800">Filtrar por Município</h4>
+                    <div className="flex-1 flex flex-col md:flex-row gap-4">
+                      <select 
+                        value={selectedMunicipioId}
+                        onChange={(e) => {
+                          setSelectedMunicipioId(e.target.value);
+                          setSelectedSecretariaId(null); // Resetar filtro de secretaria ao mudar municipio
+                        }}
+                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                      >
+                        <option value="">Todos os Municípios cadastrados</option>
+                        {municipios.map(m => (
+                          <option key={m.id} value={m.id}>{m.nome}</option>
+                        ))}
+                      </select>
+                      {selectedSecretariaId && (
+                        <button 
+                          onClick={() => setSelectedSecretariaId(null)}
+                          className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all border border-rose-100 flex items-center gap-2"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                          Limpar Filtro de Secretaria
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <select 
-                    value={selectedMunicipioId}
-                    onChange={(e) => setSelectedMunicipioId(e.target.value)}
-                    className="flex-1 md:max-w-md px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
-                  >
-                    <option value="">Todos os Municípios cadastrados</option>
-                    {municipios.map(m => (
-                      <option key={m.id} value={m.id}>{m.nome}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                )}
 
-              <Table<School>
-                data={filteredSchools}
-                onEdit={user.profile === UserProfile.SECRETARIA ? (s) => {
-                  if (s.municipio_id !== user.municipio_id && user.profile !== UserProfile.ADMIN) {
-                    alert('Permissão negada para editar unidades de outro município.');
-                    return;
-                  }
+                {filteredSchools.length === 0 ? (
+                  <div className="py-20 flex flex-col items-center justify-center bg-gray-50/50 rounded-[3rem] border border-dashed border-gray-200 animate-in fade-in duration-700">
+                    <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-xl mb-6">
+                      <i className="fa-solid fa-school-circle-exclamation text-gray-200 text-3xl"></i>
+                    </div>
+                    <p className="text-gray-400 text-sm font-black uppercase tracking-[0.2em] mb-2">Ops! Unidade não localizada</p>
+                    <p className="text-gray-400 text-xs font-medium">
+                      {selectedSecretariaId 
+                        ? "Nenhuma escola cadastrada para esta secretaria" 
+                        : "Nenhum registro encontrado para os critérios selecionados."}
+                    </p>
+                  </div>
+                ) : (
+                  <Table<School>
+                    data={filteredSchools}
+                    onEdit={user.profile === UserProfile.SECRETARIA ? (s) => {
+                      if (s.municipio_id !== user.municipio_id && user.profile !== UserProfile.ADMIN) {
+                        alert('Permissão negada para editar unidades de outro município.');
+                        return;
+                      }
 
-                  const hydratedSchool: School = {
-                    ...s,
-                    teachers: usersList
-                      .filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.teacherId === u.id)))
-                      .map(u => ({ name: u.name, subject: 'Geral', contact: u.phone || '' })), 
-                    mediators: usersList
-                      .filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.mediatorId === u.id)))
-                      .map(u => ({ name: u.name, area: 'Inclusão', contact: u.phone || '' })),
-                    classes: classes
-                      .filter(c => c.schoolId === s.id)
-                      .map(c => ({ name: c.name, level: c.year, shift: c.shift || '' })),
-                    students: students
-                      .filter(st => st.schoolId === s.id)
-                      .map(st => ({ name: st.name, ra: st.ra, class_name: '' }))
-                  };
+                      const hydratedSchool: School = {
+                        ...s,
+                        teachers: usersList
+                          .filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.teacherId === u.id)))
+                          .map(u => ({ name: u.name, subject: 'Geral', contact: u.phone || '' })), 
+                        mediators: usersList
+                          .filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.mediatorId === u.id)))
+                          .map(u => ({ name: u.name, area: 'Inclusão', contact: u.phone || '' })),
+                        classes: classes
+                          .filter(c => c.schoolId === s.id)
+                          .map(c => ({ name: c.name, level: c.year, shift: c.shift || '' })),
+                        students: students
+                          .filter(st => st.schoolId === s.id)
+                          .map(st => ({ name: st.name, ra: st.ra, class_name: '' }))
+                      };
 
-                  setSchoolToEdit(hydratedSchool);
-                  setActiveTab('school_registration');
-                } : undefined}
-                onDelete={user.profile === UserProfile.SECRETARIA ? handleDeleteSchool : undefined}
-                columns={[
-                  {
-                    header: 'Unidade Escolar',
-                    accessor: (s) => (
-                      <button
-                        onClick={() => setSelectedSchoolId(s.id)}
-                        className="font-black text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2 group transition-all text-left"
-                      >
-                        <i className="fa-solid fa-school opacity-30 group-hover:opacity-100 transition-opacity"></i>
-                        {s.name}
-                      </button>
-                    )
-                  },
-                  ...(user.profile === UserProfile.ADMIN ? [{
-                    header: 'Município',
-                    accessor: (s: School) => (
-                      <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider border border-blue-100">
-                        {municipios.find(m => m.id === s.municipio_id)?.nome || 'Não vinculado'}
-                      </span>
-                    )
-                  }] : []),
-                  { header: 'INEP', accessor: (s) => <span className="font-mono text-xs font-bold text-gray-500">{s.inep}</span> },
-                  {
-                    header: 'Diretor(a)',
-                    accessor: (s) => (
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-700">{s.principalName || 'Não vinculado'}</span>
-                        <span className="text-[10px] text-gray-400">{s.principalEmail || '-'}</span>
-                      </div>
-                    )
-                  },
-                  { header: 'Endereço', accessor: 'address' },
-                  {
-                    header: 'Estrutura (P | T | A)',
-                    accessor: (s) => (
-                      <div className="flex gap-4">
-                        <div className="flex items-center gap-1.5" title="Professores">
-                          <i className="fa-solid fa-chalkboard-user text-purple-400 text-[10px]"></i>
-                          <span className="text-[10px] font-black text-gray-700">{s.teacherCount || 0}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5" title="Turmas">
-                          <i className="fa-solid fa-layer-group text-blue-400 text-[10px]"></i>
-                          <span className="text-[10px] font-black text-gray-700">{s.classCount || 0}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5" title="Alunos">
-                          <i className="fa-solid fa-graduation-cap text-emerald-400 text-[10px]"></i>
-                          <span className="text-[10px] font-black text-gray-700">{s.studentCount || 0}</span>
-                        </div>
-                      </div>
-                    )
-                  },
-                  {
-                    header: 'Status',
-                    accessor: (s) => (
-                      <div className="flex items-center gap-2">
-                        <span className={`w-1.5 h-1.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
-                        <span className={`text-[10px] font-black uppercase ${s.active ? 'text-emerald-600' : 'text-gray-400'}`}>
-                          {s.active ? 'Ativa' : 'Inativa'}
-                        </span>
-                      </div>
-                    )
-                  }
-                ]}
-              />
+                      setSchoolToEdit(hydratedSchool);
+                      setActiveTab('school_registration');
+                    } : undefined}
+                    onDelete={user.profile === UserProfile.SECRETARIA ? handleDeleteSchool : undefined}
+                    columns={[
+                      {
+                        header: 'Unidade Escolar',
+                        accessor: (s) => (
+                          <button
+                            onClick={() => setSelectedSchoolId(s.id)}
+                            className="font-black text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2 group transition-all text-left"
+                          >
+                            <i className="fa-solid fa-school opacity-30 group-hover:opacity-100 transition-opacity"></i>
+                            {s.name}
+                          </button>
+                        )
+                      },
+                      ...(user.profile === UserProfile.ADMIN ? [{
+                        header: 'Município',
+                        accessor: (s: School) => (
+                          <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider border border-blue-100">
+                            {municipios.find(m => m.id === s.municipio_id)?.nome || 'Não vinculado'}
+                          </span>
+                        )
+                      }] : []),
+                      { header: 'INEP', accessor: (s) => <span className="font-mono text-xs font-bold text-gray-500">{s.inep}</span> },
+                      {
+                        header: 'Diretor(a)',
+                        accessor: (s) => (
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-700">{s.principalName || 'Não vinculado'}</span>
+                            <span className="text-[10px] text-gray-400">{s.principalEmail || '-'}</span>
+                          </div>
+                        )
+                      },
+                      { header: 'Endereço', accessor: 'address' },
+                      {
+                        header: 'Estrutura (P | T | A)',
+                        accessor: (s) => (
+                          <div className="flex gap-4">
+                            <div className="flex items-center gap-1.5" title="Professores">
+                              <i className="fa-solid fa-chalkboard-user text-purple-400 text-[10px]"></i>
+                              <span className="text-[10px] font-black text-gray-700">{s.teacherCount || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5" title="Turmas">
+                              <i className="fa-solid fa-layer-group text-blue-400 text-[10px]"></i>
+                              <span className="text-[10px] font-black text-gray-700">{s.classCount || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5" title="Alunos">
+                              <i className="fa-solid fa-graduation-cap text-emerald-400 text-[10px]"></i>
+                              <span className="text-[10px] font-black text-gray-700">{s.studentCount || 0}</span>
+                            </div>
+                          </div>
+                        )
+                      },
+                      {
+                        header: 'Status',
+                        accessor: (s) => (
+                          <div className="flex items-center gap-2">
+                            <span className={`w-1.5 h-1.5 rounded-full ${s.active ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
+                            <span className={`text-[10px] font-black uppercase ${s.active ? 'text-emerald-600' : 'text-gray-400'}`}>
+                              {s.active ? 'Ativa' : 'Inativa'}
+                            </span>
+                          </div>
+                        )
+                      }
+                    ]}
+                  />
+                )}
+              </div>
             </ModuleWrapper>
           );
         }
@@ -2222,7 +2494,7 @@ export default function App() {
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
-          return <TeacherInclusivePlans students={teacherStudents} classes={teacherClasses} user={user} />;
+          return <TeacherInclusivePlans students={teacherStudents} classes={teacherClasses} user={user} logActivity={logActivity} />;
         }
         return null;
 
@@ -2426,7 +2698,16 @@ export default function App() {
       case 'registros':
         // Admin vê o painel de cadastro de Municípios e Secretarias
         if (user.profile === UserProfile.ADMIN) {
-          return <AdminRegistros />;
+          return (
+            <AdminRegistros 
+              onSelectSchool={(id) => { setSelectedSchoolId(id); setActiveTab('schools'); }} 
+              onSelectSecretaria={(sec) => {
+                setSelectedSecretariaId(sec.id);
+                setSelectedMunicipioId(''); // Limpar muni específico para prevalecer o da secretaria
+                setActiveTab('schools');
+              }}
+            />
+          );
         }
         // Professor vê seus registros pedagógicos
         if (user.profile === UserProfile.PROFESSOR) {
@@ -2451,7 +2732,14 @@ export default function App() {
       case 'configuracoes':
         if (user.profile === UserProfile.PROFESSOR) return <TeacherSettings />;
         if (user.profile === UserProfile.MEDIADOR) return <MediatorSettings />;
-        return <Settings user={user} onUpdateTheme={handleUpdateUserTheme} />;
+        return (
+          <Settings 
+            user={user} 
+            onUpdateTheme={handleUpdateUserTheme} 
+            systemSettings={systemSettings}
+            onUpdateSystemSettings={handleUpdateSystemSettings}
+          />
+        );
 
       case 'school_registration':
         return (
@@ -2506,6 +2794,26 @@ export default function App() {
 
   return (
     <Layout user={effectiveUser} onLogout={handleLogout} activeTab={activeTab} setActiveTab={setActiveTab}>
+      <style>{`
+        :root {
+          --primary-button-color: ${systemSettings.buttonColor || '#2563eb'};
+          --system-font-family: ${systemSettings.fontFamily ? `'${systemSettings.fontFamily}', sans-serif` : "'Inter', sans-serif"};
+          --system-font-size: ${systemSettings.fontSize || '14px'};
+        }
+        html {
+          font-size: var(--system-font-size);
+        }
+        body {
+          font-family: var(--system-font-family);
+        }
+        .btn-custom, 
+        button:not(.bg-slate-900):not(.bg-red-500):not(.bg-emerald-50):not(.bg-blue-50):not(.bg-rose-50):not(.bg-indigo-50):not(.bg-amber-50):not(.bg-gray-100):not(.bg-white\/10) {
+          background-color: var(--primary-button-color) !important;
+        }
+        /* Corrigir botões específicos para não sobrescrever cores de status */
+        .bg-blue-600 { background-color: var(--primary-button-color) !important; }
+        .hover\:bg-blue-700:hover { filter: brightness(0.9); }
+      `}</style>
       <div className="animate-in fade-in duration-500">
         {renderModule()}
       </div>

@@ -19,28 +19,28 @@ function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRo
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
+          <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 transition-colors">
             {columns.map((col, i) => (
-              <th key={i} className={`px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest ${col.className || ''}`}>
+              <th key={i} className={`px-6 py-4 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest ${col.className || ''}`}>
                 {col.header}
               </th>
             ))}
             {(onEdit || onDelete) && (
-              <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">
+              <th className="px-6 py-4 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest text-right">
                 Ações
               </th>
             )}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
           {data.map((item) => (
             <tr 
               key={item.id} 
               onClick={() => onRowClick?.(item)}
-              className={`hover:bg-gray-50/50 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
+              className={`hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
             >
               {columns.map((col, i) => (
-                <td key={i} className={`px-6 py-4 text-sm text-gray-600 ${col.className || ''}`}>
+                <td key={i} className={`px-6 py-4 text-sm text-gray-600 dark:text-slate-300 transition-colors ${col.className || ''}`}>
                   {typeof col.accessor === 'function' ? col.accessor(item) : (item[col.accessor] as React.ReactNode)}
                 </td>
               ))}
@@ -50,7 +50,7 @@ function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRo
                     {onEdit && (
                       <button 
                         onClick={() => onEdit(item)}
-                        className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
                       >
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
@@ -58,7 +58,7 @@ function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRo
                     {onDelete && (
                       <button 
                         onClick={() => onDelete(item)}
-                        className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all"
                       >
                         <i className="fa-solid fa-trash-can"></i>
                       </button>
@@ -72,8 +72,8 @@ function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRo
       </table>
       {data.length === 0 && (
         <div className="p-12 text-center">
-          <i className="fa-solid fa-folder-open text-gray-200 text-4xl mb-3"></i>
-          <p className="text-gray-400 text-sm">Nenhum registro encontrado.</p>
+          <i className="fa-solid fa-folder-open text-gray-200 dark:text-slate-800 text-4xl mb-3"></i>
+          <p className="text-gray-400 dark:text-slate-500 text-sm">Nenhum registro encontrado.</p>
         </div>
       )}
     </div>
