@@ -688,8 +688,9 @@ const SecretariaDetailPanel: React.FC<{
 // ─── Componente Principal ─────────────────────────────────────────────────────
 const AdminRegistros: React.FC<{ 
   onSelectSchool: (id: string) => void,
-  onSelectSecretaria: (s: Secretaria) => void
-}> = ({ onSelectSchool, onSelectSecretaria }) => {
+  onSelectSecretaria: (s: Secretaria) => void,
+  logActivity: (acao: string, detalhes: any, forced_municipio_id?: string, forced_school_id?: string) => Promise<void>
+}> = ({ onSelectSchool, onSelectSecretaria, logActivity }) => {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [secretarias, setSecretarias] = useState<Secretaria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -793,6 +794,17 @@ const AdminRegistros: React.FC<{
       }
       setShowForm(false);
       setEditingMunicipio(null);
+
+      // Log de Atividade
+      const logDetails = editingMunicipio
+        ? `Editou o município: Nome → ${nomeCompleto}`
+        : `Cadastrou o município: Nome: ${nomeCompleto}`;
+      
+      await logActivity(
+        editingMunicipio ? 'Editar Município' : 'Criar Município',
+        logDetails
+      );
+
       await loadData();
     } catch (err: any) {
       if (err.message?.includes('row-level security')) {
@@ -935,6 +947,28 @@ const AdminRegistros: React.FC<{
 
       setShowForm(false);
       setEditingSecretaria(null);
+
+      // Log de Atividade
+      const secFields = {
+        name: 'Nome',
+        email: 'E-mail',
+        municipio_nome: 'Município'
+      };
+
+      // Nota: o objeto que temos de 'initial' (editingSecretaria) tem 'nome' em vez de 'name'?
+      // Vamos checar a interface Secretaria: { nome, email, ... }
+      // E o data passado: { nome, email, ... }
+      const logDetails = editingSecretaria
+        ? `Editou a secretaria: ${data.nome} (E-mail: ${data.email}, Município: ${data.municipio_nome})`
+        : `Cadastrou a secretaria: ${data.nome} (E-mail: ${data.email}, Município: ${data.municipio_nome})`;
+      
+      // Como não temos um diff fácil aqui por causa das estruturas diferentes, vamos logar os dados atuais
+      await logActivity(
+        editingSecretaria ? 'Editar Secretaria' : 'Criar Secretaria',
+        logDetails,
+        municipioId || undefined
+      );
+
       await loadData();
     } catch (err: any) {
       showMsg(`Erro: ${err.message}`, 'error');
@@ -946,6 +980,10 @@ const AdminRegistros: React.FC<{
       const { error } = await supabase.from('municipios').delete().eq('id', id);
       if (error) throw error;
       showMsg('Município removido!');
+      
+      const mun = municipios.find(m => m.id === id);
+      await logActivity('Excluir Município', `Removeu o município: ${mun?.nome || id}`);
+
       setDeleteConfirm(null);
       await loadData();
     } catch (err: any) {
@@ -958,6 +996,10 @@ const AdminRegistros: React.FC<{
       const { error } = await supabase.from('users').delete().eq('id', id);
       if (error) throw error;
       showMsg('Secretaria removida!');
+      
+      const sec = secretarias.find(s => s.id === id);
+      await logActivity('Excluir Secretaria', `Removeu a secretaria: ${sec?.nome || id}`, sec?.municipio_id);
+
       setDeleteConfirm(null);
       await loadData();
     } catch (err: any) {

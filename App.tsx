@@ -122,6 +122,44 @@ export default function App() {
     }
   };
 
+  // Auxiliares para logs detalhados
+  const getDiffLogs = (oldData: any, newData: any, fields: Record<string, string>) => {
+    const changes: string[] = [];
+    Object.entries(fields).forEach(([key, label]) => {
+      let oldVal = oldData?.[key];
+      let newVal = newData?.[key];
+
+      // Normalização para comparação
+      if (oldVal === null) oldVal = undefined;
+      if (newVal === null) newVal = undefined;
+
+      // Converter booleanos para texto amigável
+      if (typeof oldVal === 'boolean') oldVal = oldVal ? 'Ativo/Sim' : 'Inativo/Não';
+      if (typeof newVal === 'boolean') newVal = newVal ? 'Ativo/Sim' : 'Inativo/Não';
+      
+      // Se for string, remover espaços extras
+      if (typeof oldVal === 'string') oldVal = oldVal.trim();
+      if (typeof newVal === 'string') newVal = newVal.trim();
+
+      if (newVal !== undefined && oldVal !== newVal) {
+        changes.push(`${label} → ${newVal || '(vazio)'}`);
+      }
+    });
+    return changes.length > 0 ? changes.join(', ') : 'Nenhuma alteração detectada';
+  };
+
+  const getCreationLogs = (data: any, fields: Record<string, string>) => {
+    const details: string[] = [];
+    Object.entries(fields).forEach(([key, label]) => {
+      let val = data?.[key];
+      if (typeof val === 'boolean') val = val ? 'Ativo/Sim' : 'Inativo/Não';
+      if (val !== undefined && val !== null && val !== '') {
+        details.push(`${label}: ${val}`);
+      }
+    });
+    return details.join(', ');
+  };
+
   const fetchActivityLogs = async () => {
     try {
       const { data, error } = await supabase
@@ -1237,9 +1275,23 @@ export default function App() {
       setSchoolToEdit(null);
       setActiveTab('schools');
       setRefreshKey(prev => prev + 1);
+      const schoolFields = {
+        name: 'Nome',
+        inep: 'INEP',
+        email: 'E-mail',
+        phone: 'Telefone',
+        address: 'Endereço',
+        principalName: 'Diretor',
+        active: 'Status'
+      };
+
+      const logDetails = schoolToEdit 
+        ? `Editou a escola: ${getDiffLogs(schoolToEdit, newSchoolData, schoolFields)}`
+        : `Criou a escola: ${getCreationLogs(newSchoolData, schoolFields)}`;
+
       await logActivity(
         schoolToEdit ? 'Editar Escola' : 'Criar Escola',
-        `${schoolToEdit ? 'Editou' : 'Criou'} a escola: ${newSchoolData.name}`,
+        logDetails,
         schoolToEdit ? user.municipio_id : newSchoolData.municipio_id,
         currentSchoolId
       );
@@ -1297,9 +1349,20 @@ export default function App() {
         setClassToEdit(null);
         setActiveTab('turmas');
         setRefreshKey(prev => prev + 1);
+        const classFields = {
+          name: 'Nome da Turma',
+          year: 'Ano/Série',
+          shift: 'Turno',
+          active: 'Status'
+        };
+
+        const logDetails = classToEdit
+          ? `Editou a turma: ${getDiffLogs(classToEdit, classData, classFields)}`
+          : `Criou a turma: ${getCreationLogs(classData, classFields)}`;
+
         await logActivity(
           'Editar Turma',
-          `Editou a turma: ${classData.name}`,
+          logDetails,
           user.municipio_id,
           data[0].school_id,
           classData.id
@@ -1340,9 +1403,20 @@ export default function App() {
         } as Class]);
         setActiveTab('turmas');
         setRefreshKey(prev => prev + 1);
+        const classFields = {
+          name: 'Nome da Turma',
+          year: 'Ano/Série',
+          shift: 'Turno',
+          active: 'Status'
+        };
+
+        const logDetails = classToEdit
+          ? `Editou a turma: ${getDiffLogs(classToEdit, classData, classFields)}`
+          : `Criou a turma: ${getCreationLogs(classData, classFields)}`;
+
         await logActivity(
           'Criar Turma',
-          `Criou a turma: ${classData.name}`,
+          logDetails,
           user.municipio_id,
           data[0].school_id,
           data[0].id
@@ -1449,9 +1523,22 @@ export default function App() {
           setStudentToEdit(null);
           setActiveTab('alunos');
           setRefreshKey(prev => prev + 1);
+          const studentFields = {
+            name: 'Nome',
+            ra: 'RA',
+            birthDate: 'Nascimento',
+            gender: 'Gênero',
+            deficiency: 'Deficiência',
+            active: 'Status'
+          };
+
+          const logDetails = studentToEdit
+            ? `Editou o aluno: ${getDiffLogs(studentToEdit, studentData, studentFields)}`
+            : `Criou o aluno: ${getCreationLogs(studentData, studentFields)}`;
+
           await logActivity(
             'Editar Aluno',
-            `Editou o aluno: ${studentData.name}`,
+            logDetails,
             user.municipio_id,
             data[0].school_id,
             data[0].id
@@ -1494,9 +1581,22 @@ export default function App() {
           } as Student]);
           setActiveTab('alunos');
           setRefreshKey(prev => prev + 1);
+          const studentFields = {
+            name: 'Nome',
+            ra: 'RA',
+            birthDate: 'Nascimento',
+            gender: 'Gênero',
+            deficiency: 'Deficiência',
+            active: 'Status'
+          };
+
+          const logDetails = studentToEdit
+            ? `Editou o aluno: ${getDiffLogs(studentToEdit, studentData, studentFields)}`
+            : `Criou o aluno: ${getCreationLogs(studentData, studentFields)}`;
+
           await logActivity(
             'Criar Aluno',
-            `Matriculou o novo aluno: ${studentData.name}`,
+            logDetails,
             user.municipio_id,
             data[0].school_id,
             data[0].id
@@ -1698,9 +1798,20 @@ export default function App() {
 
         showNotification(!!mediatorId ? `Dados do(a) mediador(a) atualizados com sucesso!` : `Mediador cadastrado com sucesso!`, 'success');
 
+        const mediatorFields = {
+          name: 'Nome',
+          email: 'E-mail',
+          phone: 'Telefone',
+          active: 'Status'
+        };
+
+        const logDetails = mediatorId
+          ? `Editou o mediador: ${getDiffLogs(mediatorToEdit, newMediatorData, mediatorFields)}`
+          : `Criou o mediador: ${getCreationLogs(newMediatorData, mediatorFields)}`;
+
         logActivity(
-          !!mediatorId ? 'Editar Mediador' : 'Criar Mediador',
-          `${!!mediatorId ? 'Editou' : 'Criou'} mediador: ${mappedMediator.name}`,
+          mediatorId ? 'Editar Mediador' : 'Criar Mediador',
+          logDetails,
           user.municipio_id,
           mappedMediator.schoolId
         );
@@ -1752,9 +1863,15 @@ export default function App() {
         setTeacherToEdit(null);
         setActiveTab('teachers');
         setRefreshKey(prev => prev + 1);
+        const teacherFields = {
+          name: 'Nome',
+          phone: 'Telefone',
+          active: 'Status'
+        };
+
         await logActivity(
           'Editar Professor',
-          `Editou o professor: ${updatedTeacher.name}`,
+          `Editou o professor: ${getDiffLogs(teacherToEdit, newTeacherData, teacherFields)}`,
           user.municipio_id,
           updatedTeacher.schoolId
         );
@@ -1848,9 +1965,16 @@ export default function App() {
 
           // Disparar atualização dos contadores do Dashboard
           setRefreshKey(prev => prev + 1);
+          const teacherFields = {
+            name: 'Nome',
+            email: 'E-mail',
+            phone: 'Telefone',
+            active: 'Status'
+          };
+
           await logActivity(
             'Criar Professor',
-            `Cadastrou o professor: ${savedTeacher.name}`,
+            `Cadastrou o professor: ${getCreationLogs(newTeacherData, teacherFields)}`,
             user.municipio_id,
             savedTeacher.schoolId
           );
@@ -2706,6 +2830,7 @@ export default function App() {
                 setSelectedMunicipioId(''); // Limpar muni específico para prevalecer o da secretaria
                 setActiveTab('schools');
               }}
+              logActivity={logActivity}
             />
           );
         }
