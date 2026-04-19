@@ -50,19 +50,19 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'turmas',
       label: 'Turmas',
       icon: 'fa-users-rectangle',
-      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR]
     },
     {
       id: 'teachers',
       label: 'Professores',
       icon: 'fa-chalkboard-user',
-      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR]
+      profileOnly: [UserProfile.DIRETOR]
     },
     {
       id: 'alunos',
       label: 'Alunos',
       icon: 'fa-children',
-      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
       id: 'inclusive_plans',
@@ -90,7 +90,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
     },
     {
       id: 'registros',
-      label: 'Registros',
+      label: user.profile === UserProfile.ADMIN ? 'Secretarias de Educação' : (user.profile === UserProfile.PROFESSOR ? 'Planejamento Pedagógico' : 'Registros'),
       icon: 'fa-book',
       profileOnly: [UserProfile.ADMIN, UserProfile.PROFESSOR]
     },

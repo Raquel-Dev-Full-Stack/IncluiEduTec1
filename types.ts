@@ -4,7 +4,8 @@ export enum UserProfile {
   SECRETARIA = 'Secretaria de Educação',
   DIRETOR = 'Diretor Principal',
   PROFESSOR = 'Professor Oficial',
-  MEDIADOR = 'Mediador Oficial'
+  MEDIADOR = 'Mediador Oficial',
+  ESCOLA = 'Login da Escola'
 }
 
 export interface User {
@@ -132,6 +133,7 @@ export interface Student {
   mediatorId?: string;
   schoolRegime?: 'Integral' | 'Parcial';
   attendancePeriod?: 'Manhã' | 'Tarde';
+  turno?: 'parcial' | 'integral';
   description?: string;
   guardians?: Guardian[];
   hasMedicalReport?: boolean;
@@ -146,6 +148,7 @@ export interface Attendance {
   schoolId: string;
   date: string;
   status: 'presente' | 'falta';
+  shift?: string;
 }
 
 // Added missing Meal interface to support student meal tracking data
@@ -207,6 +210,9 @@ export interface LessonPlan {
   habilidadesBNCC: any;
   adaptacoesMetodologia: string;
   description?: string;
+  objetivos?: string;
+  estrategias?: string;
+  shared?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -220,4 +226,5 @@ export interface StudentRecord {
   observation?: string;
   createdBy: string;
   createdAt: string;
+  shift?: string;
 }

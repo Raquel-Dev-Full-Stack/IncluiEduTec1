@@ -217,6 +217,7 @@ export default function App() {
       deficiency: s.deficiency || '',
       schoolRegime: s.school_regime || 'Parcial',
       attendancePeriod: s.attendance_period || 'Manhã',
+      turno: s.turno,
       description: s.description || '',
       guardians: s.guardians || [],
       hasMedicalReport: s.has_medical_report || false,
@@ -239,6 +240,7 @@ export default function App() {
         'diretor': UserProfile.DIRETOR,
         'professor': UserProfile.PROFESSOR,
         'mediador': UserProfile.MEDIADOR,
+        'escola': UserProfile.ESCOLA,
         'admin': UserProfile.ADMIN
       };
 
@@ -292,13 +294,36 @@ export default function App() {
       date: r.date || r.created_at
     })) as MediationRecord[]);
 
-    setAttendances(attendancesData.map(a => ({
+    const attendanceRecords = attendancesData.map(a => ({
       ...a,
       studentId: a.student_id,
       classId: a.class_id || '',
       teacherId: a.teacher_id || '',
       schoolId: a.school_id || ''
-    })) as Attendance[]);
+    })) as Attendance[];
+
+    const presencasFromRecords = (studentRecordsData || [])
+      .filter((r: any) => r.record_type === 'presenca')
+      .map((r: any) => ({
+        id: r.id,
+        studentId: r.student_id,
+        classId: '',
+        teacherId: r.created_by,
+        schoolId: '',
+        date: r.date,
+        status: r.value as 'presente' | 'falta',
+        shift: r.shift
+      })) as Attendance[];
+
+    // Unificar e remover duplicatas por ID se necessário
+    const unifiedAttendances = [...attendanceRecords];
+    presencasFromRecords.forEach(p => {
+      if (!unifiedAttendances.find(existing => existing.id === p.id)) {
+        unifiedAttendances.push(p);
+      }
+    });
+
+    setAttendances(unifiedAttendances);
 
     setMeals(mealsData.map(m => ({
       ...m,
@@ -328,6 +353,10 @@ export default function App() {
       temaAula: lp.tema_aula,
       habilidadesBNCC: lp.habilidades_bncc,
       adaptacoesMetodologia: lp.adaptacoes_metodologia,
+      description: lp.descricao,
+      objetivos: lp.objetivos,
+      estrategias: lp.estrategias,
+      shared: lp.compartilhado,
       createdAt: lp.criado_em,
       updatedAt: lp.atualizado_em
     })) as LessonPlan[]);
@@ -337,7 +366,8 @@ export default function App() {
       studentId: r.student_id,
       recordType: r.record_type,
       createdBy: r.created_by,
-      createdAt: r.created_at
+      createdAt: r.created_at,
+      shift: r.shift
     })) as StudentRecord[]);
 
     setMunicipios(municipiosData as Municipio[]);
@@ -677,7 +707,8 @@ export default function App() {
       date: attendanceData.date.split('T')[0],
       recordType: 'presenca',
       value: attendanceData.status,
-      createdBy: user?.id
+      createdBy: user?.id,
+      shift: attendanceData.shift
     });
   };
 
@@ -742,13 +773,14 @@ export default function App() {
         record_type: recordData.recordType,
         value: recordData.value,
         observation: recordData.observation,
-        created_by: user.id
+        created_by: user.id,
+        shift: recordData.shift || null
       };
 
       const { data, error } = await supabase
         .from('student_records')
         .upsert([recordToSave], {
-          onConflict: 'student_id, date, record_type'
+          onConflict: 'student_id, date, record_type, shift'
         })
         .select();
 
@@ -1750,6 +1782,9 @@ export default function App() {
         habilidades_bncc: plan.habilidadesBNCC,
         adaptacoes_metodologia: plan.adaptacoesMetodologia,
         descricao: plan.description,
+        objetivos: plan.objetivos,
+        estrategias: plan.estrategias,
+        compartilhado: plan.shared ?? false,
         atualizado_em: new Date().toISOString()
       };
 
@@ -1769,7 +1804,7 @@ export default function App() {
 
       if (error) throw error;
 
-      showNotification('Registro pedagógico salvo com sucesso!', 'success');
+      showNotification(plan.id ? 'Planejamento atualizado com sucesso!' : 'Registro pedagógico salvo com sucesso!', 'success');
       fetchData();
       setActiveTab('registros');
     } catch (err: any) {
@@ -1824,6 +1859,40 @@ export default function App() {
         return <Messages user={user} />;
 
       case 'schools':
+        if (user.profile === UserProfile.DIRETOR) {
+          const mySchool = schools.find(s => s.id === user.schoolId);
+          if (!mySchool) {
+            return (
+              <div className="h-[400px] flex flex-col items-center justify-center text-center bg-white rounded-[2.5rem] border border-dashed border-gray-200 p-12">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                  <i className="fa-solid fa-school-circle-exclamation text-gray-300 text-4xl"></i>
+                </div>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Nenhuma escola vinculada</h2>
+                <p className="text-gray-400 max-w-sm">Seu perfil de Diretor ainda não possui uma unidade escolar atribuída. Entre em contato com a Secretaria de Educação.</p>
+              </div>
+            );
+          }
+
+          return (
+            <SchoolDetails
+              school={mySchool}
+              user={user}
+              allClasses={classes}
+              allStudents={students}
+              allUsers={usersList}
+              allMediationRecords={mediationRecords}
+              allAttendances={attendances}
+              allMeals={meals}
+              allReports={reports}
+              teachersTable={teachersTable}
+              mediatorsTable={mediatorsTable}
+              onBack={() => {}} // Diretor não volta para a lista
+              onRefresh={() => { setRefreshKey(prev => prev + 1); }}
+              showNotification={showNotification}
+            />
+          );
+        }
+
         if (!selectedSchoolId) {
           const filteredSchools = schools.filter(s => {
             if (user.profile === UserProfile.ADMIN) {
@@ -1834,7 +1903,6 @@ export default function App() {
               if (!user.municipio_id) return false;
               return s.municipio_id === user.municipio_id;
             }
-            if (user.profile === UserProfile.DIRETOR) return s.id === user.schoolId;
             return false;
           });
 
@@ -1981,31 +2049,17 @@ export default function App() {
             teachersTable={teachersTable}
             mediatorsTable={mediatorsTable}
             onBack={() => setSelectedSchoolId(null)}
+            onRefresh={() => { setRefreshKey(prev => prev + 1); fetchData(); }}
+            showNotification={showNotification}
           />
         );
 
       case 'turmas':
-        if (user.profile === UserProfile.PROFESSOR) {
-          const teacherClasses = classes.filter(c => c.teacherId === user.id);
-          return <TeacherClasses
-            classes={teacherClasses}
-            students={students}
-            onRegisterActivity={(classId) => {
-              setSelectedClassIdForActivity(classId);
-              setActiveTab('registros');
-            }}
-          />;
-        }
-        if (user.profile === UserProfile.MEDIADOR) {
-          const mediatorClasses = classes.filter(c => c.mediatorId === user.id || students.filter(s => user.studentIds?.includes(s.id)).some(s => s.classId === c.id));
-          return <MediatorClasses classes={mediatorClasses} students={students.filter(s => user.studentIds?.includes(s.id))} />;
-        }
+        if (user.profile === UserProfile.SECRETARIA) return null;
 
         const filteredClasses = user.profile === UserProfile.DIRETOR
           ? classes.filter(c => c.schoolId === user.schoolId)
-          : (user.profile === UserProfile.SECRETARIA
-            ? classes.filter(c => schools.find(s => s.id === c.schoolId)?.municipio_id === user.municipio_id)
-            : classes);
+          : classes;
 
         return (
           <ModuleWrapper
@@ -2049,6 +2103,7 @@ export default function App() {
         );
 
       case 'teachers':
+        if (user.profile === UserProfile.SECRETARIA) return null;
         if (selectedTeacherId && user.profile === UserProfile.DIRETOR) {
           const teacher = usersList.find(u => u.id === selectedTeacherId);
           if (teacher) {
@@ -2065,9 +2120,7 @@ export default function App() {
 
         const schoolTeachers = user.profile === UserProfile.DIRETOR
           ? usersList.filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === user.schoolId || classes.some(c => c.teacherId === u.id && c.schoolId === user.schoolId)))
-          : (user.profile === UserProfile.SECRETARIA
-            ? usersList.filter(u => u.profile === UserProfile.PROFESSOR && schools.find(s => s.id === u.schoolId)?.municipio_id === user.municipio_id)
-            : usersList.filter(u => u.profile === UserProfile.PROFESSOR));
+          : usersList.filter(u => u.profile === UserProfile.PROFESSOR);
 
         return (
           <div className="space-y-6">
@@ -2174,6 +2227,7 @@ export default function App() {
         return null;
 
       case 'alunos':
+        if (user.profile === UserProfile.SECRETARIA) return null;
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
@@ -2187,9 +2241,7 @@ export default function App() {
 
         const filteredStudents = user.profile === UserProfile.DIRETOR
           ? students.filter(s => s.schoolId === user.schoolId || classes.find(c => c.id === s.classId)?.schoolId === user.schoolId)
-          : (user.profile === UserProfile.SECRETARIA
-            ? students.filter(s => schools.find(sch => sch.id === s.schoolId)?.municipio_id === user.municipio_id)
-            : students);
+          : students;
 
         return (
           <ModuleWrapper

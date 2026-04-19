@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, School, Class, Student, MediationRecord, UserProfile, Meal, Report, Attendance } from '../types';
 import Table from './Table';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { supabase } from '../lib/supabaseClient';
 
 interface SchoolDetailsProps {
@@ -16,6 +17,8 @@ interface SchoolDetailsProps {
   allReports: Report[];
   teachersTable: any[];
   mediatorsTable: any[];
+  onRefresh?: () => void;
+  showNotification?: (msg: string, type: 'success' | 'error' | 'info') => void;
 }
 
 const SchoolDetails: React.FC<SchoolDetailsProps> = ({
@@ -30,7 +33,9 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   allMeals,
   allReports,
   teachersTable,
-  mediatorsTable
+  mediatorsTable,
+  onRefresh,
+  showNotification
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('administrativo');
   const [isAddingMediator, setIsAddingMediator] = useState(false);
@@ -42,6 +47,65 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
     mediadores: school.mediatorCount || 0,
     loading: true
   });
+  const [isAddingCredential, setIsAddingCredential] = useState(false);
+  const [savingCredential, setSavingCredential] = useState(false);
+  const [newCredential, setNewCredential] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+
+  const [selectedMediatorId, setSelectedMediatorId] = useState<string | null>(null);
+  const [mediatorEvolutionData, setMediatorEvolutionData] = useState<any[]>([]);
+  const [loadingEvolution, setLoadingEvolution] = useState(false);
+
+  // Buscar evolução do mediador selecionado
+  useEffect(() => {
+    const fetchMediatorEvolution = async () => {
+      if (!selectedMediatorId) {
+        setMediatorEvolutionData([]);
+        return;
+      }
+
+      setLoadingEvolution(true);
+      try {
+        const { data, error } = await supabase
+          .from('mediator_records')
+          .select('date, behavior_status, student_id')
+          .eq('mediator_id', selectedMediatorId)
+          .order('date', { ascending: true });
+
+        if (error) throw error;
+
+        // Agrupar por dia para evolução temporal
+        const grouped = data.reduce((acc: any, curr: any) => {
+          const date = new Date(curr.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          if (!acc[date]) {
+            acc[date] = { date, atendimentos: 0, crises: 0, alunos: new Set() };
+          }
+          acc[date].atendimentos += 1;
+          acc[date].alunos.add(curr.student_id);
+          if (curr.behavior_status === 'EM CRISE' || curr.behavior_status === 'Crise') {
+            acc[date].crises += 1;
+          }
+          return acc;
+        }, {});
+
+        const chartData = Object.values(grouped).map((item: any) => ({
+          ...item,
+          alunosUnicos: item.alunos.size
+        }));
+
+        setMediatorEvolutionData(chartData);
+      } catch (error) {
+        console.error('Erro ao buscar evolução do mediador:', error);
+      } finally {
+        setLoadingEvolution(false);
+      }
+    };
+
+    fetchMediatorEvolution();
+  }, [selectedMediatorId]);
 
   // Buscar contadores reais do Supabase para esta escola
   useEffect(() => {
@@ -126,6 +190,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
     });
     return combined;
   }, [school.id, schoolClasses, allUsers, mediatorsTable]);
+  
+  const schoolCredentials = useMemo(() => 
+    allUsers.filter(u => u.profile === UserProfile.ESCOLA && u.schoolId === school.id),
+  [school.id, allUsers]);
 
   const schoolMediation = useMemo(() =>
     allMediationRecords.filter(r => (r as any).schoolId === school.id || schoolStudents.some(s => s.id === r.studentId)),
@@ -152,6 +220,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
     { id: 'refeicoes', label: 'REFEIÇÕES', icon: 'fa-utensils' },
     { id: 'mediacao', label: 'MEDIAÇÃO', icon: 'fa-hand-holding-heart' },
     { id: 'relatorios', label: 'RELATÓRIOS', icon: 'fa-file-lines' },
+    { id: 'credenciais', label: 'CREDENCIAIS', icon: 'fa-key' }
   ];
 
   const handleSaveMediator = (e: React.FormEvent) => {
@@ -165,6 +234,59 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
     alert(`Mediador ${newMediator.name} cadastrado com sucesso e protocolado na Secretaria!`);
     setIsAddingMediator(false);
     setNewMediator({ name: '', cpf: '', contact: '', classId: '', observations: '' });
+  };
+
+  const handleSaveCredential = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCredential.email || !newCredential.password || !newCredential.name) {
+      alert('Favor preencher todos os campos (Nome, E-mail e Senha).');
+      return;
+    }
+
+    setSavingCredential(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const jwt = session?.access_token;
+      const url = (import.meta as any).env.VITE_SUPABASE_URL;
+
+      const response = await fetch(`${url}/functions/v1/upsert-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`
+        },
+        body: JSON.stringify({
+          email: newCredential.email,
+          password: newCredential.password,
+          name: newCredential.name,
+          role: 'escola',
+          school_id: school.id,
+          municipio_id: user.municipio_id
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Erro ao cadastrar credencial');
+      }
+
+      if (showNotification) {
+        showNotification(`Credencial para ${newCredential.name} criada com sucesso!`, 'success');
+      } else {
+        alert('Credenciais criadas com sucesso!');
+      }
+
+      setIsAddingCredential(false);
+      setNewCredential({ name: '', email: '', password: '' });
+      
+      if (onRefresh) onRefresh();
+
+    } catch (err: any) {
+      console.error('Erro ao salvar credencial:', err);
+      alert(`Erro: ${err.message}`);
+    } finally {
+      setSavingCredential(false);
+    }
   };
 
   const renderSubContent = () => {
@@ -400,7 +522,17 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
               <Table<any>
                 data={schoolMediators}
                 columns={[
-                  { header: 'NOME', accessor: (m) => <span className="font-bold text-gray-800">{m.name}</span> },
+                  { 
+                    header: 'NOME', 
+                    accessor: (m) => (
+                      <button 
+                        onClick={() => setSelectedMediatorId(m.id)}
+                        className={`font-bold text-left transition-all hover:underline ${selectedMediatorId === m.id ? 'text-indigo-600' : 'text-gray-800'}`}
+                      >
+                        {m.name}
+                      </button>
+                    ) 
+                  },
                   { header: 'E-MAIL/CONTATO', accessor: (m) => m.email || 'N/A' },
                   { header: 'STATUS', accessor: (m) => m.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-gray-400 uppercase text-[10px]">Inativo</span> }
                 ]}
@@ -422,6 +554,94 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                   { header: 'COMPORTAMENTO', accessor: (r) => <span className="uppercase font-bold text-[10px]">{r.behaviorStatus}</span> }
                 ]}
               />
+
+              {/* Gráfico de Evolução do Mediador */}
+              {selectedMediatorId && (
+                <div className="mt-12 bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h3 className="text-xs font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <i className="fa-solid fa-chart-line"></i> Evolução Temporal do Mediador
+                      </h3>
+                      <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase">
+                        {schoolMediators.find(m => m.id === selectedMediatorId)?.name} · Desempenho em Atendimentos
+                      </p>
+                    </div>
+                  </div>
+
+                  {loadingEvolution ? (
+                    <div className="h-[300px] flex items-center justify-center">
+                      <i className="fa-solid fa-circle-notch fa-spin text-indigo-500 text-3xl"></i>
+                    </div>
+                  ) : mediatorEvolutionData.length > 0 ? (
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={mediatorEvolutionData}>
+                          <defs>
+                            <linearGradient id="colorAtend" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorAlunos" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
+                          />
+                          <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
+                          />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} 
+                            labelStyle={{ fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
+                          <Area 
+                            type="monotone" 
+                            dataKey="atendimentos" 
+                            name="Atendimentos" 
+                            stroke="#6366f1" 
+                            strokeWidth={3} 
+                            fillOpacity={1} 
+                            fill="url(#colorAtend)" 
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="alunosUnicos" 
+                            name="Alunos Atendidos" 
+                            stroke="#3b82f6" 
+                            strokeWidth={3} 
+                            fillOpacity={1} 
+                            fill="url(#colorAlunos)" 
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="crises" 
+                            name="Registros de Crise" 
+                            stroke="#f43f5e" 
+                            strokeWidth={3} 
+                            fill="#f43f5e" 
+                            fillOpacity={0.05}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[200px] flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-dashed border-gray-100">
+                      <i className="fa-solid fa-chart-column text-gray-100 text-4xl mb-4"></i>
+                      <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Nenhum dado disponível para evolução</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -456,6 +676,114 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
             ]}
           />
         );
+      case 'credenciais':
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <i className="fa-solid fa-key"></i> Credenciais de Acesso da Escola
+                </h3>
+                <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase">Controle de acessos dos usuários da unidade</p>
+              </div>
+              <button
+                onClick={() => setIsAddingCredential(!isAddingCredential)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center gap-2"
+              >
+                <i className={`fa-solid ${isAddingCredential ? 'fa-xmark' : 'fa-plus'}`}></i>
+                {isAddingCredential ? 'Cancelar' : 'Cadastrar Credenciais da Escola'}
+              </button>
+            </div>
+
+            {isAddingCredential && (
+              <div className="bg-blue-50/50 p-8 rounded-[2rem] border border-blue-100 animate-in fade-in slide-in-from-top-4 duration-500">
+                <form onSubmit={handleSaveCredential} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome do Responsável / Usuário *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newCredential.name}
+                        onChange={(e) => setNewCredential({ ...newCredential, name: e.target.value })}
+                        placeholder="Ex: Direção / Secretaria da Escola"
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">E-mail de Acesso *</label>
+                      <input
+                        type="email"
+                        required
+                        value={newCredential.email}
+                        onChange={(e) => setNewCredential({ ...newCredential, email: e.target.value })}
+                        placeholder="email@escola.com"
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Senha Provisória *</label>
+                      <input
+                        type="password"
+                        required
+                        value={newCredential.password}
+                        onChange={(e) => setNewCredential({ ...newCredential, password: e.target.value })}
+                        placeholder="******"
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="submit"
+                      disabled={savingCredential}
+                      className="px-10 py-3.5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {savingCredential ? (
+                        <><i className="fa-solid fa-circle-notch animate-spin"></i> Criando Acesso...</>
+                      ) : (
+                        <><i className="fa-solid fa-check"></i> Finalizar Cadastro</>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <Table<User>
+              data={schoolCredentials}
+              columns={[
+                { 
+                  header: 'USUÁRIO', 
+                  accessor: (u) => (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
+                        <i className="fa-solid fa-user-gear"></i>
+                      </div>
+                      <span className="font-bold text-gray-800">{u.name}</span>
+                    </div>
+                  ) 
+                },
+                { header: 'E-MAIL', accessor: (u) => u.email },
+                { 
+                  header: 'STATUS', 
+                  accessor: (u) => (
+                    <span className="text-emerald-500 font-bold uppercase text-[10px] flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Ativo
+                    </span>
+                  ) 
+                }
+              ]}
+            />
+            {schoolCredentials.length === 0 && !isAddingCredential && (
+              <div className="py-12 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
+                <i className="fa-solid fa-shield-halved text-gray-200 text-4xl mb-3"></i>
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest">Nenhuma credencial cadastrada para esta unidade.</p>
+              </div>
+            )}
+          </div>
+        );
       default:
         return (
           <div className="py-20 text-center space-y-4">
@@ -471,18 +799,33 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
       {/* Header da Escola */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-6">
-          <button onClick={onBack} className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
-            <i className="fa-solid fa-arrow-left"></i>
-          </button>
-          <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tighter">{school.name}</h2>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">INEP: {school.inep}</span>
-              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Operacional
-              </span>
+          {user.profile !== UserProfile.DIRETOR && (
+            <button onClick={onBack} className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+              <i className="fa-solid fa-arrow-left"></i>
+            </button>
+          )}
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-2xl shadow-xl shadow-blue-100">
+              <i className="fa-solid fa-school"></i>
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tighter">{school.name}</h2>
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 mt-1">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <i className="fa-solid fa-fingerprint text-[8px]"></i>
+                  INEP: {school.inep}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-gray-200 hidden sm:block"></span>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <i className="fa-solid fa-location-dot text-[8px]"></i>
+                  {school.address}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-gray-200 hidden sm:block"></span>
+                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${school.active !== false ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${school.active !== false ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                  {school.active !== false ? 'Operacional / Ativa' : 'Inativa'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -32,7 +32,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     observation: ''
   });
 
-  // Estado para a chamada em lote (Nova Chamada)
+  const [selectedBatchTurno, setSelectedBatchTurno] = useState<'Manhã' | 'Tarde' | 'Integral'>('Manhã');
   const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
   const [batchStatuses, setBatchStatuses] = useState<Record<string, 'presente' | 'falta'>>({});
 
@@ -45,10 +45,18 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
   useEffect(() => {
     if (isRegisteringAttendance) {
       const newBatchStatuses: Record<string, 'presente' | 'falta'> = {};
-      students.forEach(student => {
+      
+      const filteredByTurno = students.filter(s => 
+        s.attendancePeriod === selectedBatchTurno || 
+        s.turno === 'integral' ||
+        selectedBatchTurno === 'Integral'
+      );
+
+      filteredByTurno.forEach(student => {
         const existing = attendances.find(a =>
           a.studentId === student.id &&
-          a.date.startsWith(batchDate)
+          a.date.startsWith(batchDate) &&
+          (a.shift === selectedBatchTurno || (!a.shift && student.attendancePeriod === selectedBatchTurno))
         );
         if (existing) {
           newBatchStatuses[student.id] = existing.status;
@@ -56,7 +64,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
       });
       setBatchStatuses(newBatchStatuses);
     }
-  }, [batchDate, isRegisteringAttendance, attendances, students]);
+  }, [batchDate, isRegisteringAttendance, attendances, students, selectedBatchTurno]);
 
   const handleAttendance = (studentId: string, classId: string, status: 'presente' | 'falta', customDate?: string) => {
     const selectedDate = customDate || studentAttendanceDates[studentId] || new Date().toISOString().split('T')[0];
@@ -70,7 +78,8 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
       classId,
       teacherId: currentUser.id,
       date: dateToSave,
-      status
+      status,
+      shift: isRegisteringAttendance ? selectedBatchTurno : (students.find(s => s.id === studentId)?.attendancePeriod || 'Manhã')
     });
 
     if (!isRegisteringAttendance) {
@@ -107,8 +116,12 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const getAttendanceForDate = (studentId: string, dateStr: string) => {
-    return attendances.find(a => a.studentId === studentId && a.date.startsWith(dateStr));
+  const getAttendanceForDate = (studentId: string, dateStr: string, shift?: string) => {
+    return attendances.find(a => 
+      a.studentId === studentId && 
+      a.date.startsWith(dateStr) && 
+      (!shift || a.shift === shift)
+    );
   };
 
   const studentHistory = (studentId: string) => {
@@ -191,24 +204,47 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-gray-100 px-5 py-3 rounded-2xl border border-gray-200 shadow-inner">
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data da Chamada:</label>
-              <input
-                type="date"
-                value={batchDate}
-                onChange={(e) => setBatchDate(e.target.value)}
-                className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500"
-              />
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-3 bg-gray-100 px-5 py-3 rounded-2xl border border-gray-200 shadow-inner">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data:</label>
+                <input
+                  type="date"
+                  value={batchDate}
+                  onChange={(e) => setBatchDate(e.target.value)}
+                  className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 bg-gray-100 px-5 py-3 rounded-2xl border border-gray-200 shadow-inner">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Turno:</label>
+                <select
+                  value={selectedBatchTurno}
+                  onChange={(e) => setSelectedBatchTurno(e.target.value as any)}
+                  className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="Manhã">Manhã</option>
+                  <option value="Tarde">Tarde</option>
+                  <option value="Integral">Integral</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {students.length === 0 ? (
+            {students.filter(s => 
+              s.attendancePeriod === selectedBatchTurno || 
+              s.turno === 'integral' || 
+              selectedBatchTurno === 'Integral'
+            ).length === 0 ? (
               <div className="col-span-full py-8 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                <p className="text-gray-400 text-xs font-bold uppercase">Nenhum aluno encontrado para suas turmas.</p>
+                <p className="text-gray-400 text-xs font-bold uppercase">Nenhum aluno encontrado para o turno {selectedBatchTurno}.</p>
               </div>
             ) : (
-              students.map((student) => (
+              students.filter(s => 
+                s.attendancePeriod === selectedBatchTurno || 
+                s.turno === 'integral' || 
+                selectedBatchTurno === 'Integral'
+              ).map((student) => (
                 <div key={student.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-emerald-200 transition-all shadow-sm">
                   <div className="flex flex-col min-w-0">
                     <span className="font-bold text-gray-800 text-sm truncate">{student.name}</span>
@@ -260,30 +296,38 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
             {
               header: 'Aluno',
               accessor: (s) => (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold overflow-hidden">
+                <button 
+                  onClick={() => setShowHistory(showHistory === s.id ? null : s.id)}
+                  className="flex items-center gap-3 text-left hover:bg-gray-50 p-2 -m-2 rounded-2xl transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold overflow-hidden group-hover:bg-emerald-500 group-hover:text-white transition-all">
                     <span className="text-sm">{s.name.charAt(0)}</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-bold text-gray-800">{s.name}</span>
+                    <span className="font-bold text-gray-800 group-hover:text-emerald-600 transition-all">{s.name}</span>
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">RA: {s.ra}</span>
                   </div>
-                </div>
+                </button>
               )
             },
             {
-              header: 'Turma',
+              header: 'Turma / Turno',
               accessor: (s) => (
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg border border-blue-100">
-                  {classes.find(c => c.id === s.classId)?.name || 'N/A'}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase rounded-lg border border-blue-100 w-fit">
+                    {classes.find(c => c.id === s.classId)?.name || 'N/A'}
+                  </span>
+                  <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[9px] font-black uppercase rounded-lg border border-amber-100 w-fit">
+                    {s.attendancePeriod || s.turno || 'Manhã'}
+                  </span>
+                </div>
               )
             },
             {
               header: 'Chamada Diária',
               accessor: (s) => {
                 const dateStr = studentAttendanceDates[s.id] || new Date().toISOString().split('T')[0];
-                const existingAttendance = getAttendanceForDate(s.id, dateStr);
+                const existingAttendance = getAttendanceForDate(s.id, dateStr, s.attendancePeriod || s.turno);
 
                 return (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 py-2">
@@ -469,27 +513,37 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
 
             <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
               {studentHistory(showHistory).length === 0 ? (
-                <div className="text-center py-20">
+                <div className="text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
                   <i className="fa-solid fa-calendar-xmark text-gray-200 text-4xl mb-4"></i>
-                  <p className="text-gray-400 text-sm font-medium italic">Nenhum registro de frequência encontrado.</p>
+                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest px-8">Nenhuma chamada registrada para este aluno</p>
                 </div>
               ) : (
-                studentHistory(showHistory).map(record => (
-                  <div key={record.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-gray-800">
-                        {new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                      </p>
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">
-                        Registrado às {new Date(record.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${record.status === 'presente' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                      }`}>
-                      {record.status}
-                    </span>
-                  </div>
-                ))
+                <div className="space-y-3">
+                  {studentHistory(showHistory).map(record => {
+                    const student = students.find(s => s.id === showHistory);
+                    return (
+                      <div key={record.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-blue-200 transition-all shadow-sm">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-xs font-black text-gray-800">
+                            {new Date(record.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </p>
+                          <div className="flex items-center gap-2">
+                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter bg-gray-100 px-2 py-0.5 rounded-md">
+                               <i className="fa-solid fa-clock mr-1"></i>
+                               {student?.attendancePeriod || 'N/A'}
+                             </span>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border ${record.status === 'presente' 
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                          : 'bg-rose-50 text-rose-600 border-rose-100'
+                        }`}>
+                          {record.status === 'presente' ? 'Presente' : 'Ausente'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>

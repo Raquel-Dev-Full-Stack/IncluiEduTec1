@@ -114,6 +114,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     loading: true
   });
 
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
+
   const [directorData, setDirectorData] = useState({
     alunos_atendidos: 0,
     turmas_ativas: 0,
@@ -227,27 +229,41 @@ const Dashboard: React.FC<DashboardProps> = ({
     fetchDirectorStats();
   }, [isDiretor, schoolId, refreshKey]);
 
-  // Filtragem de dados para o Diretor (apenas sua escola)
-  const filteredStudents = isDiretor ? (students || []).filter(s => {
-    const class_ = (classes || []).find(c => c.id === s.classId);
-    return class_?.schoolId === schoolId;
-  }) : (students || []);
+  // Filtragem de dados para o Diretor ou Secretaria (Filtro Global)
+  const filteredStudents = (students || []).filter(s => {
+    if (isDiretor) {
+      const class_ = (classes || []).find(c => c.id === s.classId);
+      return class_?.schoolId === schoolId;
+    }
+    if (isSecretaria && selectedSchoolId !== 'all') {
+      return s.schoolId === selectedSchoolId;
+    }
+    return true;
+  });
 
-  const filteredClasses = isDiretor ? (classes || []).filter(c => c.schoolId === schoolId) : (classes || []);
+  const filteredClasses = (classes || []).filter(c => {
+    if (isDiretor) return c.schoolId === schoolId;
+    if (isSecretaria && selectedSchoolId !== 'all') return c.schoolId === selectedSchoolId;
+    return true;
+  });
 
-  const filteredTeachers = isDiretor ? (usersList || []).filter(u =>
-    u.profile === UserProfile.PROFESSOR &&
-    (u.schoolId === schoolId || filteredClasses.some(c => c.teacherId === u.id))
-  ) : (usersList || []).filter(u => u.profile === UserProfile.PROFESSOR);
+  const filteredTeachers = (usersList || []).filter(u => {
+    if (u.profile !== UserProfile.PROFESSOR) return false;
+    if (isDiretor) return u.schoolId === schoolId || filteredClasses.some(c => c.teacherId === u.id);
+    if (isSecretaria && selectedSchoolId !== 'all') return u.schoolId === selectedSchoolId;
+    return true;
+  });
 
-  const filteredMediators = isDiretor ? (usersList || []).filter(u =>
-    u.profile === UserProfile.MEDIADOR &&
-    (u.schoolId === schoolId || filteredClasses.some(c => c.mediatorId === u.id))
-  ) : (usersList || []).filter(u => u.profile === UserProfile.MEDIADOR);
+  const filteredMediators = (usersList || []).filter(u => {
+    if (u.profile !== UserProfile.MEDIADOR) return false;
+    if (isDiretor) return u.schoolId === schoolId || filteredClasses.some(c => c.mediatorId === u.id);
+    if (isSecretaria && selectedSchoolId !== 'all') return u.schoolId === selectedSchoolId;
+    return true;
+  });
 
-  const filteredReports = isDiretor ? (reports || []).filter(r =>
+  const filteredReports = (reports || []).filter(r =>
     filteredStudents.some(s => s.id === r.studentId)
-  ) : (reports || []);
+  );
 
   const finishedReportsCount = filteredReports.filter(r => r.status === 'finalizado').length;
   const pendingReportsCount = filteredReports.filter(r => r.status === 'rascunho').length;
@@ -666,23 +682,38 @@ const Dashboard: React.FC<DashboardProps> = ({
   }
 
   // Métricas de assistência por escola para a Secretaria (Formatado para o Gráfico)
-  const chartData = (schools || []).map(school => {
-    const schoolClasses = (classes || []).filter(c => c.schoolId === school.id);
-    const studentsInSchool = (students || []).filter(s => schoolClasses.some(c => c.id === s.classId)).length;
-    const mediatorsInSchool = (usersList || []).filter(u => u.profile === UserProfile.MEDIADOR && u.active && u.schoolId === school.id).length;
+  const chartData = (schools || [])
+    .filter(school => selectedSchoolId === 'all' || school.id === selectedSchoolId)
+    .map(school => {
+      const studentsInSchool = (students || []).filter(s => s.schoolId === school.id).length;
+      const mediatorsInSchool = (usersList || []).filter(u => u.profile === UserProfile.MEDIADOR && u.active && u.schoolId === school.id).length;
 
-    const ratioValue = mediatorsInSchool > 0 ? (studentsInSchool / mediatorsInSchool) : studentsInSchool;
-    const density = studentsInSchool > 0 ? (mediatorsInSchool / studentsInSchool) : 0;
+      const ratioValue = mediatorsInSchool > 0 ? (studentsInSchool / mediatorsInSchool) : studentsInSchool;
 
-    return {
-      name: school.name.split(' ').slice(0, 3).join(' '), // Abrevia nome para caber no eixo
-      fullName: school.name,
-      alunos: studentsInSchool,
-      mediadores: mediatorsInSchool,
-      relacao: ratioValue.toFixed(1),
-      density
-    };
-  });
+      return {
+        name: school.name.split(' ').slice(0, 3).join(' '),
+        fullName: school.name,
+        alunos: studentsInSchool,
+        mediadores: mediatorsInSchool,
+        relacao: ratioValue.toFixed(1)
+      };
+    });
+
+  const shiftsData = (schools || [])
+    .filter(school => selectedSchoolId === 'all' || school.id === selectedSchoolId)
+    .map(school => {
+      const schoolStudents = (students || []).filter(s => s.schoolId === school.id);
+      const parcial = schoolStudents.filter(s => s.turno === 'parcial').length;
+      const integral = schoolStudents.filter(s => s.turno === 'integral').length;
+
+      return {
+        name: school.name.split(' ').slice(0, 3).join(' '),
+        fullName: school.name,
+        parcial,
+        integral,
+        total: schoolStudents.length
+      };
+    }).filter(d => d.total > 0);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -710,13 +741,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     return null;
   };
 
+  // Verificação de existência de alunos para o Dashboard da Secretaria
+  if (isSecretaria && (!students || students.length === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] border border-gray-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center text-gray-200 text-4xl mb-6 border border-gray-100">
+          <i className="fa-solid fa-users-slash"></i>
+        </div>
+        <h3 className="text-xl font-black text-gray-800 tracking-tight mb-2">Nenhum aluno cadastrado</h3>
+        <p className="text-gray-400 font-medium text-center max-w-sm">
+          Ainda não há dados de alunos registrados no sistema para o seu município.
+        </p>
+        <button 
+          onClick={() => setActiveTab?.('alunos')}
+          className="mt-8 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-100 hover:scale-105 transition-all active:scale-95"
+        >
+          Cadastrar Primeiro Aluno
+        </button>
+      </div>
+    );
+  }
+
   const stats = [
-    { label: 'Turmas Inclusivas', count: statsData.classes, change: '+12%', icon: 'fa-users-rectangle', color: 'purple' },
-    { label: 'Corpo Docente', count: statsData.teachers, change: '100% ativo', icon: 'fa-chalkboard-user', color: 'sky' },
-    { label: 'Unidades Escolares', count: statsData.schools, change: 'Mapeadas', icon: 'fa-school', color: 'emerald' },
-    { label: 'Alunos Público-Alvo', count: statsData.pcdStudents, change: 'Apoio Ativo', icon: 'fa-graduation-cap', color: 'orange' },
+    { label: 'Turmas Inclusivas', count: filteredClasses.length, change: '+12%', icon: 'fa-users-rectangle', color: 'purple' },
+    { label: 'Corpo Docente', count: filteredTeachers.length, change: '100% ativo', icon: 'fa-chalkboard-user', color: 'sky' },
+    { label: 'Unidades Escolares', count: selectedSchoolId === 'all' ? statsData.schools : 1, change: 'Mapeadas', icon: 'fa-school', color: 'emerald' },
+    { label: 'Alunos Público-Alvo', count: filteredStudents.length, change: 'Apoio Ativo', icon: 'fa-graduation-cap', color: 'orange' },
     { label: 'Mediadores Mobilizados', count: filteredMediators.length, change: '1 por 3 alunos', icon: 'fa-hand-holding-heart', color: 'rose' },
-    { label: 'Relatórios PDIs', count: statsData.reports, change: 'Status 2024', icon: 'fa-file-lines', color: 'amber' }
+    { label: 'Relatórios PDIs', count: filteredReports.length, change: 'Status 2024', icon: 'fa-file-lines', color: 'amber' }
   ];
 
   return (
@@ -826,9 +878,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         })}
       </div>
 
-      {/* Análise de Assistência — Seção Reformulada */}
+      {/* Análise de Assistência — Seção Original Restaurada */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Cabeçalho da Seção */}
         <div className="px-8 py-6 border-b border-gray-100 flex items-center gap-4 bg-gradient-to-r from-slate-50 to-white">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
             <i className="fa-solid fa-map-location-dot text-sm"></i>
@@ -836,6 +887,26 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div>
             <h3 className="text-base font-black text-gray-800 tracking-tight">Análise de Assistência da Rede</h3>
             <p className="text-xs text-gray-400 font-medium">Distribuição de mediadores por unidade escolar</p>
+          </div>
+          <div className="ml-auto flex items-center gap-4">
+            <div className="relative">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Filtrar por Unidade</label>
+              <div className="relative group">
+                <select
+                  value={selectedSchoolId}
+                  onChange={(e) => setSelectedSchoolId(e.target.value)}
+                  className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-blue-300 min-w-[220px]"
+                >
+                  <option value="all">Todas as Escolas (Rede)</option>
+                  {(schools || []).map(school => (
+                    <option key={school.id} value={school.id}>{school.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500 group-hover:scale-110 transition-transform">
+                  <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -895,46 +966,164 @@ const Dashboard: React.FC<DashboardProps> = ({
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
 
-          {/* Destaques Rápidos */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pb-4">
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  <i className="fa-solid fa-people-group"></i>
+      {/* Distribuição de Turnos por Escola — Nova Seção */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-8 py-6 border-b border-gray-100 flex items-center gap-4 bg-gradient-to-r from-blue-50 to-white">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center text-white shadow-md">
+            <i className="fa-solid fa-clock text-sm"></i>
+          </div>
+          <div>
+            <h3 className="text-base font-black text-gray-800 tracking-tight">Distribuição de Turnos por Escola</h3>
+            <p className="text-xs text-gray-400 font-medium">Proporção de alunos em tempo parcial vs. tempo integral</p>
+          </div>
+          <div className="ml-auto flex items-center gap-4">
+            <div className="relative">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block text-right">Filtrar por Unidade</label>
+              <div className="relative group">
+                <select
+                  value={selectedSchoolId}
+                  onChange={(e) => setSelectedSchoolId(e.target.value)}
+                  className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-blue-300 min-w-[220px]"
+                >
+                  <option value="all">Todas as Escolas (Rede)</option>
+                  {(schools || []).map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
+                  <i className="fa-solid fa-chevron-down text-[10px]"></i>
                 </div>
-                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Média Municipal</p>
               </div>
-              <p className="text-2xl font-black text-slate-800">1:{(chartData.reduce((acc, curr) => acc + Number(curr.relacao), 0) / (chartData.length || 1)).toFixed(1)}</p>
-              <p className="text-xs text-slate-400 font-medium">Cobertura média de assistência</p>
-            </div>
-
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                  <i className="fa-solid fa-user-check"></i>
-                </div>
-                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Escola com mais Apoio</p>
-              </div>
-              <p className="text-2xl font-black text-slate-800">
-                {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) < Number(curr.relacao) ? prev : curr).name : 'N/A'}
-              </p>
-              <p className="text-xs text-slate-400 font-medium">Melhor taxa mediador/aluno</p>
-            </div>
-
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-colors">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Ponto de Atenção</p>
-              </div>
-              <p className="text-2xl font-black text-slate-800">
-                {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) > Number(curr.relacao) ? prev : curr).name : 'N/A'}
-              </p>
-              <p className="text-xs text-slate-400 font-medium">Maior carga por mediador</p>
             </div>
           </div>
+        </div>
+
+        <div className="p-8">
+          <div className="h-[400px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={shiftsData}
+                margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                barGap={12}
+              >
+                <defs>
+                  <linearGradient id="colorParcial" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#FB923C" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#EA580C" stopOpacity={1} />
+                  </linearGradient>
+                  <linearGradient id="colorIntegral" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#0D9488" stopOpacity={1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                  interval={0}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                />
+                <Tooltip 
+                  content={({ active, payload }: any) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
+                          <p className="font-black text-gray-800 text-xs uppercase tracking-widest mb-2 border-b border-gray-50 pb-2">{data.fullName}</p>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-8">
+                              <span className="text-[10px] font-bold text-orange-400 uppercase">Tempo Parcial:</span>
+                              <span className="text-sm font-black text-orange-600">{data.parcial}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-8">
+                              <span className="text-[10px] font-bold text-teal-400 uppercase">Tempo Integral:</span>
+                              <span className="text-sm font-black text-teal-600">{data.integral}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-8 pt-1.5 border-t border-gray-50 mt-1.5">
+                              <span className="text-[10px] font-black text-gray-500 uppercase">Total de Alunos:</span>
+                              <span className="text-sm font-black text-gray-800">{data.total}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                  cursor={{ fill: '#f8fafc' }} 
+                />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
+                  wrapperStyle={{ paddingBottom: '30px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}
+                />
+                <Bar
+                  dataKey="parcial"
+                  name="Tempo Parcial"
+                  fill="url(#colorParcial)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={32}
+                />
+                <Bar
+                  dataKey="integral"
+                  name="Tempo Integral"
+                  fill="url(#colorIntegral)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={32}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Destaques Rápidos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pb-4">
+        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <i className="fa-solid fa-people-group"></i>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Média Municipal</p>
+          </div>
+          <p className="text-2xl font-black text-slate-800">1:{(chartData.reduce((acc, curr) => acc + Number(curr.relacao), 0) / (chartData.length || 1)).toFixed(1)}</p>
+          <p className="text-xs text-slate-400 font-medium">Cobertura média de assistência</p>
+        </div>
+
+        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <i className="fa-solid fa-user-check"></i>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Escola com mais Apoio</p>
+          </div>
+          <p className="text-2xl font-black text-slate-800">
+            {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) < Number(curr.relacao) ? prev : curr).name : 'N/A'}
+          </p>
+          <p className="text-xs text-slate-400 font-medium">Melhor taxa mediador/aluno</p>
+        </div>
+
+        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 group transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-colors">
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Ponto de Atenção</p>
+          </div>
+          <p className="text-2xl font-black text-slate-800">
+            {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) > Number(curr.relacao) ? prev : curr).name : 'N/A'}
+          </p>
+          <p className="text-xs text-slate-400 font-medium">Maior carga por mediador</p>
         </div>
       </div>
 
@@ -961,7 +1150,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               >
                 <option value="all">Visão Geral da Rede</option>
-                {(isDiretor ? filteredStudents : students || []).map(s => (
+                {(filteredStudents || []).map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>

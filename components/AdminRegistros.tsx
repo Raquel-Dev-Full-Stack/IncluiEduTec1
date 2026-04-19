@@ -688,8 +688,8 @@ const AdminRegistros: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-800 tracking-tight">Registros Administrativos</h1>
-          <p className="text-gray-500 text-sm mt-1">Cadastro de municípios e secretarias de educação com credenciais de acesso.</p>
+          <h1 className="text-2xl font-black text-gray-800 tracking-tight">Secretarias de Educação</h1>
+          <p className="text-gray-500 text-sm mt-1">Gestão de municípios vinculados e credenciais de acesso das secretarias.</p>
         </div>
         {!showForm && (
           <button

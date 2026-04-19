@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Student, Class, LessonPlan } from '../types';
+import { jsPDF } from 'jspdf';
 
 interface BNCCData {
   codigo: string;
@@ -27,6 +28,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
   const [isAdding, setIsAdding] = useState(!!initialClassId);
   const [bnccData, setBnccData] = useState<BNCCData[]>([]);
   const [isLoadingBNCC, setIsLoadingBNCC] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Estados do Formulário
   const [formData, setFormData] = useState({
@@ -35,7 +37,10 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
     studentId: '', // Ainda mantido para registros individuais se necessário
     description: '',
     habilidadesBNCC: '',
-    adaptacoesMetodologia: ''
+    adaptacoesMetodologia: '',
+    objetivos: '',
+    estrategias: '',
+    shared: false
   });
 
   // Atualiza turma inicial se o prop mudar
@@ -81,21 +86,104 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
     }
 
     onSave({
+      id: editingId || undefined,
       classId: formData.classId,
       temaAula: formData.temaAula,
       description: formData.description,
       habilidadesBNCC: formData.habilidadesBNCC ? [formData.habilidadesBNCC] : [],
-      adaptacoesMetodologia: formData.adaptacoesMetodologia
+      adaptacoesMetodologia: formData.adaptacoesMetodologia,
+      objetivos: formData.objetivos,
+      estrategias: formData.estrategias,
+      shared: formData.shared
     });
 
     setIsAdding(false);
+    setEditingId(null);
     setFormData({
       temaAula: '',
       classId: '',
       studentId: '',
       description: '',
       habilidadesBNCC: '',
-      adaptacoesMetodologia: ''
+      adaptacoesMetodologia: '',
+      objetivos: '',
+      estrategias: '',
+      shared: false
+    });
+  };
+
+  const handleEdit = (lesson: LessonPlan) => {
+    setFormData({
+      temaAula: lesson.temaAula,
+      classId: lesson.classId,
+      studentId: '',
+      description: lesson.description || '',
+      habilidadesBNCC: lesson.habilidadesBNCC?.[0] || '',
+      adaptacoesMetodologia: lesson.adaptacoesMetodologia || '',
+      objetivos: lesson.objetivos || '',
+      estrategias: lesson.estrategias || '',
+      shared: lesson.shared || false
+    });
+    setEditingId(lesson.id);
+    setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleExport = (lesson: LessonPlan) => {
+    const doc = new jsPDF();
+    const className = classes.find(c => c.id === lesson.classId)?.name || 'N/A';
+    
+    // Configurações de cores e fontes
+    doc.setFillColor(79, 70, 229); // Indigo 600
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text('Planejamento Pedagógico', 15, 25);
+    
+    doc.setTextColor(51, 51, 51);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    let y = 50;
+    const drawSection = (title: string, content: string) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(title.toUpperCase(), 15, y);
+      y += 7;
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(content || 'Não informado', 180);
+      doc.text(lines, 15, y);
+      y += (lines.length * 7) + 10;
+    };
+
+    // Card de Informações
+    doc.setDrawColor(230, 230, 230);
+    doc.roundedRect(15, y, 180, 25, 3, 3);
+    doc.text(`DATA: ${new Date(lesson.createdAt).toLocaleDateString('pt-BR')}`, 20, y + 10);
+    doc.text(`TURMA: ${className}`, 20, y + 17);
+    doc.text(`TEMA: ${lesson.temaAula}`, 100, y + 10);
+    if (lesson.habilidadesBNCC?.[0]) {
+      doc.text(`BNCC: ${lesson.habilidadesBNCC[0]}`, 100, y + 17);
+    }
+    y += 35;
+
+    drawSection('Objetivos da Aprendizagem', lesson.objetivos);
+    drawSection('Estratégias de Ensino', lesson.estrategias);
+    drawSection('Desenvolvimento / Conteúdo', lesson.description);
+    
+    if (lesson.adaptacoesMetodologia) {
+      doc.setTextColor(79, 70, 229);
+      drawSection('Adaptações Metodológicas', lesson.adaptacoesMetodologia);
+    }
+    
+    doc.save(`planejamento_${lesson.temaAula.replace(/\s+/g, '_')}.pdf`);
+  };
+
+  const handleToggleShare = (lesson: LessonPlan) => {
+    onSave({
+      ...lesson,
+      shared: !lesson.shared
     });
   };
 
@@ -107,8 +195,8 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
             <i className="fa-solid fa-book"></i>
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Histórico de Registros</h1>
-            <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Todas as suas anotações pedagógicas organizadas</p>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Planejamento Pedagógico</h1>
+            <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Gestão completa de planos de aula e marcos de ensino</p>
           </div>
         </div>
 
@@ -139,7 +227,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
             }`}
         >
           <i className={`fa-solid ${isAdding ? 'fa-xmark' : 'fa-plus'}`}></i>
-          {isAdding ? 'Cancelar Registro' : 'Adicionar Novo Registro'}
+          {isAdding ? 'Cancelar Planejamento' : 'Novo Plano de Aula'}
         </button>
       </div>
 
@@ -149,7 +237,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
             <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
               <i className="fa-solid fa-file-signature"></i>
             </div>
-            Novo Registro Pedagógico
+            {editingId ? 'Editar Planejamento' : 'Novo Plano de Aula'}
           </h3>
 
           <form onSubmit={handleSaveSubmit} className="space-y-6">
@@ -205,7 +293,31 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Descrição do Registro *</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Objetivos da Aprendizagem</label>
+                <textarea
+                  value={formData.objetivos}
+                  onChange={(e) => setFormData({ ...formData, objetivos: e.target.value })}
+                  placeholder="Quais os objetivos principais desta aula?"
+                  rows={3}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-3xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none shadow-inner"
+                ></textarea>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estratégias de Ensino</label>
+                <textarea
+                  value={formData.estrategias}
+                  onChange={(e) => setFormData({ ...formData, estrategias: e.target.value })}
+                  placeholder="Quais métodos e ferramentas serão utilizados?"
+                  rows={3}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-3xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none shadow-inner"
+                ></textarea>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Descrição do Registro / Conteúdo *</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -228,13 +340,32 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row justify-end items-center gap-6 pt-4">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-4">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={formData.shared}
+                    onChange={(e) => setFormData({ ...formData, shared: e.target.checked })}
+                  />
+                  <div className={`w-14 h-7 rounded-full transition-colors ${formData.shared ? 'bg-emerald-500' : 'bg-gray-200'}`}></div>
+                  <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${formData.shared ? 'translate-x-7' : ''}`}></div>
+                </div>
+                <div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">
+                    Compartilhar com a Coordenação
+                  </span>
+                  <p className="text-[9px] text-gray-400">Torna este planejamento visível para a escola</p>
+                </div>
+              </label>
+
               <button
                 type="submit"
                 className="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all active:scale-95 shadow-xl shadow-indigo-100 flex items-center gap-2 whitespace-nowrap"
               >
                 <i className="fa-solid fa-cloud-arrow-up"></i>
-                Salvar Registro
+                Salvar {editingId ? 'Alterações' : 'Planejamento'}
               </button>
             </div>
           </form>
@@ -249,8 +380,16 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
           </div>
         ) : (
           lessonPlans.map((lesson) => (
-            <div key={lesson.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row gap-8">
-              <div className="md:w-48 flex-shrink-0 space-y-2">
+            <div key={lesson.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row gap-8 relative overflow-hidden">
+              {lesson.shared && (
+                <div className="absolute top-0 right-0">
+                  <div className="bg-emerald-500 text-white text-[8px] font-black uppercase py-1 px-4 rounded-bl-xl tracking-tighter">
+                    Compartilhado
+                  </div>
+                </div>
+              )}
+
+              <div className="md:w-48 flex-shrink-0 space-y-3">
                 <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{new Date(lesson.createdAt).toLocaleDateString('pt-BR')}</p>
                 <h4 className="text-sm font-bold text-gray-800">{classes.find(c => c.id === lesson.classId)?.name || 'Turma N/A'}</h4>
                 <div className="flex flex-wrap gap-2">
@@ -260,25 +399,76 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
                   {lesson.habilidadesBNCC && lesson.habilidadesBNCC.length > 0 && (
                     <span
                       className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase rounded-lg border border-emerald-100 cursor-help"
-                      title={bnccData.find(b => b.codigo === lesson.habilidadesBNCC[0])?.descricao}
+                      title={bnccData.find(b => b.codigo === lesson.habilidadesBNCC[0])?.descricao || ''}
                     >
                       BNCC: {lesson.habilidadesBNCC[0]}
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="flex-1 space-y-4">
-                <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Desenvolvimento Pedagógico</p>
-                  <p className="text-xs text-gray-600 leading-relaxed font-medium">"{lesson.description}"</p>
+
+                <div className="pt-2 grid grid-cols-1 gap-2">
+                  <button
+                    onClick={() => onSave({ ...lesson, shared: true })}
+                    disabled={lesson.shared}
+                    className={`w-full py-2 px-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${lesson.shared
+                        ? 'bg-emerald-100 text-emerald-600 border border-emerald-200 cursor-not-allowed'
+                        : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100'
+                      }`}
+                  >
+                    <i className="fa-solid fa-share-nodes"></i>
+                    {lesson.shared ? 'Compartilhado' : 'Compartilhar'}
+                  </button>
+
+                  <button
+                    onClick={() => handleEdit(lesson)}
+                    className="w-full py-2 px-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-solid fa-pen-to-square"></i>
+                    Editar
+                  </button>
+
+                  <button
+                    onClick={() => handleExport(lesson)}
+                    className="w-full py-2 px-3 bg-gray-50 text-gray-600 border border-gray-100 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-solid fa-file-pdf"></i>
+                    Exportar
+                  </button>
                 </div>
-                {lesson.adaptacoesMetodologia && (
-                  <div className="bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100">
-                    <p className="text-[9px] font-black text-indigo-500 uppercase mb-2">Adaptações de Acessibilidade</p>
-                    <p className="text-xs text-indigo-900 leading-relaxed font-semibold italic">"{lesson.adaptacoesMetodologia}"</p>
-                  </div>
-                )}
               </div>
+
+              <div className="flex-1 space-y-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                    <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Desenvolvimento / Conteúdo</p>
+                    <p className="text-xs text-gray-600 leading-relaxed font-medium">"{lesson.description}"</p>
+                  </div>
+
+                  {lesson.objetivos && (
+                    <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                      <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Objetivos da Aprendizagem</p>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">"{lesson.objetivos}"</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {lesson.estrategias && (
+                    <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                      <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Estratégias de Ensino</p>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">"{lesson.estrategias}"</p>
+                    </div>
+                  )}
+
+                  {lesson.adaptacoesMetodologia && (
+                    <div className="bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100">
+                      <p className="text-[9px] font-black text-indigo-500 uppercase mb-2">Adaptações de Acessibilidade</p>
+                      <p className="text-xs text-indigo-900 leading-relaxed font-semibold italic">"{lesson.adaptacoesMetodologia}"</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-center">
                 <button className="w-10 h-10 rounded-xl bg-white border border-gray-100 text-gray-400 hover:text-indigo-600 transition-all shadow-sm">
                   <i className="fa-solid fa-ellipsis-vertical"></i>

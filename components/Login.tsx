@@ -108,6 +108,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
                   disabled={isLoading}
                   className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none outline-none transition-all cursor-pointer disabled:opacity-50"
                 >
+                  <option value={UserProfile.ADMIN}>{UserProfile.ADMIN}</option>
                   <option value={UserProfile.SECRETARIA}>{UserProfile.SECRETARIA}</option>
                   <option value={UserProfile.DIRETOR}>{UserProfile.DIRETOR}</option>
                   <option value={UserProfile.PROFESSOR}>{UserProfile.PROFESSOR}</option>
