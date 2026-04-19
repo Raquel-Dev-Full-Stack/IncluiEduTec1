@@ -27,7 +27,6 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
   const [filterPeriod, setFilterPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [isAdding, setIsAdding] = useState(!!initialClassId);
   const [bnccData, setBnccData] = useState<BNCCData[]>([]);
-  const [isLoadingBNCC, setIsLoadingBNCC] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Estados do Formulário
@@ -57,21 +56,13 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
       .then(res => res.json())
       .then(data => {
         setBnccData(data);
-        setIsLoadingBNCC(false);
       })
       .catch(err => {
         console.error("Erro ao carregar banco BNCC:", err);
-        setIsLoadingBNCC(false);
       });
   }, []);
 
-  const groupedBNCC = useMemo(() => {
-    return bnccData.reduce((acc, curr) => {
-      if (!acc[curr.componente]) acc[curr.componente] = [];
-      acc[curr.componente].push(curr);
-      return acc;
-    }, {} as Record<string, BNCCData[]>);
-  }, [bnccData]);
+
 
   const filteredStudentsForForm = useMemo(() => {
     if (!formData.classId) return [];
@@ -271,23 +262,24 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
 
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Habilidade BNCC</label>
-                <select
-                  value={formData.habilidadesBNCC}
-                  onChange={(e) => setFormData({ ...formData, habilidadesBNCC: e.target.value })}
-                  disabled={isLoadingBNCC}
-                  className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-                >
-                  <option value="">{isLoadingBNCC ? 'Carregando BNCC...' : 'Selecione um código BNCC...'}</option>
-                  {(Object.entries(groupedBNCC) as [string, BNCCData[]][]).map(([componente, skills]) => (
-                    <optgroup key={componente} label={componente}>
-                      {skills.map(skill => (
-                        <option key={skill.codigo} value={skill.codigo} title={skill.descricao}>
-                          [{skill.codigo}] {skill.descricao.substring(0, 60)}...
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.habilidadesBNCC}
+                    onChange={(e) => setFormData({ ...formData, habilidadesBNCC: e.target.value })}
+                    placeholder="Digite o código (Ex: EF01LP01)"
+                    className="flex-1 p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-gray-300"
+                  />
+                  <a 
+                    href="https://basenacionalcomum.mec.gov.br/abase/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    title="Consultar/Baixar códigos BNCC"
+                    className="w-[49px] h-[49px] flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 hover:bg-indigo-100 transition-all shadow-sm group"
+                  >
+                    <i className="fa-solid fa-arrow-up-right-from-square group-hover:scale-110 transition-transform"></i>
+                  </a>
+                </div>
               </div>
             </div>
 
