@@ -375,6 +375,7 @@ export default function App() {
       if (user) {
         const currentUserEnriched = enrichedUsers.find(u => 
           u.id === user.id || 
+          u.auth_user_id === user.id ||
           u.email === user.email
         );
         if (currentUserEnriched) {
@@ -528,8 +529,11 @@ export default function App() {
             return {
               ...prev,
               ...userData,
+              id: userData.id,
               name: nameValue,
-              profile: (roleToProfileMap[userData.role] || userData.role) as UserProfile,
+              schoolId: userData.school_id || userData.schoolId || prev?.schoolId,
+              municipio_id: userData.municipio_id || userData.municipioId || prev?.municipio_id,
+              profile: (roleToProfileMap[userData.role] || userData.role || prev?.profile || UserProfile.PROFESSOR) as UserProfile,
               themePreference: savedTheme || 'light'
             } as unknown as User;
           });
@@ -1309,6 +1313,8 @@ export default function App() {
 
   const handleSaveClass = async (classData: Partial<Class>) => {
     if (!user) return;
+    setLoading(true);
+    try {
 
     // Garantir school_id do diretor logado
     const classToSave = {
@@ -1426,7 +1432,13 @@ export default function App() {
         showNotification('Turma cadastrada com sucesso e vinculada à escola!', 'success');
       }
     }
-  };
+  } catch (err: any) {
+    console.error('Erro crítico ao salvar turma:', err);
+    showNotification(`Erro ao salvar: ${err.message || 'Erro inesperado'}`, 'error');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteClass = async (classItem: Class) => {
     if (!window.confirm(`Deseja realmente excluir a turma "${classItem.name}"?`)) return;
@@ -1986,8 +1998,17 @@ export default function App() {
           showNotification('Professor cadastrado com sucesso e credenciais criadas.', 'success');
         }
       } catch (err: any) {
-        console.error('Erro ao salvar professor:', err);
-        showNotification(`Erro ao cadastrar professor: ${err.message}`, 'error');
+        console.error('Erro crítico ao salvar professor:', err);
+        const errorMsg = err.message || err.details || 'Erro desconhecido';
+        showNotification(`Erro ao cadastrar professor: ${errorMsg}`, 'error');
+        
+        // Log de auditoria para falha
+        await logActivity(
+          'Erro Cadastro Professor',
+          `Falha ao tentar cadastrar ${newTeacherData.name}: ${errorMsg}`,
+          user.municipio_id,
+          user.schoolId
+        );
       } finally {
         setLoading(false);
       }
