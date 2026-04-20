@@ -879,6 +879,7 @@ export default function App() {
     try {
       const recordToSave = {
         aluno_id: mealData.studentId,
+        student_id: mealData.studentId, // Adicionando student_id para paridade e RLS
         meal_date: mealData.date.split('T')[0],
         tipo_refeicao: mealData.type,
         status_consumo: mealData.status,

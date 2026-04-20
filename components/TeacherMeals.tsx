@@ -272,25 +272,50 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                               })}
                             </div>
 
-                            <div className="flex justify-center gap-3 mt-1 border-t border-gray-100 pt-2">
-                              <label className="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer hover:text-indigo-600 transition-colors" title="Dormiu">
-                                <input
-                                  type="checkbox"
-                                  checked={!!mealData.sono}
-                                  onChange={(e) => handleCheckboxChange(student.id, meal.label, 'sono', e.target.checked)}
-                                  className="w-3 h-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
-                                />
-                                <i className="fa-solid fa-bed text-indigo-400"></i>
-                              </label>
-                              <label className="flex items-center gap-1 text-[9px] font-bold text-gray-500 cursor-pointer hover:text-amber-600 transition-colors" title="Evacuou">
-                                <input
-                                  type="checkbox"
-                                  checked={!!mealData.evacuou}
-                                  onChange={(e) => handleCheckboxChange(student.id, meal.label, 'evacuou', e.target.checked)}
-                                  className="w-3 h-3 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
-                                />
-                                <i className="fa-solid fa-poop text-amber-700"></i>
-                              </label>
+                            <div className="flex flex-col gap-3 mt-1 border-t border-gray-100 pt-3 px-2">
+                              {/* Controle de Sono */}
+                              <div className="flex flex-col items-center gap-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  <i className="fa-solid fa-bed text-indigo-400 text-[10px]"></i>
+                                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Dormiu?</span>
+                                </div>
+                                <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 w-full max-w-[100px] shadow-inner">
+                                  <button
+                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'sono', true)}
+                                    className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.sono === true ? 'bg-indigo-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                  >
+                                    SIM
+                                  </button>
+                                  <button
+                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'sono', false)}
+                                    className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.sono === false ? 'bg-rose-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                  >
+                                    NÃO
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Controle de Evacuação */}
+                              <div className="flex flex-col items-center gap-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  <i className="fa-solid fa-poop text-amber-700 text-[10px]"></i>
+                                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Evacuou?</span>
+                                </div>
+                                <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 w-full max-w-[100px] shadow-inner">
+                                  <button
+                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'evacuou', true)}
+                                    className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.evacuou === true ? 'bg-amber-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                  >
+                                    SIM
+                                  </button>
+                                  <button
+                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'evacuou', false)}
+                                    className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.evacuou === false ? 'bg-rose-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+                                  >
+                                    NÃO
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </td>
