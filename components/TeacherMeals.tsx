@@ -11,17 +11,17 @@ interface TeacherMealsProps {
 }
 
 const mealTypes = [
-  { id: 'Café da Manhã', label: 'Café da Manhã', icon: 'fa-coffee' },
-  { id: 'Colação', label: 'Colação', icon: 'fa-apple-whole' },
-  { id: 'Almoço', label: 'Almoço', icon: 'fa-utensils' },
-  { id: 'Lanche', label: 'Lanche', icon: 'fa-cookie' },
-  { id: 'Janta', label: 'Janta', icon: 'fa-bowl-food' },
+  { id: 'cafe_da_manha', label: 'Café da Manhã', icon: 'fa-coffee' },
+  { id: 'colacao', label: 'Colação', icon: 'fa-apple-whole' },
+  { id: 'almoco', label: 'Almoço', icon: 'fa-utensils' },
+  { id: 'lanche', label: 'Lanche', icon: 'fa-cookie' },
+  { id: 'janta', label: 'Janta', icon: 'fa-bowl-food' },
 ];
 
 const mealStatus = [
-  { id: 'comeu', label: 'Comeu tudo', color: 'emerald', icon: 'fa-check' },
-  { id: 'comeu pouco', label: 'Comeu pouco', color: 'amber', icon: 'fa-chart-pie' },
-  { id: 'não comeu', label: 'Não comeu', color: 'rose', icon: 'fa-xmark' },
+  { id: 'tudo', label: 'Comeu tudo', color: 'emerald', icon: 'fa-check' },
+  { id: 'metade', label: 'Comeu pouco', color: 'amber', icon: 'fa-chart-pie' },
+  { id: 'nao_comeu', label: 'Não comeu', color: 'rose', icon: 'fa-xmark' },
 ];
 
 const TeacherMeals: React.FC<TeacherMealsProps> = ({
@@ -36,7 +36,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
   const [isRegistering, setIsRegistering] = useState(false);
 
   // Estados para o modo de registro em lote
-  const [batchMealType, setBatchMealType] = useState('Almoço');
+  const [batchMealType, setBatchMealType] = useState('almoco');
   const [batchRecords, setBatchRecords] = useState<Record<string, string>>({});
 
   const getMealData = (studentId: string, type: string) => {
@@ -56,7 +56,10 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
       type: mealType,
       status,
     } as Omit<Meal, 'id'>);
-    setFeedback(`Registro de ${mealType} atualizado!`);
+    
+    // Encontrar o label para o feedback amigável
+    const mealLabel = mealTypes.find(m => m.id === mealType)?.label || mealType;
+    setFeedback(`Registro de ${mealLabel} atualizado!`);
     setTimeout(() => setFeedback(null), 2000);
   };
 
@@ -66,7 +69,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
       studentId,
       date: selectedDate + 'T' + new Date().toLocaleTimeString('pt-BR'),
       type: mealType,
-      status: existing.status || 'Não comeu',
+      status: existing.status || 'nao_comeu',
       sono: field === 'sono' ? value : existing.sono,
       evacuou: field === 'evacuou' ? value : existing.evacuou,
     });
@@ -85,7 +88,8 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
       handleStatusChange(id, batchMealType, batchRecords[id]);
     });
 
-    setFeedback(`${studentIds.length} registros de ${batchMealType} salvos!`);
+    const mealLabel = mealTypes.find(m => m.id === batchMealType)?.label || batchMealType;
+    setFeedback(`${studentIds.length} registros de ${mealLabel} salvos!`);
     setIsRegistering(false);
     setBatchRecords({});
     setTimeout(() => setFeedback(null), 3000);
@@ -244,7 +248,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                       </div>
                     </td>
                     {mealTypes.map(meal => {
-                      const mealData = getMealData(student.id, meal.label) || {};
+                      const mealData = getMealData(student.id, meal.id) || {};
                       const currentStatus = mealData.status;
 
                       return (
@@ -257,12 +261,13 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                                   emerald: isActive ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-emerald-500 border-emerald-100 hover:bg-emerald-50',
                                   amber: isActive ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-amber-500 border-amber-100 hover:bg-amber-50',
                                   rose: isActive ? 'bg-rose-500 text-white border-rose-600' : 'bg-white text-rose-500 border-rose-100 hover:bg-rose-50',
+                                  blue: isActive ? 'bg-blue-500 text-white border-blue-600' : 'bg-white text-blue-500 border-blue-100 hover:bg-blue-50',
                                 };
 
                                 return (
                                   <button
                                     key={status.id}
-                                    onClick={() => handleStatusChange(student.id, meal.label, status.id)}
+                                    onClick={() => handleStatusChange(student.id, meal.id, status.id)}
                                     title={status.label}
                                     className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-90 shadow-sm ${colors[status.color]}`}
                                   >
@@ -281,13 +286,13 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                                 </div>
                                 <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 w-full max-w-[100px] shadow-inner">
                                   <button
-                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'sono', true)}
+                                    onClick={() => handleCheckboxChange(student.id, meal.id, 'sono', true)}
                                     className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.sono === true ? 'bg-indigo-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
                                   >
                                     SIM
                                   </button>
                                   <button
-                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'sono', false)}
+                                    onClick={() => handleCheckboxChange(student.id, meal.id, 'sono', false)}
                                     className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.sono === false ? 'bg-rose-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
                                   >
                                     NÃO
@@ -303,13 +308,13 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                                 </div>
                                 <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 w-full max-w-[100px] shadow-inner">
                                   <button
-                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'evacuou', true)}
+                                    onClick={() => handleCheckboxChange(student.id, meal.id, 'evacuou', true)}
                                     className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.evacuou === true ? 'bg-amber-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
                                   >
                                     SIM
                                   </button>
                                   <button
-                                    onClick={() => handleCheckboxChange(student.id, meal.label, 'evacuou', false)}
+                                    onClick={() => handleCheckboxChange(student.id, meal.id, 'evacuou', false)}
                                     className={`flex-1 py-1 rounded-md text-[8px] font-black transition-all ${mealData.evacuou === false ? 'bg-rose-500 text-white shadow-sm scale-105' : 'text-gray-400 hover:text-gray-600'}`}
                                   >
                                     NÃO
