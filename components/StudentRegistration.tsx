@@ -183,7 +183,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ onSave, onCan
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <i className="fa-solid fa-virus text-emerald-400"></i> Deficiência / Condição
+                   <i className="fa-solid fa-virus text-emerald-400"></i> Deficiência Principal
                 </label>
                 <input
                   type="text"
@@ -191,6 +191,54 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ onSave, onCan
                   onChange={(e) => setFormData({ ...formData, deficiency: e.target.value })}
                   placeholder="Ex: TEA, DI, Baixa Visão"
                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                   <i className="fa-solid fa- stethoscope text-emerald-400"></i> Diagnóstico (CID)
+                </label>
+                <input
+                  type="text"
+                  value={formData.diagnosis}
+                  onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+                  placeholder="Ex: F84.0 ou descrição detalhada"
+                  className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                   <i className="fa-solid fa-layer-group text-emerald-400"></i> Série / Ano
+                </label>
+                <input
+                   type="text"
+                   value={formData.grade}
+                   onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                   placeholder="Ex: 1º Ano, Pré-II"
+                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                   <i className="fa-solid fa-door-open text-emerald-400"></i> Sala de Aula
+                </label>
+                <input
+                   type="text"
+                   value={formData.classroom}
+                   onChange={(e) => setFormData({ ...formData, classroom: e.target.value })}
+                   placeholder="Ex: Sala 04, Bloco B"
+                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                   <i className="fa-solid fa-calendar-check text-emerald-400"></i> Ano de Matrícula
+                </label>
+                <input
+                   type="number"
+                   value={formData.enrollment_year || formData.year}
+                   onChange={(e) => setFormData({ ...formData, enrollment_year: parseInt(e.target.value) || undefined })}
+                   placeholder="2026"
+                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                 />
               </div>
             </div>

@@ -25,6 +25,7 @@ import TeacherRecords from './components/TeacherRecords';
 import TeacherSettings from './components/TeacherSettings';
 import TeacherInclusivePlans from './components/TeacherInclusivePlans';
 import DirectorTeacherRecords from './components/DirectorTeacherRecords';
+import StudentDetailsView from './components/StudentDetailsView';
 import Settings from './components/Settings';
 import DBAnalysis from './components/DBAnalysis';
 import AdminDashboard from './components/AdminDashboard';
@@ -100,6 +101,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedClassIdForActivity, setSelectedClassIdForActivity] = useState<string | null>(null);
   const [selectedSecretariaId, setSelectedSecretariaId] = useState<string | null>(null);
+  const [selectedStudentIdForView, setSelectedStudentIdForView] = useState<string | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
   // Monitorar ações do sistema
@@ -324,6 +326,10 @@ export default function App() {
       guardians: s.guardians || [],
       hasMedicalReport: s.has_medical_report || false,
       medicalReportUrl: s.medical_report_url || '',
+      diagnosis: s.diagnosis || '',
+      grade: s.grade || '',
+      classroom: s.classroom || '',
+      birthDate: s.birth_date,
       year: s.enrollment_year || s.year || 0
     })) as Student[]);
 
@@ -1507,7 +1513,7 @@ export default function App() {
           .from('students')
           .update({
             name: studentToSave.name,
-            birth_date: studentToSave.birthDate,
+            birth_date: studentToSave.birthDate || null,
             class_id: studentToSave.classId,
             school_id: studentToSave.school_id,
             ra: studentToSave.ra,
@@ -1519,7 +1525,11 @@ export default function App() {
             description: studentToSave.description,
             guardians: studentToSave.guardians,
             has_medical_report: studentToSave.hasMedicalReport,
-            medical_report_url: studentToSave.hasMedicalReport ? studentToSave.medicalReportUrl : null
+            medical_report_url: studentToSave.hasMedicalReport ? studentToSave.medicalReportUrl : null,
+            diagnosis: studentToSave.diagnosis,
+            grade: studentToSave.grade,
+            classroom: studentToSave.classroom,
+            enrollment_year: studentToSave.enrollment_year || studentToSave.year
           })
           .eq('id', studentData.id)
           .select();
@@ -1531,7 +1541,14 @@ export default function App() {
             ...data[0],
             schoolId: data[0].school_id,
             classId: data[0].class_id,
-            birthDate: data[0].birth_date
+            birthDate: data[0].birth_date,
+            regentTeacherId: data[0].main_teacher_id,
+            mediatorId: data[0].mediator_id,
+            schoolRegime: data[0].school_regime,
+            attendancePeriod: data[0].attendance_period,
+            hasMedicalReport: data[0].has_medical_report,
+            medicalReportUrl: data[0].medical_report_url,
+            enrollment_year: data[0].enrollment_year
           } as Student) : s));
           setStudentToEdit(null);
           setActiveTab('alunos');
@@ -1566,7 +1583,7 @@ export default function App() {
           .insert([{
             id: crypto.randomUUID(),
             name: studentToSave.name,
-            birth_date: studentToSave.birthDate,
+            birth_date: studentToSave.birthDate || null,
             class_id: studentToSave.classId,
             school_id: studentToSave.school_id,
             ra: studentToSave.ra,
@@ -1579,6 +1596,10 @@ export default function App() {
             guardians: studentToSave.guardians,
             has_medical_report: studentToSave.hasMedicalReport,
             medical_report_url: studentToSave.hasMedicalReport ? studentToSave.medicalReportUrl : null,
+            diagnosis: studentToSave.diagnosis,
+            grade: studentToSave.grade,
+            classroom: studentToSave.classroom,
+            enrollment_year: studentToSave.enrollment_year || studentToSave.year,
             active: true
           }])
           .select();
@@ -1590,7 +1611,14 @@ export default function App() {
             ...data[0],
             schoolId: data[0].school_id,
             classId: data[0].class_id,
-            birthDate: data[0].birth_date
+            birthDate: data[0].birth_date,
+            regentTeacherId: data[0].main_teacher_id,
+            mediatorId: data[0].mediator_id,
+            schoolRegime: data[0].school_regime,
+            attendancePeriod: data[0].attendance_period,
+            hasMedicalReport: data[0].has_medical_report,
+            medicalReportUrl: data[0].medical_report_url,
+            enrollment_year: data[0].enrollment_year
           } as Student]);
           setActiveTab('alunos');
           setRefreshKey(prev => prev + 1);
@@ -2657,6 +2685,21 @@ export default function App() {
           return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} />;
         }
 
+        if (selectedStudentIdForView) {
+          const student = students.find(s => s.id === selectedStudentIdForView);
+          if (student) {
+            return (
+              <StudentDetailsView
+                student={student}
+                studentClass={classes.find(c => c.id === student.classId)}
+                mediator={usersList.find(u => u.id === student.mediatorId)}
+                regentTeacher={usersList.find(u => u.id === student.regentTeacherId)}
+                onBack={() => setSelectedStudentIdForView(null)}
+              />
+            );
+          }
+        }
+
         const filteredStudents = user.profile === UserProfile.DIRETOR
           ? students.filter(s => s.schoolId === user.schoolId || classes.find(c => c.id === s.classId)?.schoolId === user.schoolId)
           : students;
@@ -2672,7 +2715,23 @@ export default function App() {
               onEdit={user.profile === UserProfile.DIRETOR ? (s) => { setStudentToEdit(s); setActiveTab('student_registration'); } : undefined}
               onDelete={user.profile === UserProfile.DIRETOR ? handleDeleteStudent : undefined}
               columns={[
-                { header: 'Nome', accessor: (s) => <span className="font-bold text-gray-800">{s.name}</span> },
+                {
+                  header: 'Aluno(a)',
+                  accessor: (s) => (
+                    <button
+                      onClick={() => setSelectedStudentIdForView(s.id)}
+                      className="flex items-center gap-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 p-2 rounded-2xl transition-all group w-full"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 text-xs group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                        <i className="fa-solid fa-graduation-cap"></i>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 transition-all">{s.name}</span>
+                        <span className="text-[9px] font-black uppercase text-emerald-500/60 tracking-tighter">Ver perfil completo</span>
+                      </div>
+                    </button>
+                  )
+                },
                 {
                   header: 'Idade',
                   accessor: (s) => s.birthDate ? `${new Date().getFullYear() - new Date(s.birthDate).getFullYear()} anos` : 'N/A'

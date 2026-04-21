@@ -141,7 +141,8 @@ export interface Student {
   schoolId?: string;
   aee: boolean;
   deficiency: string;
-  birthDate?: string;
+  birth_date?: string; // Mapeado do banco
+  birthDate?: string;  // Legado usado no app
   regentTeacherId?: string;
   mediatorId?: string;
   schoolRegime?: 'Integral' | 'Parcial';
@@ -151,6 +152,14 @@ export interface Student {
   guardians?: Guardian[];
   hasMedicalReport?: boolean;
   medicalReportUrl?: string;
+  diagnosis?: string;
+  grade?: string;
+  classroom?: string;
+  active?: boolean;
+  enrollment_year?: number;
+  year?: number;
+  created_at?: string;
+  last_monitoring_at?: string;
 }
 
 export interface Attendance {

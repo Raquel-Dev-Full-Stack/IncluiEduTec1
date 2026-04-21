@@ -52,7 +52,8 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   const [newCredential, setNewCredential] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    profile: 'escola' as 'escola' | 'professor' | 'mediador'
   });
 
   const [selectedMediatorId, setSelectedMediatorId] = useState<string | null>(null);
@@ -192,7 +193,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   }, [school.id, schoolClasses, allUsers, mediatorsTable]);
   
   const schoolCredentials = useMemo(() => 
-    allUsers.filter(u => u.profile === UserProfile.ESCOLA && u.schoolId === school.id),
+    allUsers.filter(u => 
+      (u.profile === UserProfile.ESCOLA || u.profile === UserProfile.PROFESSOR || u.profile === UserProfile.MEDIADOR) && 
+      u.schoolId === school.id
+    ),
   [school.id, allUsers]);
 
   const schoolMediation = useMemo(() =>
@@ -259,7 +263,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           email: newCredential.email,
           password: newCredential.password,
           name: newCredential.name,
-          role: 'escola',
+          role: newCredential.profile,
           school_id: school.id,
           municipio_id: user.municipio_id
         })
@@ -277,7 +281,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
       }
 
       setIsAddingCredential(false);
-      setNewCredential({ name: '', email: '', password: '' });
+      setNewCredential({ name: '', email: '', password: '', profile: 'escola' });
       
       if (onRefresh) onRefresh();
 
@@ -295,69 +299,73 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-300">
             <div className="space-y-6">
-              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b pb-2">Informações da Unidade</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <h4 className="text-base font-black text-slate-800 uppercase tracking-widest border-b-2 border-slate-100 pb-3 flex items-center gap-2">
+                <i className="fa-solid fa-circle-info text-blue-600"></i> Informações da Unidade
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-2">
                 <div className="sm:col-span-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Nome Oficial</p>
-                  <p className="text-sm font-bold text-gray-800">{school.name}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Nome Oficial</p>
+                  <p className="text-base font-bold text-slate-900">{school.name}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Código INEP</p>
-                  <p className="text-sm font-bold text-blue-600">{school.inep}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Código INEP</p>
+                  <p className="text-base font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-lg inline-block">{school.inep}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Tipo</p>
-                  <p className="text-sm font-bold text-gray-700">{school.type || 'Municipal'}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Tipo de Unidade</p>
+                  <p className="text-base font-bold text-slate-800">{school.type || 'Escola Municipal'}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Endereço Completo</p>
-                  <p className="text-sm font-medium text-gray-600">{school.address}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Endereço Completo</p>
+                  <p className="text-sm font-bold text-slate-800 leading-relaxed">{school.address}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Bairro</p>
-                  <p className="text-sm font-medium text-gray-600">{school.neighborhood || '-'}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Bairro Localizado</p>
+                  <p className="text-sm font-bold text-slate-800">{school.neighborhood || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">CEP</p>
-                  <p className="text-sm font-medium text-gray-600">{school.zipCode || '-'}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">CEP</p>
+                  <p className="text-sm font-bold text-slate-800 font-mono italic">{school.zipCode || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Cidade / UF</p>
-                  <p className="text-sm font-medium text-gray-600">{school.municipality || 'Maricá'} / {school.state || 'RJ'}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Município / Estado</p>
+                  <p className="text-sm font-bold text-slate-800">{school.municipality || 'Maricá'} / {school.state || 'RJ'}</p>
                 </div>
               </div>
             </div>
             <div className="space-y-6">
-              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b pb-2">Gestão e Contato</h4>
+              <h4 className="text-base font-black text-slate-800 uppercase tracking-widest border-b-2 border-slate-100 pb-3 flex items-center gap-2">
+                <i className="fa-solid fa-address-book text-emerald-600"></i> Gestão e Contato
+              </h4>
               <div className="space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-200">
+                <div className="flex items-center gap-5 p-5 bg-blue-50/50 rounded-3xl border border-blue-100 shadow-sm transition-all hover:bg-blue-50">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-700 flex items-center justify-center text-white text-2xl shadow-xl shadow-blue-100">
                     <i className="fa-solid fa-user-tie"></i>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-blue-500 uppercase">Diretor(a) Responsável</p>
-                    <p className="text-sm font-black text-blue-900">{school.principalName || 'Não Informado'}</p>
-                    {school.principalEmail && <p className="text-[10px] text-blue-400 font-medium">{school.principalEmail}</p>}
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-0.5">Diretor(a) Responsável</p>
+                    <p className="text-base font-black text-slate-900">{school.principalName || 'Não Informado'}</p>
+                    {school.principalEmail && <p className="text-xs text-blue-700 font-bold mt-0.5">{school.principalEmail}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl">
+                <div className="flex items-center gap-5 p-5 bg-emerald-50/50 rounded-3xl border border-emerald-100 shadow-sm transition-all hover:bg-emerald-50">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center text-white text-2xl shadow-xl shadow-emerald-100">
                     <i className="fa-solid fa-phone"></i>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase">Contato Institucional</p>
-                    <p className="text-sm font-black text-emerald-900">{school.phone || '(00) 0000-0000'}</p>
-                    {school.email && <p className="text-[10px] text-emerald-400 font-medium">{school.email}</p>}
+                    <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-0.5">Contato Institucional</p>
+                    <p className="text-base font-black text-slate-900">{school.phone || '(00) 0000-0000'}</p>
+                    {school.email && <p className="text-xs text-emerald-700 font-bold mt-0.5">{school.email}</p>}
                   </div>
                 </div>
               </div>
 
               <div className="pt-4">
-                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <i className="fa-solid fa-comment-dots text-gray-300"></i> Observações Adicionais
+                <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <i className="fa-solid fa-comment-dots text-slate-300"></i> Observações Adicionais
                 </h4>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-xs text-gray-600 leading-relaxed italic">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-600 leading-relaxed italic">
                     {school.observations || 'Nenhuma observação interna cadastrada pela Secretaria.'}
                   </p>
                 </div>
@@ -381,9 +389,9 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           <Table<any>
             data={schoolTeachers}
             columns={[
-              { header: 'NOME', accessor: (u) => <span className="font-bold text-gray-800">{u.name}</span> },
+              { header: 'NOME', accessor: (u) => <span className="font-bold text-slate-800">{u.name}</span> },
               { header: 'E-MAIL', accessor: (u) => u.email || 'N/A' },
-              { header: 'STATUS', accessor: (u) => u.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-gray-400 uppercase text-[10px]">Inativo</span> }
+              { header: 'STATUS', accessor: (u) => u.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-slate-600 uppercase text-[10px]">Inativo</span> }
             ]}
           />
         );
@@ -392,7 +400,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           <Table<Student>
             data={schoolStudents}
             columns={[
-              { header: 'ALUNO', accessor: (s) => <span className="font-bold text-gray-800">{s.name}</span> },
+              { header: 'ALUNO', accessor: (s) => <span className="font-bold text-slate-800">{s.name}</span> },
               { header: 'RA', accessor: 'ra' },
               { header: 'DEFICIÊNCIA', accessor: 'deficiency' },
               { header: 'AEE', accessor: (s) => s.aee ? <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black uppercase">SIM</span> : 'NÃO' }
@@ -437,7 +445,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
             {/* Seção 1: Profissionais Mediadores */}
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xs font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                <h3 className="text-slate-900 font-black uppercase tracking-[0.2em] flex items-center gap-2">
                   <i className="fa-solid fa-user-doctor"></i> Quadro de Mediadores Profissionais
                 </h3>
                 {user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN ? (
@@ -452,58 +460,58 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
               </div>
 
               {isAddingMediator && (
-                <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-200 shadow-inner animate-in fade-in slide-in-from-top-4 duration-500 mb-8">
+                <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200 shadow-inner animate-in fade-in slide-in-from-top-4 duration-500 mb-8">
                   <form onSubmit={handleSaveMediator} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome Completo do Mediador *</label>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Nome Completo do Mediador *</label>
                         <input
                           type="text"
                           value={newMediator.name}
                           onChange={(e) => setNewMediator({ ...newMediator, name: e.target.value })}
                           placeholder="Nome do profissional"
-                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CPF *</label>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">CPF *</label>
                         <input
                           type="text"
                           value={newMediator.cpf}
                           onChange={(e) => setNewMediator({ ...newMediator, cpf: e.target.value.replace(/\D/g, '') })}
                           placeholder="000.000.000-00"
-                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contato (Tel/Email) *</label>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Contato (Tel/Email) *</label>
                         <input
                           type="text"
                           value={newMediator.contact}
                           onChange={(e) => setNewMediator({ ...newMediator, contact: e.target.value })}
                           placeholder="(00) 00000-0000 ou email@exemplo.com"
-                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Turma Atribuída (Opcional)</label>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Turma Atribuída (Opcional)</label>
                         <select
                           value={newMediator.classId}
                           onChange={(e) => setNewMediator({ ...newMediator, classId: e.target.value })}
-                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none"
                         >
                           <option value="">Nenhuma turma vinculada</option>
                           {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </div>
                       <div className="md:col-span-2 space-y-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Observações</label>
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Observações</label>
                         <input
                           type="text"
                           value={newMediator.observations}
                           onChange={(e) => setNewMediator({ ...newMediator, observations: e.target.value })}
                           placeholder="Informações adicionais, especialidades ou restrições..."
-                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                         />
                       </div>
                     </div>
@@ -527,21 +535,21 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                     accessor: (m) => (
                       <button 
                         onClick={() => setSelectedMediatorId(m.id)}
-                        className={`font-bold text-left transition-all hover:underline ${selectedMediatorId === m.id ? 'text-indigo-600' : 'text-gray-800'}`}
+                        className={`font-bold text-left transition-all hover:underline ${selectedMediatorId === m.id ? 'text-indigo-600' : 'text-slate-800'}`}
                       >
                         {m.name}
                       </button>
                     ) 
                   },
                   { header: 'E-MAIL/CONTATO', accessor: (m) => m.email || 'N/A' },
-                  { header: 'STATUS', accessor: (m) => m.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-gray-400 uppercase text-[10px]">Inativo</span> }
+                  { header: 'STATUS', accessor: (m) => m.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-slate-600 uppercase text-[10px]">Inativo</span> }
                 ]}
               />
             </div>
 
             {/* Seção 2: Registros de Mediação */}
-            <div className="space-y-6 pt-12 border-t border-gray-100">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+            <div className="space-y-6 pt-12 border-t border-slate-100">
+              <h3 className="text-xs font-black text-slate-600 uppercase tracking-[0.2em] flex items-center gap-2">
                 <i className="fa-solid fa-clipboard-list"></i> Histórico de Atendimentos e Registros
               </h3>
               <Table<MediationRecord>
@@ -557,13 +565,13 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
 
               {/* Gráfico de Evolução do Mediador */}
               {selectedMediatorId && (
-                <div className="mt-12 bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="mt-12 bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="flex items-center justify-between mb-8">
                     <div>
-                      <h3 className="text-xs font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <h3 className="text-slate-900 font-black uppercase tracking-[0.2em] flex items-center gap-2">
                         <i className="fa-solid fa-chart-line"></i> Evolução Temporal do Mediador
                       </h3>
-                      <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase">
+                      <p className="text-[10px] font-medium text-slate-600 mt-1 uppercase">
                         {schoolMediators.find(m => m.id === selectedMediatorId)?.name} · Desempenho em Atendimentos
                       </p>
                     </div>
@@ -635,9 +643,9 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                       </ResponsiveContainer>
                     </div>
                   ) : (
-                    <div className="h-[200px] flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-dashed border-gray-100">
-                      <i className="fa-solid fa-chart-column text-gray-100 text-4xl mb-4"></i>
-                      <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Nenhum dado disponível para evolução</p>
+                    <div className="h-[200px] flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-dashed border-slate-100">
+                      <i className="fa-solid fa-chart-column text-slate-100 text-4xl mb-4"></i>
+                      <p className="text-slate-600 text-sm font-bold uppercase tracking-widest">Nenhum dado disponível para evolução</p>
                     </div>
                   )}
                 </div>
@@ -681,10 +689,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                <h3 className="text-blue-900 font-black uppercase tracking-[0.2em] flex items-center gap-2">
                   <i className="fa-solid fa-key"></i> Credenciais de Acesso da Escola
                 </h3>
-                <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase">Controle de acessos dos usuários da unidade</p>
+                <p className="text-[10px] font-medium text-slate-600 mt-1 uppercase">Controle de acessos dos usuários da unidade</p>
               </div>
               <button
                 onClick={() => setIsAddingCredential(!isAddingCredential)}
@@ -700,37 +708,50 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                 <form onSubmit={handleSaveCredential} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome do Responsável / Usuário *</label>
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Nome do Responsável / Usuário *</label>
                       <input
                         type="text"
                         required
                         value={newCredential.name}
                         onChange={(e) => setNewCredential({ ...newCredential, name: e.target.value })}
                         placeholder="Ex: Direção / Secretaria da Escola"
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">E-mail de Acesso *</label>
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">E-mail de Acesso *</label>
                       <input
                         type="email"
                         required
                         value={newCredential.email}
                         onChange={(e) => setNewCredential({ ...newCredential, email: e.target.value })}
                         placeholder="email@escola.com"
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Senha Provisória *</label>
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Senha Provisória *</label>
                       <input
                         type="password"
                         required
                         value={newCredential.password}
                         onChange={(e) => setNewCredential({ ...newCredential, password: e.target.value })}
                         placeholder="******"
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Perfil de Acesso *</label>
+                      <select
+                        required
+                        value={newCredential.profile}
+                        onChange={(e) => setNewCredential({ ...newCredential, profile: e.target.value as any })}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none"
+                      >
+                        <option value="escola">Login Geral da Escola</option>
+                        <option value="professor">Perfil: Professor</option>
+                        <option value="mediador">Perfil: Mediador</option>
+                      </select>
                     </div>
                   </div>
                   <div className="flex justify-end pt-4">
@@ -757,10 +778,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                   header: 'USUÁRIO', 
                   accessor: (u) => (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600 text-sm">
                         <i className="fa-solid fa-user-gear"></i>
                       </div>
-                      <span className="font-bold text-gray-800">{u.name}</span>
+                      <span className="font-bold text-slate-800">{u.name}</span>
                     </div>
                   ) 
                 },
@@ -773,13 +794,25 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                       Ativo
                     </span>
                   ) 
+                },
+                {
+                  header: 'PERFIL',
+                  accessor: (u) => (
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
+                      u.profile === UserProfile.ESCOLA ? 'bg-blue-50 text-blue-600' :
+                      u.profile === UserProfile.PROFESSOR ? 'bg-emerald-50 text-emerald-600' :
+                      'bg-indigo-50 text-indigo-600'
+                    }`}>
+                      {u.profile}
+                    </span>
+                  )
                 }
               ]}
             />
             {schoolCredentials.length === 0 && !isAddingCredential && (
-              <div className="py-12 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
-                <i className="fa-solid fa-shield-halved text-gray-200 text-4xl mb-3"></i>
-                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest">Nenhuma credencial cadastrada para esta unidade.</p>
+              <div className="py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                <i className="fa-solid fa-shield-halved text-slate-200 text-4xl mb-3"></i>
+                <p className="text-slate-600 text-xs font-medium uppercase tracking-widest">Nenhuma credencial cadastrada para esta unidade.</p>
               </div>
             )}
           </div>
@@ -787,8 +820,8 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
       default:
         return (
           <div className="py-20 text-center space-y-4">
-            <i className="fa-solid fa-clock-rotate-left text-gray-200 text-5xl"></i>
-            <p className="text-gray-400 text-sm italic">Dados históricos em processamento para esta unidade.</p>
+            <i className="fa-solid fa-clock-rotate-left text-slate-200 text-5xl"></i>
+            <p className="text-slate-600 text-sm italic">Dados históricos em processamento para esta unidade.</p>
           </div>
         );
     }
@@ -797,10 +830,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
       {/* Header da Escola */}
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-6">
           {user.profile !== UserProfile.DIRETOR && (
-            <button onClick={onBack} className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+            <button onClick={onBack} className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-all">
               <i className="fa-solid fa-arrow-left"></i>
             </button>
           )}
@@ -809,18 +842,18 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
               <i className="fa-solid fa-school"></i>
             </div>
             <div>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tighter">{school.name}</h2>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter">{school.name}</h2>
               <div className="flex flex-wrap items-center gap-y-2 gap-x-4 mt-1">
                 <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-1.5">
                   <i className="fa-solid fa-fingerprint text-[8px]"></i>
                   INEP: {school.inep}
                 </span>
-                <span className="w-1 h-1 rounded-full bg-gray-200 hidden sm:block"></span>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block"></span>
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
                   <i className="fa-solid fa-location-dot text-[8px]"></i>
                   {school.address}
                 </span>
-                <span className="w-1 h-1 rounded-full bg-gray-200 hidden sm:block"></span>
+                <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block"></span>
                 <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${school.active !== false ? 'text-emerald-500' : 'text-rose-500'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${school.active !== false ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
                   {school.active !== false ? 'Operacional / Ativa' : 'Inativa'}
@@ -838,37 +871,38 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           { label: 'PROFESSORES', count: dynamicStats.professores, icon: 'fa-chalkboard-user', color: 'emerald' },
           { label: 'MEDIADORES', count: dynamicStats.mediadores, icon: 'fa-hand-holding-heart', color: 'indigo' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div key={stat.label} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
             {dynamicStats.loading && (
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center backdrop-blur-[1px] z-10">
-                <i className="fa-solid fa-circle-notch fa-spin text-gray-300"></i>
+                <i className="fa-solid fa-circle-notch fa-spin text-slate-300"></i>
               </div>
             )}
             <div className={`w-14 h-14 rounded-2xl bg-${stat.color}-50 text-${stat.color}-500 flex items-center justify-center text-2xl`}>
               <i className={`fa-solid ${stat.icon}`}></i>
             </div>
             <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
-              <h3 className="text-2xl font-black text-gray-800">{stat.count}</h3>
+              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{stat.label}</p>
+              <h3 className="text-2xl font-black text-slate-800">{stat.count}</h3>
             </div>
           </div>
         ))}
       </div>
 
       {/* Tabs Internas */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
-        <div className="flex overflow-x-auto bg-gray-50/50 border-b border-gray-100 custom-scrollbar">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+        <div className="flex overflow-x-auto bg-slate-50 border-b border-slate-200 custom-scrollbar shadow-inner">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-b-2 flex items-center gap-2 ${activeSubTab === tab.id
-                ? 'border-blue-600 text-blue-600 bg-white'
-                : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100/50'
+              className={`px-8 py-5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-b-4 flex items-center gap-3 relative ${activeSubTab === tab.id
+                ? 'border-blue-700 text-blue-800 bg-white shadow-sm z-10'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 opacity-70 hover:opacity-100'
                 }`}
             >
-              <i className={`fa-solid ${tab.icon} text-xs`}></i>
+              <i className={`fa-solid ${tab.icon} text-sm ${activeSubTab === tab.id ? 'text-blue-700' : 'text-slate-400'}`}></i>
               {tab.label}
+              {activeSubTab === tab.id && <span className="absolute bottom-0 left-0 right-0 h-1 bg-blue-700 rounded-t-full"></span>}
             </button>
           ))}
         </div>
@@ -883,18 +917,18 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setViewingReport(null)}></div>
           <div className="relative bg-white w-full max-w-3xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
-            <div className="p-8 border-b border-gray-100 bg-blue-50/30 flex items-center justify-between">
+            <div className="p-8 border-b border-slate-100 bg-blue-50/30 flex items-center justify-between">
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl shadow-xl shadow-blue-100">
                   <i className="fa-solid fa-file-invoice"></i>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">{viewingReport.title}</h3>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">{viewingReport.title}</h3>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-widest">
                       Tipo: {viewingReport.type}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                     <span className={`text-[10px] font-black uppercase tracking-widest ${viewingReport.status === 'finalizado' ? 'text-emerald-600' : 'text-amber-600'
                       }`}>
                       Status: {viewingReport.status}
@@ -904,7 +938,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
               </div>
               <button
                 onClick={() => setViewingReport(null)}
-                className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm"
+                className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-600 hover:text-rose-500 hover:border-rose-100 transition-all shadow-sm"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
@@ -913,22 +947,22 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-8">
               <div className="grid grid-cols-2 gap-6">
-                <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Última Atualização</p>
-                  <p className="text-sm font-bold text-gray-800">
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Última Atualização</p>
+                  <p className="text-sm font-bold text-slate-800">
                     {new Date(viewingReport.updatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
-                <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Unidade Escolar</p>
-                  <p className="text-sm font-bold text-gray-800">{school.name}</p>
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Unidade Escolar</p>
+                  <p className="text-sm font-bold text-slate-800">{school.name}</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] border-b border-blue-50 pb-2">Conteúdo do Documento</h4>
-                <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-inner min-h-[200px]">
-                  <p className="text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-inner min-h-[200px]">
+                  <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
                     {viewingReport.description || "Nenhum conteúdo adicional disponível para este registro histórico."}
                   </p>
                 </div>
@@ -948,10 +982,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="p-8 border-t border-gray-100 bg-gray-50 flex justify-end gap-4">
+            <div className="p-8 border-t border-slate-100 bg-slate-50 flex justify-end gap-4">
               <button
                 onClick={() => setViewingReport(null)}
-                className="px-8 py-3.5 bg-white border border-gray-200 text-gray-500 font-black uppercase text-[10px] tracking-widest hover:bg-gray-100 rounded-2xl transition-all shadow-sm"
+                className="px-8 py-3.5 bg-white border border-slate-200 text-slate-600 font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 rounded-2xl transition-all shadow-sm"
               >
                 Fechar Visualização
               </button>

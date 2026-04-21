@@ -17,30 +17,30 @@ interface TableProps<T> {
 function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRowClick }: TableProps<T>) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
+      <table className="w-full text-left border-separate border-spacing-0 shadow-sm rounded-2xl overflow-hidden">
         <thead>
-          <tr className="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 transition-colors">
+          <tr className="bg-slate-800 border-b-2 border-slate-900 transition-colors">
             {columns.map((col, i) => (
-              <th key={i} className={`px-6 py-4 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest ${col.className || ''}`}>
+              <th key={i} className={`px-6 py-5 text-[11px] font-black text-white uppercase tracking-[0.2em] ${col.className || ''}`}>
                 {col.header}
               </th>
             ))}
             {(onEdit || onDelete) && (
-              <th className="px-6 py-4 text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest text-right">
+              <th className="px-6 py-5 text-[11px] font-black text-white uppercase tracking-[0.2em] text-right">
                 Ações
               </th>
             )}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+        <tbody className="bg-white">
           {data.map((item) => (
             <tr 
               key={item.id} 
               onClick={() => onRowClick?.(item)}
-              className={`hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors group ${onRowClick ? 'cursor-pointer' : ''}`}
+              className={`border-b border-slate-100 last:border-0 odd:bg-white even:bg-slate-50/80 hover:bg-blue-50/50 transition-all group ${onRowClick ? 'cursor-pointer' : ''}`}
             >
               {columns.map((col, i) => (
-                <td key={i} className={`px-6 py-4 text-sm text-gray-600 dark:text-slate-300 transition-colors ${col.className || ''}`}>
+                <td key={i} className={`px-6 py-5 text-sm text-slate-900 font-bold tracking-tight transition-colors ${col.className || ''}`}>
                   {typeof col.accessor === 'function' ? col.accessor(item) : (item[col.accessor] as React.ReactNode)}
                 </td>
               ))}
