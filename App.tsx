@@ -330,6 +330,7 @@ export default function App() {
       grade: s.grade || '',
       classroom: s.classroom || '',
       birthDate: s.birth_date,
+      notas: s.notas || {},
       year: s.enrollment_year || s.year || 0
     })) as Student[]);
 
@@ -2570,25 +2571,6 @@ export default function App() {
 
         return (
           <div className="space-y-6">
-            {/* Sub-abas exclusivas para o Diretor */}
-            {user.profile === UserProfile.DIRETOR && (
-              <div className="flex bg-white p-1 rounded-2xl border border-gray-100 w-fit shadow-sm">
-                <button
-                  onClick={() => setTeacherSubTab('list')}
-                  className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${teacherSubTab === 'list' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  Corpo Docente
-                </button>
-                <button
-                  onClick={() => setTeacherSubTab('records')}
-                  className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${teacherSubTab === 'records' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  Registros Pedagógicos
-                </button>
-              </div>
-            )}
-
-            {teacherSubTab === 'list' ? (
               <ModuleWrapper
                 title="Corpo Docente"
                 description="Visualização e cadastro dos professores regentes da unidade escolar."
@@ -2641,15 +2623,6 @@ export default function App() {
                   ]}
                 />
               </ModuleWrapper>
-            ) : (
-              <DirectorTeacherRecords
-                user={user}
-                lessonPlans={lessonPlans}
-                usersList={usersList}
-                classes={classes}
-                students={students}
-              />
-            )}
           </div>
         );
 
@@ -2674,16 +2647,6 @@ export default function App() {
 
       case 'alunos':
         if (user.profile === UserProfile.SECRETARIA) return null;
-        if (user.profile === UserProfile.PROFESSOR) {
-          const teacherClasses = classes.filter(c => c.teacherId === user.id);
-          const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
-          return <TeacherStudents students={teacherStudents} classes={teacherClasses} attendances={attendances} onSaveAttendance={handleSaveAttendance} onSaveStudentRecord={handleSaveStudentRecord} currentUser={user} />;
-        }
-        if (user.profile === UserProfile.MEDIADOR) {
-          const mediatorStudents = students.filter(s => user.studentIds?.includes(s.id));
-          const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
-          return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} />;
-        }
 
         if (selectedStudentIdForView) {
           const student = students.find(s => s.id === selectedStudentIdForView);
@@ -2695,9 +2658,21 @@ export default function App() {
                 mediator={usersList.find(u => u.id === student.mediatorId)}
                 regentTeacher={usersList.find(u => u.id === student.regentTeacherId)}
                 onBack={() => setSelectedStudentIdForView(null)}
+                currentUser={user}
               />
             );
           }
+        }
+
+        if (user.profile === UserProfile.PROFESSOR) {
+          const teacherClasses = classes.filter(c => c.teacherId === user.id);
+          const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
+          return <TeacherStudents students={teacherStudents} classes={teacherClasses} attendances={attendances} onSaveAttendance={handleSaveAttendance} onSaveStudentRecord={handleSaveStudentRecord} currentUser={user} onViewProfile={setSelectedStudentIdForView} />;
+        }
+        if (user.profile === UserProfile.MEDIADOR) {
+          const mediatorStudents = students.filter(s => user.studentIds?.includes(s.id));
+          const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
+          return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} />;
         }
 
         const filteredStudents = user.profile === UserProfile.DIRETOR

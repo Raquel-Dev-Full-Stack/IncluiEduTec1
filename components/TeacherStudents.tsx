@@ -10,6 +10,7 @@ interface TeacherStudentsProps {
   onSaveAttendance: (attendance: Omit<Attendance, 'id'>) => void;
   onSaveStudentRecord: (record: Partial<StudentRecord>) => void;
   currentUser: User;
+  onViewProfile?: (studentId: string) => void;
 }
 
 const TeacherStudents: React.FC<TeacherStudentsProps> = ({
@@ -18,7 +19,8 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
   attendances,
   onSaveAttendance,
   onSaveStudentRecord,
-  currentUser
+  currentUser,
+  onViewProfile
 }) => {
   const [feedback, setFeedback] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [showHistory, setShowHistory] = useState<string | null>(null);
@@ -410,6 +412,15 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                   >
                     <i className="fa-solid fa-pen-to-square"></i>
                   </button>
+                  {onViewProfile && (
+                    <button
+                      onClick={() => onViewProfile(s.id)}
+                      className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 group shadow-sm"
+                      title="Ver Perfil / Notas"
+                    >
+                      <i className="fa-solid fa-graduation-cap"></i>
+                    </button>
+                  )}
                 </div>
               )
             }

@@ -1,5 +1,7 @@
-import React from 'react';
-import { Student, Class, User, Guardian } from '../types';
+import React, { useState } from 'react';
+import { Student, Class, User, Guardian, UserProfile } from '../types';
+import { supabase } from '../lib/supabaseClient';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface StudentDetailsViewProps {
   student: Student;
@@ -7,9 +9,93 @@ interface StudentDetailsViewProps {
   mediator: User | undefined;
   regentTeacher?: User;
   onBack: () => void;
+  currentUser?: User;
 }
 
-const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studentClass, mediator, regentTeacher, onBack }) => {
+const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studentClass, mediator, regentTeacher, onBack, currentUser }) => {
+  const [notas, setNotas] = useState<Record<string, any>>(student.notas || {});
+  const [isEditingNotas, setIsEditingNotas] = useState(false);
+  const [selectedBimestre, setSelectedBimestre] = useState('1º_bimestre');
+  const [editForm, setEditForm] = useState({ subject: '', grade: '', obs: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const bimesters = ['1º_bimestre', '2º_bimestre', '3º_bimestre', '4º_bimestre'];
+
+  const getNotaValue = (val: any) => typeof val === 'object' && val !== null ? Number(val.nota || val.Nota || 0) : Number(val || 0);
+  const getNotaObs = (val: any) => typeof val === 'object' && val !== null ? val.observacao || val.obs || val.Observações || '' : '';
+
+  const chartData = bimesters.map(bim => {
+    const bimData = notas[bim] || {};
+    const subjects = Object.keys(bimData);
+    if (subjects.length === 0) return { name: bim.replace('_', ' '), media: null };
+    
+    const sum = subjects.reduce((acc, sub) => acc + getNotaValue(bimData[sub]), 0);
+    return { name: bim.replace('_', ' '), media: Number((sum / subjects.length).toFixed(1)) };
+  });
+
+  const getAnnualAverage = () => {
+    const validMedias = chartData.filter(d => d.media !== null).map(d => d.media!);
+    if (validMedias.length === 0) return { avg: 0, count: 0 };
+    const sum = validMedias.reduce((a, b) => a + b, 0);
+    return { avg: Number((sum / validMedias.length).toFixed(1)), count: validMedias.length };
+  };
+
+  const { avg: annualAvg, count: validBimestersCount } = getAnnualAverage();
+  const finalStatus = validBimestersCount === 0 ? 'Sem notas' : (annualAvg >= 6.0 ? 'Aprovado' : 'Recuperação');
+
+  const handleAddNota = async () => {
+    if (!editForm.subject || !editForm.grade) return;
+    setIsSaving(true);
+    
+    const newNotas = { ...notas };
+    if (!newNotas[selectedBimestre]) newNotas[selectedBimestre] = {};
+    
+    newNotas[selectedBimestre][editForm.subject] = {
+      nota: Number(editForm.grade),
+      obs: editForm.obs
+    };
+
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ notas: newNotas })
+        .eq('id', student.id);
+
+      if (error) throw error;
+      
+      setNotas(newNotas);
+      setEditForm({ subject: '', grade: '', obs: '' });
+      // Updates local App state if passed down, but for now it's okay because StudentDetailsView fetches initially.
+      student.notas = newNotas;
+    } catch (err) {
+      console.error('Erro ao salvar nota:', err);
+      alert('Erro ao salvar nota.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteNota = async (subject: string) => {
+    if (!confirm(`Deseja remover a nota de ${subject}?`)) return;
+    
+    const newNotas = { ...notas };
+    delete newNotas[selectedBimestre][subject];
+    
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ notas: newNotas })
+        .eq('id', student.id);
+
+      if (error) throw error;
+      setNotas(newNotas);
+      student.notas = newNotas;
+    } catch (err) {
+      console.error('Erro ao remover nota:', err);
+      alert('Erro ao remover nota.');
+    }
+  };
+
   const calculateAge = (birthDate?: string) => {
     if (!birthDate) return 'N/A';
     const birth = new Date(birthDate);
@@ -280,6 +366,161 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 </div>
                 <span className="text-xs font-bold text-gray-800 dark:text-slate-200">{formatDate(student.last_monitoring_at) || 'Sem data'}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nova Seção: Evolução do Aluno */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 mt-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center">
+              <i className="fa-solid fa-chart-line"></i>
+            </div>
+            Evolução do Aluno
+          </h3>
+          {(currentUser?.profile === UserProfile.PROFESSOR || currentUser?.profile === UserProfile.ADMIN) && (
+            <button
+              onClick={() => setIsEditingNotas(!isEditingNotas)}
+              className="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              {isEditingNotas ? 'Fechar Edição' : 'Lançar Notas'}
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Seletor de Bimestre */}
+            <div className="flex gap-2">
+              {bimesters.map(bim => (
+                <button
+                  key={bim}
+                  onClick={() => setSelectedBimestre(bim)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedBimestre === bim ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-400'}`}
+                >
+                  {bim.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            {/* Tabela de Notas */}
+            <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-slate-800">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-slate-800/50">
+                    <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Disciplina</th>
+                    <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Nota</th>
+                    <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Observações</th>
+                    {isEditingNotas && <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Ações</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(notas[selectedBimestre] || {}).map(sub => {
+                    const val = notas[selectedBimestre][sub];
+                    return (
+                      <tr key={sub} className="border-b border-gray-50 dark:border-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
+                        <td className="p-4 font-bold text-gray-800 dark:text-slate-200 text-sm">{sub}</td>
+                        <td className="p-4 font-black text-indigo-600 dark:text-indigo-400">{getNotaValue(val).toFixed(1)}</td>
+                        <td className="p-4 text-gray-500 dark:text-slate-400 text-xs italic">{getNotaObs(val) || '-'}</td>
+                        {isEditingNotas && (
+                          <td className="p-4">
+                            <button onClick={() => handleDeleteNota(sub)} className="text-rose-500 hover:text-rose-600 text-sm">
+                              <i className="fa-solid fa-trash"></i>
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                  {Object.keys(notas[selectedBimestre] || {}).length === 0 && !isEditingNotas && (
+                    <tr>
+                      <td colSpan={3} className="p-8 text-center text-gray-400 text-xs uppercase tracking-widest font-bold">
+                        Nenhuma nota lançada
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Formulário de Edição */}
+            {isEditingNotas && (
+              <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 space-y-4">
+                <h4 className="text-xs font-black text-indigo-800 dark:text-indigo-400 uppercase tracking-widest">Adicionar / Editar Nota</h4>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input
+                    type="text"
+                    placeholder="Disciplina (ex: Matemática)"
+                    value={editForm.subject}
+                    onChange={e => setEditForm({ ...editForm, subject: e.target.value })}
+                    className="flex-1 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    placeholder="Nota (0-10)"
+                    value={editForm.grade}
+                    onChange={e => setEditForm({ ...editForm, grade: e.target.value })}
+                    className="w-full md:w-32 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Observações (Opcional)"
+                  value={editForm.obs}
+                  onChange={e => setEditForm({ ...editForm, obs: e.target.value })}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleAddNota}
+                  disabled={isSaving || !editForm.subject || !editForm.grade}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all"
+                >
+                  {isSaving ? 'Salvando...' : 'Salvar Nota'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            {/* Resumo Geral */}
+            <div className="bg-gray-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-gray-100 dark:border-slate-800">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Resumo Geral</h4>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-bold text-gray-600 dark:text-slate-300">Média Anual</span>
+                <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{annualAvg.toFixed(1)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-gray-600 dark:text-slate-300">Situação Parcial</span>
+                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                  finalStatus === 'Aprovado' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                  finalStatus === 'Recuperação' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                  'bg-gray-200 text-gray-500 dark:bg-slate-700'
+                }`}>
+                  {finalStatus}
+                </span>
+              </div>
+            </div>
+
+            {/* Gráfico de Evolução */}
+            <div className="bg-gray-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-gray-100 dark:border-slate-800 h-64">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Evolução de Média</h4>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#4f46e5', fontWeight: 'bold' }}
+                  />
+                  <Line type="monotone" dataKey="media" stroke="#4f46e5" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
