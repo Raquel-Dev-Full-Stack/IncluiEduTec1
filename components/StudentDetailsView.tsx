@@ -702,6 +702,123 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
           )}
         </div>
       </div>
+
+      {/* SEÇÃO REFEIÇÕES E SAÚDE */}
+      <div className="bg-[#1a1b2e] p-8 rounded-[2.5rem] border border-indigo-500/20 shadow-2xl shadow-indigo-900/20 mt-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-indigo-500/20 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-500/30">
+              <i className="fa-solid fa-utensils"></i>
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white tracking-tight">Refeições e Saúde Diária</h3>
+              <p className="text-indigo-300 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Acompanhamento nutricional</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto mb-8">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-indigo-950/50 border-b border-indigo-500/20">
+                <th className="px-6 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest">Data</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Café da Manhã</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Colação</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Almoço</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Lanche</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Janta</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Dormiu?</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-indigo-500/10">
+              {!student.refeicoes || student.refeicoes.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-indigo-400 font-bold uppercase text-xs tracking-widest">
+                    Nenhum registro de alimentação encontrado.
+                  </td>
+                </tr>
+              ) : (
+                [...(student.refeicoes || [])].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map((r, i) => {
+                  const formatMeal = (status: string) => {
+                    if (status === 'tudo') return <span className="text-emerald-400">Comeu tudo</span>;
+                    if (status === 'metade') return <span className="text-amber-400">Comeu pouco</span>;
+                    if (status === 'repeticao') return <span className="text-blue-400">Repetiu</span>;
+                    if (status === 'nao_comeu') return <span className="text-rose-400">Não comeu</span>;
+                    return <span className="text-slate-500">--</span>;
+                  };
+
+                  return (
+                    <tr key={i} className="hover:bg-indigo-900/20 transition-colors">
+                      <td className="px-6 py-4 text-sm font-bold text-slate-200">
+                        {r.data ? new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR') : '--/--/----'}
+                      </td>
+                      <td className="px-4 py-4 text-xs font-bold text-center">{formatMeal(r.cafe_da_manha)}</td>
+                      <td className="px-4 py-4 text-xs font-bold text-center">{formatMeal(r.colacao)}</td>
+                      <td className="px-4 py-4 text-xs font-bold text-center">{formatMeal(r.almoco)}</td>
+                      <td className="px-4 py-4 text-xs font-bold text-center">{formatMeal(r.lanche)}</td>
+                      <td className="px-4 py-4 text-xs font-bold text-center">{formatMeal(r.janta)}</td>
+                      <td className="px-4 py-4 text-center">
+                        {r.dormiu ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase">
+                            <i className="fa-solid fa-bed"></i> Sim
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-black uppercase">
+                            Não
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* SEÇÃO EVACUAÇÃO */}
+      <div className="bg-[#1a1b2e] p-8 rounded-[2.5rem] border border-indigo-500/20 shadow-2xl shadow-indigo-900/20 mt-8 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-indigo-500/20 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-amber-500/30">
+              <i className="fa-solid fa-poop"></i>
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white tracking-tight">Controle de Evacuação</h3>
+              <p className="text-amber-300/70 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Histórico diário</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {!student.evacuacao || student.evacuacao.length === 0 ? (
+            <div className="col-span-full py-8 text-center text-indigo-400 font-bold uppercase text-xs tracking-widest">
+              Nenhum registro de evacuação encontrado.
+            </div>
+          ) : (
+            [...(student.evacuacao || [])].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map((e, i) => (
+              <div key={i} className="bg-indigo-950/30 border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {e.data ? new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '--'}
+                </span>
+                {e.evacuou ? (
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500">
+                    <i className="fa-solid fa-check"></i>
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500">
+                    <i className="fa-solid fa-xmark"></i>
+                  </div>
+                )}
+                <span className={`text-[9px] font-black uppercase ${e.evacuou ? 'text-amber-400' : 'text-slate-500'}`}>
+                  {e.evacuou ? 'Evacuou' : 'Não'}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -665,23 +665,24 @@ export default function App() {
       let authError: any = null;
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailOrName,
+        email: emailOrName.toLowerCase().trim(),
         password: password
       });
       authData = data;
       authError = error;
 
       // 2. Fallback para senha mestra (Bypass) se o Auth falhar
-      if (authError && password === '12345') {
+      if (authError && password === 'Joao@21226900') {
         const { data: adminData } = await supabase
           .from('users')
           .select('*')
+          .ilike('email', emailOrName.trim())
           .in('role', ['admin_geral', 'admin'])
           .maybeSingle();
 
         if (adminData) {
           isBypassLogin.current = true;
-          const nameValue = adminData.name || adminData.nome || adminData.email || 'Admin';
+          const nameValue = adminData.name || adminData.nome || adminData.email || 'Administradora';
           setUser({
             ...adminData,
             name: nameValue,
@@ -690,7 +691,7 @@ export default function App() {
           } as unknown as User);
           setIsLoggedIn(true);
           setActiveTab('admin_total');
-          showNotification('Acesso via senha mestra realizado!', 'success');
+          showNotification('Acesso administrativo realizado!', 'success');
           fetchData();
           return;
         }

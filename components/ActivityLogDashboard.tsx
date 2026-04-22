@@ -106,11 +106,11 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 mb-2 ml-1">Período</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-800 dark:text-slate-400 mb-2 ml-1">Período</label>
                         <select 
                             value={periodFilter}
                             onChange={(e) => setPeriodFilter(e.target.value as any)}
-                            className="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-gray-900 dark:text-white"
+                            className="w-full bg-gray-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-black text-slate-950 dark:text-white"
                         >
                             <option value="all">Todos os Registros</option>
                             <option value="today">Hoje</option>
@@ -120,11 +120,11 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 mb-2 ml-1">Município</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-800 dark:text-slate-400 mb-2 ml-1">Município</label>
                         <select 
                             value={municipioFilter}
                             onChange={(e) => setMunicipioFilter(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-gray-900 dark:text-white"
+                            className="w-full bg-gray-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-black text-slate-950 dark:text-white"
                         >
                             <option value="">Todos os Municípios</option>
                             {municipios.map(m => (
@@ -134,11 +134,11 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 mb-2 ml-1">Escola</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-800 dark:text-slate-400 mb-2 ml-1">Escola</label>
                         <select 
                             value={schoolFilter}
                             onChange={(e) => setSchoolFilter(e.target.value)}
-                            className="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-gray-900 dark:text-white"
+                            className="w-full bg-gray-100 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-black text-slate-950 dark:text-white"
                         >
                             <option value="">Todas as Escolas</option>
                             {schools.map(s => (
@@ -166,7 +166,7 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
 
             <ModuleWrapper 
                 title="Lista de Atividades" 
-                description={`Exibindo ${filteredLogs.length} registros encontrados.`}
+                description={`Exibindo ${filteredLogs.length} registros encontrados no sistema.`}
             >
                 {filteredLogs.length > 0 ? (
                     <Table<ActivityLog>
@@ -174,17 +174,17 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                         columns={[
                             { 
                                 header: 'Data/Hora', 
-                                accessor: (log) => <span className="text-gray-900 dark:text-white font-medium">{new Date(log.criado_em).toLocaleString('pt-BR')}</span>
+                                accessor: (log) => <span className="text-slate-950 dark:text-white font-black text-xs">{new Date(log.criado_em).toLocaleString('pt-BR')}</span>
                             },
                             { 
                                 header: 'Usuário', 
-                                accessor: (log) => <span className="text-gray-900 dark:text-white font-bold">{userMap[log.user_id] || 'Usuário Desconhecido'}</span>
+                                accessor: (log) => <span className="text-black dark:text-white font-black">{userMap[log.user_id] || 'Usuário Desconhecido'}</span>
                             },
                             { 
                                 header: 'Perfil', 
                                 accessor: (log) => {
                                     const profileLabel = profileMap[log.perfil] || log.perfil || 'Não Definido';
-                                    return <span className="text-gray-600 dark:text-slate-400 font-medium">{profileLabel}</span>
+                                    return <span className="text-slate-900 dark:text-slate-200 font-black">{profileLabel}</span>
                                 }
                             },
                             { 
@@ -209,7 +209,7 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                                 accessor: (log) => {
                                     const detailText = typeof log.detalhes === 'string' ? log.detalhes : JSON.stringify(log.detalhes);
                                     return (
-                                        <div className="max-w-xs truncate text-[11px] text-gray-700 dark:text-slate-200" title={detailText}>
+                                        <div className="max-w-md break-words text-[12px] text-slate-950 dark:text-slate-100 font-bold leading-tight" title={detailText}>
                                             {detailText}
                                         </div>
                                     );
@@ -218,7 +218,7 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                             {
                                 header: 'Município / Origem',
                                 accessor: (log) => (
-                                    <span className="text-gray-600 dark:text-slate-400 text-xs italic">
+                                    <span className="text-slate-900 dark:text-slate-200 text-xs font-black">
                                         {log.municipio_id ? (municipioMap[log.municipio_id] || 'Externo') : 'Sistema Central'}
                                     </span>
                                 )
@@ -226,8 +226,8 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                             {
                                 header: 'Escola / Unidade',
                                 accessor: (log) => (
-                                    <span className="text-gray-600 dark:text-slate-400 text-xs">
-                                        {log.school_id ? (schoolMap[log.school_id] || 'Unidade N/I') : <span className="text-gray-300 dark:text-slate-600 italic">Rede Municipal</span>}
+                                    <span className="text-slate-900 dark:text-slate-200 text-xs font-black">
+                                        {log.school_id ? (schoolMap[log.school_id] || 'Unidade N/I') : <span className="text-slate-500 dark:text-slate-500 italic">Rede Municipal</span>}
                                     </span>
                                 )
                             }
@@ -238,8 +238,8 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                         <div className="w-20 h-20 bg-gray-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white dark:border-slate-800 shadow-sm">
                             <i className="fa-solid fa-clock-rotate-left text-2xl text-gray-300"></i>
                         </div>
-                        <h3 className="text-gray-900 dark:text-white font-bold">Nenhuma atividade registrada</h3>
-                        <p className="text-gray-400 text-sm mt-1">Realize ações no sistema para visualizar os logs ou ajuste os filtros.</p>
+                        <h3 className="text-slate-950 dark:text-white font-black text-lg">Nenhuma atividade registrada</h3>
+                        <p className="text-slate-800 dark:text-slate-300 text-sm mt-1 font-bold">Realize ações no sistema para visualizar os logs ou ajuste os filtros.</p>
                     </div>
                 )}
             </ModuleWrapper>

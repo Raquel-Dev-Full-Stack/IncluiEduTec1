@@ -40,7 +40,7 @@ function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRo
               className={`border-b border-slate-100 last:border-0 odd:bg-white even:bg-slate-50/80 hover:bg-blue-50/50 transition-all group ${onRowClick ? 'cursor-pointer' : ''}`}
             >
               {columns.map((col, i) => (
-                <td key={i} className={`px-6 py-5 text-sm text-slate-900 font-bold tracking-tight transition-colors ${col.className || ''}`}>
+                <td key={i} className={`px-6 py-5 text-sm text-slate-950 dark:text-slate-100 font-bold tracking-tight transition-colors ${col.className || ''}`}>
                   {typeof col.accessor === 'function' ? col.accessor(item) : (item[col.accessor] as React.ReactNode)}
                 </td>
               ))}

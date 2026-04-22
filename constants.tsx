@@ -1,7 +1,7 @@
 import { UserProfile, User, School, Class, Student, Report, Meal, MediationRecord, BNCCSkill, LessonPlan, Message } from './types';
 
 export const MOCK_USERS: User[] = [
-  { id: '1', name: 'Ricardo Santos', email: 'ricardo@marica.rj.gov.br', profile: UserProfile.ADMIN, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', active: true },
+  { id: '1', name: 'Raquel Eliza', email: 'raquelelizabcd@gmail.com', profile: UserProfile.ADMIN, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', active: true },
   { id: '2', name: 'Ana Souza', email: 'ana.direcao@escola.br', profile: UserProfile.DIRETOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
   { id: '3', name: 'Carlos Lima', email: 'carlos.prof@escola.br', profile: UserProfile.PROFESSOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
   { id: '4', name: 'Mariana Silva', email: 'mariana.med@escola.br', profile: UserProfile.MEDIADOR, municipio_id: 'd9f0a1b2-c3d4-4e5f-a6b7-c8d9e0f1a2b3', schoolId: 's1', active: true },
@@ -50,7 +50,7 @@ export const MOCK_MESSAGES: Message[] = [
     remetente_id: '2',
     remetente_email: 'ana.direcao@escola.br',
     destinatario_id: '1',
-    destinatario_email: 'ricardo@marica.rj.gov.br',
+    destinatario_email: 'raquelelizabcd@gmail.com',
     conteudo: 'Bom dia. Gostaríamos de solicitar reforço na medição para o 3º ano da unidade Joana Benedicta.',
     data_envio: '2024-06-14T09:00:00Z',
     lido: false,
@@ -59,7 +59,7 @@ export const MOCK_MESSAGES: Message[] = [
   {
     id: 'msg_2',
     remetente_id: '1',
-    remetente_email: 'ricardo@marica.rj.gov.br',
+    remetente_email: 'raquelelizabcd@gmail.com',
     destinatario_id: '2',
     destinatario_email: 'ana.direcao@escola.br',
     conteudo: 'Recebido, Ana. Analisaremos o quadro de funcionários e daremos um retorno na próxima segunda.',
