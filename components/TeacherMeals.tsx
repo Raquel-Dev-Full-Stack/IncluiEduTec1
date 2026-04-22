@@ -8,6 +8,7 @@ interface TeacherMealsProps {
   meals: Meal[];
   onSaveMeal: (meal: Omit<Meal, 'id'>) => void;
   currentUser: User;
+  onUpdateStudentHealth?: (studentId: string, refeicoes: any[], evacuacao: any[]) => void;
 }
 
 const mealTypes = [
@@ -30,7 +31,8 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
   classes,
   meals,
   onSaveMeal,
-  currentUser
+  currentUser,
+  onUpdateStudentHealth
 }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -129,6 +131,48 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
     
     return Object.entries(groups);
   }, [viewingHistory, meals]);
+
+  const handleDailyRecordChange = (
+    studentId: string, 
+    field: 'cafe_da_manha' | 'colacao' | 'almoco' | 'lanche' | 'janta' | 'dormiu' | 'evacuou', 
+    value: string | boolean
+  ) => {
+    if (!onUpdateStudentHealth) return;
+    
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    let updatedRefeicoes = [...(student.refeicoes || [])];
+    let updatedEvacuacao = [...(student.evacuacao || [])];
+
+    const todayRefeicaoIndex = updatedRefeicoes.findIndex(r => r.data === selectedDate);
+    const todayEvacuacaoIndex = updatedEvacuacao.findIndex(e => e.data === selectedDate);
+
+    if (field === 'evacuou') {
+      if (todayEvacuacaoIndex >= 0) {
+        updatedEvacuacao[todayEvacuacaoIndex] = { ...updatedEvacuacao[todayEvacuacaoIndex], evacuou: value };
+      } else {
+        updatedEvacuacao.push({ data: selectedDate, evacuou: value });
+      }
+    } else if (field === 'dormiu') {
+      if (todayRefeicaoIndex >= 0) {
+        updatedRefeicoes[todayRefeicaoIndex] = { ...updatedRefeicoes[todayRefeicaoIndex], dormiu: value };
+      } else {
+        updatedRefeicoes.push({ data: selectedDate, cafe_da_manha: '', colacao: '', almoco: '', lanche: '', janta: '', dormiu: value });
+      }
+    } else {
+      if (todayRefeicaoIndex >= 0) {
+        updatedRefeicoes[todayRefeicaoIndex] = { ...updatedRefeicoes[todayRefeicaoIndex], [field]: value };
+      } else {
+        updatedRefeicoes.push({ data: selectedDate, cafe_da_manha: '', colacao: '', almoco: '', lanche: '', janta: '', dormiu: false, [field]: value });
+      }
+    }
+
+    onUpdateStudentHealth(studentId, updatedRefeicoes, updatedEvacuacao);
+    
+    setFeedback(`Registro diário atualizado!`);
+    setTimeout(() => setFeedback(null), 2000);
+  };
 
   const selectedStudentForHistory = students.find(s => s.id === viewingHistory);
 
@@ -418,6 +462,97 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
                     })}
                   </tr>
                 ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* NOVO: Registros Diários (Alimentação e Saúde) salvos em students.refeicoes e students.evacuacao */}
+      <div className="bg-[#1a1b2e] rounded-[3rem] border border-indigo-500/20 shadow-2xl shadow-indigo-900/20 overflow-hidden mt-8">
+        <div className="p-6 border-b border-indigo-500/20 bg-indigo-950/30 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30">
+            <i className="fa-solid fa-notes-medical"></i>
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-white tracking-tight">Registros Diários de Saúde e Alimentação</h2>
+            <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-widest">Controle direto no prontuário do aluno</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-indigo-950/50 border-b border-indigo-500/20">
+                <th className="px-6 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest min-w-[200px]">Aluno</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Café da Manhã</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Colação</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Almoço</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Lanche</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Janta</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Dormiu?</th>
+                <th className="px-4 py-5 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center min-w-[120px]">Evacuou?</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-indigo-500/10">
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center">
+                    <p className="text-indigo-400 font-bold uppercase text-xs tracking-widest">Nenhum aluno encontrado.</p>
+                  </td>
+                </tr>
+              ) : (
+                students.map((student) => {
+                  const todayRefeicao = (student.refeicoes || []).find(r => r.data === selectedDate) || {};
+                  const todayEvacuacao = (student.evacuacao || []).find(e => e.data === selectedDate) || {};
+                  
+                  return (
+                    <tr key={`daily-${student.id}`} className="hover:bg-indigo-900/20 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-bold text-gray-100 text-sm block">{student.name}</span>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase">RA: {student.ra}</span>
+                      </td>
+                      {['cafe_da_manha', 'colacao', 'almoco', 'lanche', 'janta'].map((field) => (
+                        <td key={field} className="px-2 py-4">
+                          <select 
+                            value={todayRefeicao[field] || ''}
+                            onChange={(e) => handleDailyRecordChange(student.id, field as any, e.target.value)}
+                            className="w-full bg-[#0f1021] border border-indigo-500/30 rounded-lg px-2 py-2 text-[10px] font-bold text-gray-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="">--</option>
+                            <option value="tudo">Comeu tudo</option>
+                            <option value="metade">Comeu pouco</option>
+                            <option value="repeticao">Repetiu</option>
+                            <option value="nao_comeu">Não comeu</option>
+                          </select>
+                        </td>
+                      ))}
+                      <td className="px-2 py-4 text-center">
+                        <div className="flex bg-[#0f1021] p-0.5 rounded-lg border border-indigo-500/30">
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'dormiu', true)}
+                            className={`flex-1 py-1 rounded-md text-[9px] font-black transition-all ${todayRefeicao.dormiu === true ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >SIM</button>
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'dormiu', false)}
+                            className={`flex-1 py-1 rounded-md text-[9px] font-black transition-all ${todayRefeicao.dormiu === false ? 'bg-rose-500 text-white shadow-sm' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >NÃO</button>
+                        </div>
+                      </td>
+                      <td className="px-2 py-4 text-center">
+                        <div className="flex bg-[#0f1021] p-0.5 rounded-lg border border-indigo-500/30">
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'evacuou', true)}
+                            className={`flex-1 py-1 rounded-md text-[9px] font-black transition-all ${todayEvacuacao.evacuou === true ? 'bg-purple-600 text-white shadow-sm' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >SIM</button>
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'evacuou', false)}
+                            className={`flex-1 py-1 rounded-md text-[9px] font-black transition-all ${todayEvacuacao.evacuou === false ? 'bg-purple-600 text-white shadow-sm' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >NÃO</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

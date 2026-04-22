@@ -161,6 +161,8 @@ export interface Student {
   created_at?: string;
   last_monitoring_at?: string;
   notas?: Record<string, Record<string, number>>;
+  refeicoes?: any[];
+  evacuacao?: any[];
 }
 
 export interface Attendance {

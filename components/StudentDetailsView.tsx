@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Student, Class, User, Guardian, UserProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -18,6 +18,33 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
   const [selectedBimestre, setSelectedBimestre] = useState('1º_bimestre');
   const [editForm, setEditForm] = useState({ subject: '', grade: '', obs: '' });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados para o Histórico do Mediador
+  const [historico, setHistorico] = useState<any[]>([]);
+  const [isEditingHistorico, setIsEditingHistorico] = useState(false);
+  const [historicoForm, setHistoricoForm] = useState({ date: new Date().toISOString().split('T')[0], observation: '' });
+  const [isSavingHistorico, setIsSavingHistorico] = useState(false);
+  const [mediatorStudentId, setMediatorStudentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHistorico = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('mediator_students')
+          .select('*')
+          .eq('student_id', student.id)
+          .limit(1);
+        
+        if (data && data.length > 0) {
+          setMediatorStudentId(data[0].id);
+          setHistorico(data[0].historico || []);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar histórico do mediador:', err);
+      }
+    };
+    fetchHistorico();
+  }, [student.id]);
 
   const bimesters = ['1º_bimestre', '2º_bimestre', '3º_bimestre', '4º_bimestre'];
 
@@ -93,6 +120,72 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
     } catch (err) {
       console.error('Erro ao remover nota:', err);
       alert('Erro ao remover nota.');
+    }
+  };
+
+  const handleAddHistorico = async () => {
+    if (!historicoForm.date || !historicoForm.observation) return;
+    setIsSavingHistorico(true);
+
+    const newRecord = {
+      id: crypto.randomUUID(),
+      date: historicoForm.date,
+      observation: historicoForm.observation,
+      mediatorName: currentUser?.name || 'Mediador',
+      createdAt: new Date().toISOString()
+    };
+
+    const newHistorico = [newRecord, ...historico].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    try {
+      if (mediatorStudentId) {
+        const { error } = await supabase
+          .from('mediator_students')
+          .update({ historico: newHistorico })
+          .eq('id', mediatorStudentId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('mediator_students')
+          .insert({
+            student_id: student.id,
+            mediator_id: currentUser?.id,
+            historico: newHistorico
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        if (data) setMediatorStudentId(data.id);
+      }
+      
+      setHistorico(newHistorico);
+      setHistoricoForm({ date: new Date().toISOString().split('T')[0], observation: '' });
+      setIsEditingHistorico(false);
+    } catch (err) {
+      console.error('Erro ao salvar histórico:', err);
+      alert('Erro ao salvar histórico do mediador.');
+    } finally {
+      setIsSavingHistorico(false);
+    }
+  };
+
+  const handleDeleteHistorico = async (id: string) => {
+    if (!confirm('Deseja remover este registro do histórico?')) return;
+    if (!mediatorStudentId) return;
+
+    const newHistorico = historico.filter(h => h.id !== id);
+
+    try {
+      const { error } = await supabase
+        .from('mediator_students')
+        .update({ historico: newHistorico })
+        .eq('id', mediatorStudentId);
+
+      if (error) throw error;
+      setHistorico(newHistorico);
+    } catch (err) {
+      console.error('Erro ao remover histórico:', err);
+      alert('Erro ao remover histórico.');
     }
   };
 
@@ -523,6 +616,90 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Nova Seção: Histórico do Mediador */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-slate-800 shadow-sm space-y-8 mt-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center">
+              <i className="fa-solid fa-clipboard-list"></i>
+            </div>
+            Histórico do Mediador
+          </h3>
+          {(currentUser?.profile === UserProfile.MEDIADOR || currentUser?.profile === UserProfile.ADMIN) && (
+            <button
+              onClick={() => setIsEditingHistorico(!isEditingHistorico)}
+              className="px-4 py-2 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              {isEditingHistorico ? 'Fechar Edição' : 'Novo Registro'}
+            </button>
+          )}
+        </div>
+
+        {/* Formulário de Adição de Registro */}
+        {isEditingHistorico && (
+          <div className="bg-purple-50/50 dark:bg-purple-900/10 p-6 rounded-2xl border border-purple-100 dark:border-purple-900/30 space-y-4">
+            <h4 className="text-xs font-black text-purple-800 dark:text-purple-400 uppercase tracking-widest">Adicionar Observação</h4>
+            <div className="flex flex-col gap-4">
+              <input
+                type="date"
+                value={historicoForm.date}
+                onChange={e => setHistoricoForm({ ...historicoForm, date: e.target.value })}
+                className="w-full md:w-48 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <textarea
+                placeholder="Descreva as observações pedagógicas e comportamentais do aluno..."
+                value={historicoForm.observation}
+                onChange={e => setHistoricoForm({ ...historicoForm, observation: e.target.value })}
+                rows={4}
+                className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              ></textarea>
+            </div>
+            <button
+              onClick={handleAddHistorico}
+              disabled={isSavingHistorico || !historicoForm.observation || !historicoForm.date}
+              className="px-6 py-3 bg-purple-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-purple-700 disabled:opacity-50 transition-all"
+            >
+              {isSavingHistorico ? 'Salvando...' : 'Salvar Registro'}
+            </button>
+          </div>
+        )}
+
+        {/* Lista Cronológica */}
+        <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 dark:before:via-slate-700 before:to-transparent">
+          {historico.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-xs uppercase tracking-widest font-bold">
+              Nenhum registro no histórico
+            </div>
+          ) : (
+            historico.map((record, idx) => (
+              <div key={record.id || idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white dark:border-slate-900 bg-purple-100 text-purple-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                  <i className="fa-solid fa-check text-xs"></i>
+                </div>
+                <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[10px] font-black text-purple-600 uppercase tracking-widest">
+                      {new Date(record.date).toLocaleDateString('pt-BR')}
+                    </div>
+                    {(currentUser?.profile === UserProfile.ADMIN || isEditingHistorico) && (
+                      <button onClick={() => handleDeleteHistorico(record.id)} className="text-gray-400 hover:text-rose-500 transition-colors">
+                        <i className="fa-solid fa-trash text-xs"></i>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-2">
+                    {record.mediatorName || 'Mediador'}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400 leading-relaxed italic">
+                    "{record.observation}"
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

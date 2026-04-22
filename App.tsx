@@ -885,6 +885,26 @@ export default function App() {
     });
   };
 
+  const handleUpdateStudentHealth = async (studentId: string, refeicoes: any[], evacuacao: any[]) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .update({ refeicoes, evacuacao })
+        .eq('id', studentId)
+        .select();
+
+      if (error) throw error;
+
+      if (data) {
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, refeicoes, evacuacao } : s));
+      }
+    } catch (error) {
+      console.error('Error saving student health:', error);
+      showNotification('Erro ao salvar registros de saúde.', 'error');
+    }
+  };
+
   const handleSaveMeal = async (mealData: any) => {
     if (!user) return;
     try {
@@ -2672,7 +2692,7 @@ export default function App() {
         if (user.profile === UserProfile.MEDIADOR) {
           const mediatorStudents = students.filter(s => user.studentIds?.includes(s.id));
           const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
-          return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} />;
+          return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} onViewProfile={setSelectedStudentIdForView} />;
         }
 
         const filteredStudents = user.profile === UserProfile.DIRETOR
@@ -2743,7 +2763,7 @@ export default function App() {
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
-          return <TeacherMeals students={teacherStudents} classes={teacherClasses} meals={meals} onSaveMeal={handleSaveMeal} currentUser={user} />;
+          return <TeacherMeals students={teacherStudents} classes={teacherClasses} meals={meals} onSaveMeal={handleSaveMeal} onUpdateStudentHealth={handleUpdateStudentHealth} currentUser={user} />;
         }
         return null;
 

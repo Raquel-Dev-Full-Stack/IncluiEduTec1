@@ -7,9 +7,10 @@ interface MediatorRecordsProps {
   studentRecords: StudentRecord[];
   students: Student[];
   classes: Class[];
+  onViewProfile?: (studentId: string) => void;
 }
 
-const MediatorRecords: React.FC<MediatorRecordsProps> = ({ records, studentRecords, students, classes }) => {
+const MediatorRecords: React.FC<MediatorRecordsProps> = ({ records, studentRecords, students, classes, onViewProfile }) => {
   const [activeTab, setActiveTab] = useState<'mediacao' | 'diario'>('mediacao');
   const [filterPeriod, setFilterPeriod] = useState<'week' | 'month' | 'year'>('week');
 
@@ -85,7 +86,14 @@ const MediatorRecords: React.FC<MediatorRecordsProps> = ({ records, studentRecor
                 <div className="md:w-64 flex-shrink-0 space-y-4">
                   <div className="space-y-1">
                     <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">{new Date(record.date).toLocaleDateString('pt-BR')}</p>
-                    <h4 className="text-base font-black text-gray-800 leading-tight">{students.find(s => s.id === record.studentId)?.name || 'N/A'}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-black text-gray-800 leading-tight">{students.find(s => s.id === record.studentId)?.name || 'N/A'}</h4>
+                      {onViewProfile && (
+                        <button onClick={() => onViewProfile(record.studentId)} className="text-indigo-600 hover:text-indigo-800 transition-colors" title="Ver Perfil do Aluno">
+                          <i className="fa-solid fa-graduation-cap text-xs"></i>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase border text-center ${getBehaviorColor(record.behaviorStatus)}`}>
@@ -111,7 +119,14 @@ const MediatorRecords: React.FC<MediatorRecordsProps> = ({ records, studentRecor
                 <div className="md:w-64 flex-shrink-0 space-y-4">
                   <div className="space-y-1">
                     <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">{new Date(record.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
-                    <h4 className="text-base font-black text-gray-800 leading-tight">{students.find(s => s.id === record.studentId)?.name || 'N/A'}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-black text-gray-800 leading-tight">{students.find(s => s.id === record.studentId)?.name || 'N/A'}</h4>
+                      {onViewProfile && (
+                        <button onClick={() => onViewProfile(record.studentId)} className="text-indigo-600 hover:text-indigo-800 transition-colors" title="Ver Perfil do Aluno">
+                          <i className="fa-solid fa-graduation-cap text-xs"></i>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase border text-center ${record.recordType === 'presenca' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
