@@ -2262,6 +2262,7 @@ export default function App() {
             attendances={attendances}
             meals={meals}
             mediationRecords={mediationRecords}
+            municipios={municipios}
           />
         );
 

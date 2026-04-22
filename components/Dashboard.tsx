@@ -18,6 +18,7 @@ interface DashboardProps {
   attendances?: any[];
   meals?: any[];
   mediationRecords?: any[];
+  municipios?: any[];
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -32,7 +33,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   studentRecords,
   attendances,
   meals,
-  mediationRecords
+  mediationRecords,
+  municipios
 }) => {
   const isSecretaria = user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN;
   const isDiretor = user.profile === UserProfile.DIRETOR;
@@ -110,11 +112,19 @@ const Dashboard: React.FC<DashboardProps> = ({
     pcdStudents: 0,
     totalStudents: 0,
     mediators: 0,
-    year: '2024',
+    year: '2026',
     loading: true
   });
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Atualiza a cada minuto
+    return () => clearInterval(timer);
+  }, []);
+
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
+  const [selectedMunicipioId, setSelectedMunicipioId] = useState<string>('');
 
   const [directorData, setDirectorData] = useState({
     alunos_atendidos: 0,
@@ -131,12 +141,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (!isSecretaria) return;
 
       try {
-        // 1. Busca os IDs das escolas do município da Secretaria
+        // 1. Busca os IDs das escolas do município selecionado (ou da secretaria)
         let schoolsQuery = supabase.from('schools').select('id', { count: 'exact' });
         
-        // Se for Secretaria, DEVE filtrar por município
-        if (user.profile === 'secretaria' && user.municipio_id) {
-          schoolsQuery = schoolsQuery.eq('municipio_id', user.municipio_id);
+        // Determinar o município de filtragem
+        const mId = user.profile === UserProfile.ADMIN ? selectedMunicipioId : user.municipio_id;
+
+        if (mId) {
+          schoolsQuery = schoolsQuery.eq('municipio_id', mId);
         }
         
         const { data: schoolsData, count: schoolsCount } = await schoolsQuery;
@@ -154,22 +166,22 @@ const Dashboard: React.FC<DashboardProps> = ({
           { data: classesYearData }
         ] = await Promise.all([
           // Relatórios / PDIs
-          supabase.from('reports').select('*', { count: 'exact', head: true }),
+          supabase.from('reports').select('*', { count: 'exact', head: true }).in('school_id', schoolFilter),
           // Corpo Docente — professor_details
-          supabase.from('professor_details').select('*', { count: 'exact', head: true }),
+          supabase.from('professor_details').select('*', { count: 'exact', head: true }).in('school_id', schoolFilter),
           // Turmas Ativas — classes filtradas pelo município
           supabase.from('classes').select('*', { count: 'exact', head: true }).in('school_id', schoolFilter),
           // Total de Alunos do município (tabela students, filtrada pelas escolas do município)
           supabase.from('students').select('*', { count: 'exact', head: true }).in('school_id', schoolFilter),
           // Mediadores em Campo — mediator_records
-          supabase.from('mediator_records').select('*', { count: 'exact', head: true }),
+          supabase.from('mediator_records').select('*', { count: 'exact', head: true }).in('school_id', schoolFilter),
           // Ano letivo
           supabase.from('classes').select('year').limit(1)
         ]);
 
         const currentYear = (classesYearData && classesYearData.length > 0 && classesYearData[0].year)
           ? String(classesYearData[0].year)
-          : '2025';
+          : '2026';
 
         setStatsData({
           reports: reportsCount || 0,
@@ -189,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
 
     fetchStats();
-  }, [isSecretaria, refreshKey]);
+  }, [isSecretaria, refreshKey, selectedMunicipioId, user.municipio_id, user.profile]);
 
 
   useEffect(() => {
@@ -230,7 +242,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [isDiretor, schoolId, refreshKey]);
 
   // Filtragem de dados para o Diretor ou Secretaria (Filtro Global)
+  const filteredSchools = (schools || []).filter(s => {
+    if (user.profile === UserProfile.ADMIN && selectedMunicipioId) {
+      return s.municipio_id === selectedMunicipioId;
+    }
+    return true;
+  });
+
   const filteredStudents = (students || []).filter(s => {
+    if (user.profile === UserProfile.ADMIN && selectedMunicipioId && s.municipio_id !== selectedMunicipioId) return false;
+    
     if (isDiretor) {
       const class_ = (classes || []).find(c => c.id === s.classId);
       return class_?.schoolId === schoolId;
@@ -242,6 +263,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   });
 
   const filteredClasses = (classes || []).filter(c => {
+    if (user.profile === UserProfile.ADMIN && selectedMunicipioId) {
+      // Tentar encontrar escola vinculada para verificar município se não tiver municipio_id direto
+      const school = (schools || []).find(s => s.id === c.schoolId);
+      if (school && school.municipio_id !== selectedMunicipioId) return false;
+    }
     if (isDiretor) return c.schoolId === schoolId;
     if (isSecretaria && selectedSchoolId !== 'all') return c.schoolId === selectedSchoolId;
     return true;
@@ -249,21 +275,29 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const filteredTeachers = (usersList || []).filter(u => {
     if (u.profile !== UserProfile.PROFESSOR) return false;
-    if (isDiretor) return u.schoolId === schoolId || filteredClasses.some(c => c.teacherId === u.id);
+    if (user.profile === UserProfile.ADMIN && selectedMunicipioId && u.municipio_id !== selectedMunicipioId) return false;
+    if (isDiretor) return u.schoolId === schoolId;
     if (isSecretaria && selectedSchoolId !== 'all') return u.schoolId === selectedSchoolId;
     return true;
   });
 
   const filteredMediators = (usersList || []).filter(u => {
     if (u.profile !== UserProfile.MEDIADOR) return false;
-    if (isDiretor) return u.schoolId === schoolId || filteredClasses.some(c => c.mediatorId === u.id);
+    if (user.profile === UserProfile.ADMIN && selectedMunicipioId && u.municipio_id !== selectedMunicipioId) return false;
+    if (isDiretor) return u.schoolId === schoolId;
     if (isSecretaria && selectedSchoolId !== 'all') return u.schoolId === selectedSchoolId;
     return true;
   });
 
-  const filteredReports = (reports || []).filter(r =>
-    filteredStudents.some(s => s.id === r.studentId)
-  );
+  const filteredReports = (reports || []).filter(r => {
+    if (user.profile === UserProfile.ADMIN && selectedMunicipioId) {
+       const school = (schools || []).find(s => s.id === r.schoolId);
+       if (school && school.municipio_id !== selectedMunicipioId) return false;
+    }
+    if (isDiretor) return r.schoolId === schoolId;
+    if (isSecretaria && selectedSchoolId !== 'all') return r.schoolId === selectedSchoolId;
+    return true;
+  });
 
   const finishedReportsCount = filteredReports.filter(r => r.status === 'finalizado').length;
   const pendingReportsCount = filteredReports.filter(r => r.status === 'rascunho').length;
@@ -682,7 +716,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }
 
   // Métricas de assistência por escola para a Secretaria (Formatado para o Gráfico)
-  const chartData = (schools || [])
+  const chartData = filteredSchools
     .filter(school => selectedSchoolId === 'all' || school.id === selectedSchoolId)
     .map(school => {
       const studentsInSchool = (students || []).filter(s => s.schoolId === school.id).length;
@@ -699,7 +733,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       };
     });
 
-  const shiftsData = (schools || [])
+  const shiftsData = filteredSchools
     .filter(school => selectedSchoolId === 'all' || school.id === selectedSchoolId)
     .map(school => {
       const schoolStudents = (students || []).filter(s => s.schoolId === school.id);
@@ -768,7 +802,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     { label: 'Unidades Escolares', count: selectedSchoolId === 'all' ? statsData.schools : 1, change: 'Mapeadas', icon: 'fa-school', color: 'emerald' },
     { label: 'Alunos Público-Alvo', count: filteredStudents.length, change: 'Apoio Ativo', icon: 'fa-graduation-cap', color: 'orange' },
     { label: 'Mediadores Mobilizados', count: filteredMediators.length, change: '1 por 3 alunos', icon: 'fa-hand-holding-heart', color: 'rose' },
-    { label: 'Relatórios PDIs', count: filteredReports.length, change: 'Status 2024', icon: 'fa-file-lines', color: 'amber' }
+    { label: 'Relatórios PDIs', count: filteredReports.length, change: 'Status 2026', icon: 'fa-file-lines', color: 'amber' }
   ];
 
   return (
@@ -785,7 +819,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               <i className="fa-solid fa-landmark"></i>
             </div>
             <div>
-              <p className="text-blue-200 text-xs font-bold uppercase tracking-[0.2em] mb-1">Secretaria de Educação</p>
+              <p className="text-blue-200 text-xs font-bold uppercase tracking-[0.2em] mb-1">
+                {user.profile === UserProfile.ADMIN ? 'Admin Geral' : 'Secretaria de Educação'}
+              </p>
               <h1 className="text-3xl font-black text-white tracking-tight">Olá, {user.name.split(' ')[0]}!</h1>
               <p className="text-blue-200 text-sm mt-1 font-medium">
                 Painel de Gestão Municipal · IncluiEduTec
@@ -797,6 +833,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex flex-col items-center px-5 py-3 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl min-w-[110px]">
               <span className="text-blue-200 text-[10px] font-black uppercase tracking-widest">Ano Letivo</span>
               <span className="text-white text-xl font-black">{statsData.year}</span>
+            </div>
+            <div className="hidden sm:flex flex-col items-center px-5 py-3 bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl min-w-[140px]">
+              <span className="text-blue-100 text-[10px] font-black uppercase tracking-widest mb-1">Data e Hora</span>
+              <div className="flex flex-col items-center">
+                <span className="text-white text-xs font-bold leading-none">{currentTime.toLocaleDateString('pt-BR')}</span>
+                <span className="text-white/80 text-[10px] font-medium mt-1">{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
             </div>
             <div className="flex flex-col items-center px-5 py-3 bg-emerald-400/25 backdrop-blur-sm border border-emerald-300/30 rounded-2xl min-w-[110px]">
               <span className="text-emerald-200 text-[10px] font-black uppercase tracking-widest">Status</span>
@@ -889,6 +932,30 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-xs text-gray-400 font-medium">Distribuição de mediadores por unidade escolar</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
+            {user.profile === UserProfile.ADMIN && (
+              <div className="relative">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Filtrar por Município</label>
+                <div className="relative group">
+                  <select
+                    value={selectedMunicipioId}
+                    onChange={(e) => {
+                      setSelectedMunicipioId(e.target.value);
+                      setSelectedSchoolId('all'); // Reset school filter on municipio change
+                    }}
+                    className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm hover:border-purple-300 min-w-[200px]"
+                  >
+                    <option value="">Todos os Municípios</option>
+                    {(municipios || []).map(m => (
+                      <option key={m.id} value={m.id}>{m.name || m.nome}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-purple-500 group-hover:scale-110 transition-transform">
+                    <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Filtrar por Unidade</label>
               <div className="relative group">
@@ -897,8 +964,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                   onChange={(e) => setSelectedSchoolId(e.target.value)}
                   className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-blue-300 min-w-[220px]"
                 >
-                  <option value="all">Todas as Escolas (Rede)</option>
-                  {(schools || []).map(school => (
+                  <option value="all">Todas as Escolas {selectedMunicipioId ? '(Município)' : '(Rede)'}</option>
+                  {filteredSchools.map(school => (
                     <option key={school.id} value={school.id}>{school.name}</option>
                   ))}
                 </select>
@@ -980,6 +1047,30 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-xs text-gray-400 font-medium">Proporção de alunos em tempo parcial vs. tempo integral</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
+            {user.profile === UserProfile.ADMIN && (
+              <div className="relative">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Filtrar por Município</label>
+                <div className="relative group">
+                  <select
+                    value={selectedMunicipioId}
+                    onChange={(e) => {
+                      setSelectedMunicipioId(e.target.value);
+                      setSelectedSchoolId('all');
+                    }}
+                    className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm hover:border-purple-300 min-w-[200px]"
+                  >
+                    <option value="">Todos os Municípios</option>
+                    {(municipios || []).map(m => (
+                      <option key={m.id} value={m.id}>{m.name || m.nome}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-purple-500 group-hover:scale-110 transition-transform">
+                    <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block text-right">Filtrar por Unidade</label>
               <div className="relative group">
@@ -988,8 +1079,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                   onChange={(e) => setSelectedSchoolId(e.target.value)}
                   className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 pr-10 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-blue-300 min-w-[220px]"
                 >
-                  <option value="all">Todas as Escolas (Rede)</option>
-                  {(schools || []).map(s => (
+                  <option value="all">Todas as Escolas {selectedMunicipioId ? '(Município)' : '(Rede)'}</option>
+                  {filteredSchools.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
