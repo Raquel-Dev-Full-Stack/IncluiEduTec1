@@ -174,17 +174,17 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                         columns={[
                             { 
                                 header: 'Data/Hora', 
-                                accessor: (log) => <span className="text-slate-950 dark:text-white font-black text-xs">{new Date(log.criado_em).toLocaleString('pt-BR')}</span>
+                                accessor: (log) => <span className="text-slate-900 dark:text-slate-100 font-black text-xs">{new Date(log.criado_em).toLocaleString('pt-BR')}</span>
                             },
                             { 
                                 header: 'Usuário', 
-                                accessor: (log) => <span className="text-black dark:text-white font-black">{userMap[log.user_id] || 'Usuário Desconhecido'}</span>
+                                accessor: (log) => <span className="text-slate-900 dark:text-slate-100 font-black">{userMap[log.user_id] || 'Usuário Desconhecido'}</span>
                             },
                             { 
                                 header: 'Perfil', 
                                 accessor: (log) => {
                                     const profileLabel = profileMap[log.perfil] || log.perfil || 'Não Definido';
-                                    return <span className="text-slate-900 dark:text-slate-200 font-black">{profileLabel}</span>
+                                    return <span className="text-slate-800 dark:text-slate-300 font-black">{profileLabel}</span>
                                 }
                             },
                             { 
@@ -209,7 +209,7 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                                 accessor: (log) => {
                                     const detailText = typeof log.detalhes === 'string' ? log.detalhes : JSON.stringify(log.detalhes);
                                     return (
-                                        <div className="max-w-md break-words text-[12px] text-slate-950 dark:text-slate-100 font-bold leading-tight" title={detailText}>
+                                        <div className="max-w-md break-words text-[12px] text-slate-800 dark:text-slate-200 font-bold leading-tight" title={detailText}>
                                             {detailText}
                                         </div>
                                     );
@@ -218,7 +218,7 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                             {
                                 header: 'Município / Origem',
                                 accessor: (log) => (
-                                    <span className="text-slate-900 dark:text-slate-200 text-xs font-black">
+                                    <span className="text-slate-800 dark:text-slate-300 text-xs font-black">
                                         {log.municipio_id ? (municipioMap[log.municipio_id] || 'Externo') : 'Sistema Central'}
                                     </span>
                                 )
@@ -226,8 +226,8 @@ const ActivityLogDashboard: React.FC<ActivityLogDashboardProps> = ({
                             {
                                 header: 'Escola / Unidade',
                                 accessor: (log) => (
-                                    <span className="text-slate-900 dark:text-slate-200 text-xs font-black">
-                                        {log.school_id ? (schoolMap[log.school_id] || 'Unidade N/I') : <span className="text-slate-500 dark:text-slate-500 italic">Rede Municipal</span>}
+                                    <span className="text-slate-800 dark:text-slate-300 text-xs font-black">
+                                        {log.school_id ? (schoolMap[log.school_id] || 'Unidade N/I') : <span className="text-slate-500 dark:text-slate-400 italic">Rede Municipal</span>}
                                     </span>
                                 )
                             }

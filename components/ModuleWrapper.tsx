@@ -12,8 +12,8 @@ const ModuleWrapper: React.FC<ModuleWrapperProps> = ({ title, description, onAdd
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-black text-slate-950 dark:text-white transition-colors">{title}</h1>
-          <p className="text-slate-800 dark:text-slate-300 text-sm mt-1 font-bold transition-colors">{description}</p>
+          <h1 className="text-2xl font-black text-slate-950 dark:text-slate-100 transition-colors">{title}</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 font-bold transition-colors">{description}</p>
         </div>
         {onAdd && (
           <button

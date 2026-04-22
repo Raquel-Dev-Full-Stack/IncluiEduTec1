@@ -608,7 +608,12 @@ export default function App() {
             fontSize: data.font_size,
             studentLimit: data.student_limit,
             mediatorRatio: data.mediator_ratio,
-            activeLanguage: data.active_language
+            activeLanguage: data.active_language,
+            backgroundTheme: data.background_theme,
+            interfaceDensity: data.interface_density,
+            interfaceStyle: data.interface_style,
+            interfaceShadows: data.interface_shadows,
+            interfaceAnimations: data.interface_animations
           });
         }
       } catch (err) {
@@ -845,6 +850,11 @@ export default function App() {
         student_limit: newSettings.studentLimit,
         mediator_ratio: newSettings.mediatorRatio,
         active_language: newSettings.activeLanguage,
+        background_theme: newSettings.backgroundTheme,
+        interface_density: newSettings.interfaceDensity,
+        interface_style: newSettings.interfaceStyle,
+        interface_shadows: newSettings.interfaceShadows,
+        interface_animations: newSettings.interfaceAnimations,
         updated_at: new Date().toISOString()
       };
 
@@ -2941,6 +2951,7 @@ export default function App() {
             onUpdateTheme={handleUpdateUserTheme} 
             systemSettings={systemSettings}
             onUpdateSystemSettings={handleUpdateSystemSettings}
+            setSystemSettings={setSystemSettings}
           />
         );
 
@@ -2996,7 +3007,13 @@ export default function App() {
   } as User;
 
   return (
-    <Layout user={effectiveUser} onLogout={handleLogout} activeTab={activeTab} setActiveTab={setActiveTab}>
+    <Layout 
+      user={effectiveUser} 
+      onLogout={handleLogout} 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab}
+      backgroundTheme={systemSettings.backgroundTheme}
+    >
       <style>{`
         :root {
           --primary-button-color: ${systemSettings.buttonColor || '#2563eb'};

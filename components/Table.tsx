@@ -32,12 +32,12 @@ function Table<T extends { id: string }>({ columns, data, onEdit, onDelete, onRo
             )}
           </tr>
         </thead>
-        <tbody className="bg-white">
+        <tbody className="bg-white dark:bg-slate-900">
           {data.map((item) => (
             <tr 
               key={item.id} 
               onClick={() => onRowClick?.(item)}
-              className={`border-b border-slate-100 last:border-0 odd:bg-white even:bg-slate-50/80 hover:bg-blue-50/50 transition-all group ${onRowClick ? 'cursor-pointer' : ''}`}
+              className={`border-b border-slate-100 dark:border-slate-800 last:border-0 odd:bg-white odd:dark:bg-slate-900 even:bg-slate-50/80 even:dark:bg-slate-800/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all group ${onRowClick ? 'cursor-pointer' : ''}`}
             >
               {columns.map((col, i) => (
                 <td key={i} className={`px-6 py-5 text-sm text-slate-950 dark:text-slate-100 font-bold tracking-tight transition-colors ${col.className || ''}`}>

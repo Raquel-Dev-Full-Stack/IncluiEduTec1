@@ -7,9 +7,10 @@ interface SettingsProps {
   onUpdateTheme: (theme: 'light' | 'dark') => void;
   systemSettings: SystemSettings;
   onUpdateSystemSettings: (settings: SystemSettings) => Promise<void>;
+  setSystemSettings: React.Dispatch<React.SetStateAction<SystemSettings>>;
 }
 
-const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings, onUpdateSystemSettings }) => {
+const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings, onUpdateSystemSettings, setSystemSettings }) => {
   const [language, setLanguage] = useState(systemSettings.activeLanguage || 'pt-br');
   const [notifications, setNotifications] = useState(true);
   const [exportFormat, setExportFormat] = useState('pdf');
@@ -21,6 +22,11 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
   const [localFontSize, setLocalFontSize] = useState(systemSettings.fontSize);
   const [localStudentLimit, setLocalStudentLimit] = useState(systemSettings.studentLimit);
   const [localMediatorRatio, setLocalMediatorRatio] = useState(systemSettings.mediatorRatio);
+  const [localBackgroundTheme, setLocalBackgroundTheme] = useState(systemSettings.backgroundTheme || 'padrao');
+  const [localInterfaceDensity, setLocalInterfaceDensity] = useState(systemSettings.interfaceDensity || 'normal');
+  const [localInterfaceStyle, setLocalInterfaceStyle] = useState(systemSettings.interfaceStyle || 'arredondado');
+  const [localInterfaceShadows, setLocalInterfaceShadows] = useState(systemSettings.interfaceShadows || 'suave');
+  const [localInterfaceAnimations, setLocalInterfaceAnimations] = useState(systemSettings.interfaceAnimations || 'normais');
 
   useEffect(() => {
     setLocalButtonColor(systemSettings.buttonColor);
@@ -29,6 +35,11 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
     setLocalStudentLimit(systemSettings.studentLimit);
     setLocalMediatorRatio(systemSettings.mediatorRatio);
     setLanguage(systemSettings.activeLanguage);
+    setLocalBackgroundTheme(systemSettings.backgroundTheme || 'padrao');
+    setLocalInterfaceDensity(systemSettings.interfaceDensity || 'normal');
+    setLocalInterfaceStyle(systemSettings.interfaceStyle || 'arredondado');
+    setLocalInterfaceShadows(systemSettings.interfaceShadows || 'suave');
+    setLocalInterfaceAnimations(systemSettings.interfaceAnimations || 'normais');
   }, [systemSettings]);
 
   const currentTheme = user.themePreference || 'light';
@@ -203,6 +214,88 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tema de Fundo</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { id: 'padrao', label: 'Padrão', bg: 'bg-slate-50', icon: 'fa-table-cells' },
+                    { id: 'gradiente', label: 'Gradiente', bg: 'bg-gradient-to-br from-blue-50 to-indigo-50', icon: 'fa-clapperboard' },
+                    { id: 'dark-blue', label: 'Noite', bg: 'bg-slate-900', icon: 'fa-moon', text: 'text-white' },
+                    { id: 'glass', label: 'Vidro', bg: 'bg-white/40 backdrop-blur-md', icon: 'fa-wand-magic-sparkles' },
+                    { id: 'minimal', label: 'Minimal', bg: 'bg-white border-gray-100', icon: 'fa-square' },
+                    { id: 'soft', label: 'Suave', bg: 'bg-rose-50/30', icon: 'fa-leaf' }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setLocalBackgroundTheme(t.id);
+                        // Preview imediato na interface
+                        setSystemSettings(prev => ({ ...prev, backgroundTheme: t.id }));
+                      }}
+                      className={`p-3 rounded-2xl border text-[9px] font-black uppercase flex flex-col items-center gap-2 transition-all ${localBackgroundTheme === t.id ? 'border-indigo-600 bg-indigo-50 text-indigo-600 ring-2 ring-indigo-100' : `border-gray-100 ${t.bg} ${t.text || 'text-gray-400'} hover:border-indigo-200`}`}
+                    >
+                      <i className={`fa-solid ${t.icon} text-base`}></i>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Densidade da Interface</label>
+                  <select 
+                    value={localInterfaceDensity}
+                    onChange={(e) => setLocalInterfaceDensity(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="normal">Normal (Padrão)</option>
+                    <option value="compacta">Compacta</option>
+                    <option value="espacada">Espaçada (Foco)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estilo de Cantos</label>
+                  <select 
+                    value={localInterfaceStyle}
+                    onChange={(e) => setLocalInterfaceStyle(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="arredondado">Arredondado (Suave)</option>
+                    <option value="extra">Moderno (Extra)</option>
+                    <option value="quadrado">Geométrico (Sharp)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sombras dos Elementos</label>
+                  <select 
+                    value={localInterfaceShadows}
+                    onChange={(e) => setLocalInterfaceShadows(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="nenhuma">Sem Sombras</option>
+                    <option value="suave">Suave (Padrão)</option>
+                    <option value="profunda">Profunda (Elevada)</option>
+                    <option value="neon">Neon (Colorida)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Animações Globais</label>
+                  <select 
+                    value={localInterfaceAnimations}
+                    onChange={(e) => setLocalInterfaceAnimations(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="normais">Dinâmicas (Normais)</option>
+                    <option value="reduzidas">Reduzidas (Eco)</option>
+                    <option value="desativadas">Desativadas</option>
+                  </select>
+                </div>
+              </div>
+
               <button 
                 onClick={() => showFeedback('Interface de customização de widgets ativada. Arraste os elementos para reorganizar.')}
                 className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
@@ -370,6 +463,12 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
               setLocalStudentLimit(systemSettings.studentLimit);
               setLocalMediatorRatio(systemSettings.mediatorRatio);
               setLanguage(systemSettings.activeLanguage);
+              setLocalBackgroundTheme(systemSettings.backgroundTheme || 'padrao');
+              setLocalInterfaceDensity(systemSettings.interfaceDensity || 'normal');
+              setLocalInterfaceStyle(systemSettings.interfaceStyle || 'arredondado');
+              setLocalInterfaceShadows(systemSettings.interfaceShadows || 'suave');
+              setLocalInterfaceAnimations(systemSettings.interfaceAnimations || 'normais');
+              setSystemSettings({ ...systemSettings }); // Restaura o preview global
               showFeedback('Alterações descartadas.');
             }}
             className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all"
@@ -385,7 +484,12 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
                 fontSize: localFontSize,
                 studentLimit: localStudentLimit,
                 mediatorRatio: localMediatorRatio,
-                activeLanguage: language
+                activeLanguage: language,
+                backgroundTheme: localBackgroundTheme,
+                interfaceDensity: localInterfaceDensity,
+                interfaceStyle: localInterfaceStyle,
+                interfaceShadows: localInterfaceShadows,
+                interfaceAnimations: localInterfaceAnimations
               });
               showFeedback('Configurações aplicadas com sucesso!');
             }}

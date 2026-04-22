@@ -37,6 +37,11 @@ export interface SystemSettings {
   studentLimit: number;
   mediatorRatio: number;
   activeLanguage: string;
+  backgroundTheme?: string;
+  interfaceDensity?: string;
+  interfaceStyle?: string;
+  interfaceShadows?: string;
+  interfaceAnimations?: string;
 }
 
 export interface Message {

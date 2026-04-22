@@ -8,10 +8,22 @@ interface LayoutProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   children: React.ReactNode;
+  backgroundTheme?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab, children }) => {
+const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab, children, backgroundTheme = 'padrao' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const getBackgroundClass = (theme: string) => {
+    switch (theme) {
+      case 'gradiente': return 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-indigo-100';
+      case 'dark-blue': return 'bg-slate-950 text-slate-200';
+      case 'glass': return 'bg-gradient-to-tr from-slate-100 to-white/80 backdrop-blur-xl bg-fixed';
+      case 'minimal': return 'bg-white';
+      case 'soft': return 'bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-rose-50/30 via-white to-orange-50/20';
+      default: return 'bg-gray-50';
+    }
+  };
 
   interface MenuItem {
     id: string;
@@ -126,7 +138,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 flex-col md:flex-row font-['Inter']">
+    <div className={`min-h-screen flex flex-col md:flex-row font-['Inter'] transition-colors duration-500 ${getBackgroundClass(backgroundTheme)}`}>
       {/* Mobile Overlay */}
       {isMenuOpen && (
         <div
