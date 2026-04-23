@@ -4,9 +4,10 @@ interface Lesson {
   id: number;
   title: string;
   duration: string;
-  type: 'video' | 'leitura' | 'atividade' | 'quiz';
+  type: 'leitura' | 'atividade' | 'quiz';
   completed: boolean;
   description: string;
+  content?: string;
 }
 
 interface Module {
@@ -28,117 +29,208 @@ const MODULES: Module[] = [
     icon: 'fa-book-open',
     color: 'from-blue-600 to-blue-800',
     description:
-      'Compreenda os princípios históricos e filosóficos da educação inclusiva, a evolução das políticas públicas no Brasil e os marcos legislativos que garantem o direito à educação de todos.',
+      'Compreenda os princípios históricos e filosóficos da educação inclusiva e o binômio Educar e Cuidar.',
     objectives: [
       'Conhecer a história da educação especial no Brasil',
-      'Compreender os princípios da Declaração de Salamanca',
-      'Identificar a legislação vigente: LDB, LDBEN e a Lei Brasileira de Inclusão',
-      'Refletir sobre o paradigma da integração x inclusão',
+      'Compreender o binômio Educar e Cuidar',
+      'Refletir sobre a Mediação Humanizadora',
+      'Identificar a legislação histórica e fundamentos',
     ],
     lessons: [
-      { id: 1, title: 'Histórico da Educação Especial no Brasil', duration: '20 min', type: 'leitura', completed: true, description: 'Evolução das políticas de educação especial desde a criação do INES até os dias atuais.' },
-      { id: 2, title: 'Declaração de Salamanca e seus impactos', duration: '25 min', type: 'video', completed: true, description: 'Como o documento internacional de 1994 transformou a visão sobre a inclusão mundial.' },
-      { id: 3, title: 'LBI — Lei Brasileira de Inclusão', duration: '30 min', type: 'leitura', completed: false, description: 'Análise aprofundada da Lei 13.146/2015 e seus reflexos no cotidiano escolar.' },
-      { id: 4, title: 'Integração vs. Inclusão: qual a diferença?', duration: '15 min', type: 'video', completed: false, description: 'Distinção conceitual e prática entre os dois paradigmas educacionais.' },
-      { id: 5, title: 'Quiz — Fundamentos Legislativos', duration: '10 min', type: 'quiz', completed: false, description: 'Avalie seu aprendizado sobre os marcos legais da inclusão.' },
+      { 
+        id: 1, 
+        title: 'Histórico e o Binômio Educar-Cuidar', 
+        duration: '20 min', 
+        type: 'leitura', 
+        completed: true, 
+        description: 'Evolução histórica e a indissociabilidade entre o educar e o cuidar.',
+        content: `### Resumo Teórico
+Historicamente, passamos da exclusão para a inclusão. O binômio **Educar e Cuidar** é indissociável: o cuidado garante a dignidade e a prontidão para o aprender. A **Mediação Humanizadora** atua como a ponte entre o aluno e o conhecimento.
+
+### Diretriz MEC 2026
+O suporte à vida escolar (higiene, locomoção) é parte integrante do projeto pedagógico, não devendo ser separado das atividades de ensino.
+
+### Exemplo Prático (BNCC: EI03EO01)
+*Habilidade:* Demonstrar empatia pelos outros.
+*Flexibilização:* Para um aluno com TEA, use cartões visuais com fotos reais dos colegas. O professor narra as emoções: "O Pedro está sorrindo porque gostou da brincadeira".`
+      },
+      { 
+        id: 2, 
+        title: 'Mediação Humanizadora na Prática', 
+        duration: '25 min', 
+        type: 'leitura', 
+        completed: true, 
+        description: 'Como atuar como mediador do conhecimento respeitando a singularidade.',
+        content: `A mediação baseia-se na zona de desenvolvimento proximal. O professor não apenas entrega o conteúdo, mas cria estratégias para que o aluno com NEE acesse o mesmo objetivo que a turma, com suportes específicos.`
+      },
+      { 
+        id: 3, 
+        title: 'Atividade de Reflexão: Prática Diária', 
+        duration: '15 min', 
+        type: 'atividade', 
+        completed: false, 
+        description: 'Reflexão sobre a integração do educar e cuidar no seu cotidiano.',
+        content: `**Desafio:** Liste três momentos do seu dia onde o "cuidar" pareceu interromper o "educar". Como você pode transformar esses momentos em oportunidades de aprendizagem social ou de autonomia?`
+      },
     ],
   },
   {
     id: 2,
     title: 'Módulo 2',
-    subtitle: 'Deficiências e Necessidades Educacionais Especiais',
-    icon: 'fa-heart-pulse',
+    subtitle: 'O Novo Marco Legal (Lei 15.247/2025)',
+    icon: 'fa-landmark',
     color: 'from-emerald-600 to-emerald-800',
     description:
-      'Aprofunde-se nas principais deficiências e NEEs presentes nas salas de aula inclusivas, compreendendo características, diagnósticos e estratégias pedagógicas adequadas para cada perfil.',
+      'Conheça a Lei 15.247/2025, o Compromisso Nacional Criança Alfabetizada e o fim da exigência de laudo para o AEE.',
     objectives: [
-      'Identificar os diferentes tipos de deficiência e NEE',
-      'Compreender o espectro autista (TEA) e suas implicações pedagógicas',
-      'Conhecer estratégias para deficiências físicas, visuais e auditivas',
-      'Desenvolver sensibilidade clínica sem substituir o diagnóstico médico',
+      'Entender a Lei nº 15.247/2025',
+      'Conhecer o Compromisso Nacional Criança Alfabetizada',
+      'Aplicar o fim da exigência de laudo para início do AEE',
+      'Alfabetizar na perspectiva inclusiva',
     ],
     lessons: [
-      { id: 1, title: 'Mapeando as Necessidades Educacionais Especiais', duration: '25 min', type: 'leitura', completed: false, description: 'Panorama das principais NEEs e como elas se manifestam no ambiente escolar.' },
-      { id: 2, title: 'Transtorno do Espectro Autista (TEA) na escola', duration: '35 min', type: 'video', completed: false, description: 'Características do TEA, níveis de suporte e como o professor pode apoiar o desenvolvimento.' },
-      { id: 3, title: 'Deficiência Intelectual: estratégias de ensino', duration: '30 min', type: 'leitura', completed: false, description: 'Adaptações curriculares e metodológicas para alunos com DI.' },
-      { id: 4, title: 'Deficiências Sensoriais: visual e auditiva', duration: '30 min', type: 'video', completed: false, description: 'Recursos de acessibilidade e comunicação alternativa para alunos com deficiência visual ou auditiva.' },
-      { id: 5, title: 'TDAH e Dislexia: identificação e suporte', duration: '20 min', type: 'leitura', completed: false, description: 'Como reconhecer sinais de TDAH e dislexia e adaptar a prática pedagógica.' },
-      { id: 6, title: 'Atividade Prática: perfil do aluno', duration: '20 min', type: 'atividade', completed: false, description: 'Elabore o perfil de um aluno fictício com NEE e proponha três estratégias de suporte.' },
+      { 
+        id: 4, 
+        title: 'Alfabetização Inclusiva e a Lei 15.247/2025', 
+        duration: '30 min', 
+        type: 'leitura', 
+        completed: false, 
+        description: 'A obrigatoriedade de garantir meios para que todos acessem o código escrito.',
+        content: `### Resumo Teórico
+A Lei 15.247/2025 combate a ideia de que alunos com deficiência "não alfabetizam". Todos devem acessar o código escrito até o final do 2º ano.
+
+### Diretriz MEC 2026
+**Fim da exigência de laudo:** O AEE deve ser iniciado com base nas barreiras identificadas pelo professor, sem aguardar diagnósticos clínicos.
+
+### Exemplo Prático (BNCC: EF01LP01)
+*Habilidade:* Reconhecer a direção da escrita.
+*Flexibilização:* Use "janelas de leitura" (vazadores de papel) que isolam a linha, facilitando o foco para alunos com Deficiência Intelectual ou TDAH.`
+      },
+      { 
+        id: 5, 
+        title: 'Implementando o AEE sem Laudo', 
+        duration: '20 min', 
+        type: 'atividade', 
+        completed: false, 
+        description: 'Plano de ação para suporte imediato ao aluno.',
+        content: `Como sua escola pode organizar o suporte pedagógico imediato? Crie um fluxo de encaminhamento interno baseado na observação do professor regente.`
+      },
     ],
   },
   {
     id: 3,
     title: 'Módulo 3',
-    subtitle: 'Práticas Pedagógicas Inclusivas',
+    subtitle: 'Desenho Universal para a Aprendizagem (DUA)',
     icon: 'fa-chalkboard-user',
     color: 'from-violet-600 to-violet-800',
     description:
-      'Transforme sua sala de aula com metodologias ativas, Desenho Universal para a Aprendizagem (DUA) e estratégias de diferenciação que beneficiam todos os alunos, com ou sem deficiência.',
+      'Aplique os 3 princípios do DUA para tornar qualquer código da BNCC acessível a todos os alunos.',
     objectives: [
-      'Aplicar os princípios do Desenho Universal para a Aprendizagem (DUA)',
-      'Planejar aulas diferenciadas que contemplem diferentes estilos de aprendizagem',
-      'Utilizar recursos de tecnologia assistiva em sala de aula',
-      'Desenvolver avaliações inclusivas e formativas',
+      'Dominar os 3 pilares do DUA',
+      'Projetar aulas proativamente acessíveis',
+      'Diferenciar representação, ação e engajamento',
     ],
     lessons: [
-      { id: 1, title: 'Desenho Universal para a Aprendizagem (DUA)', duration: '30 min', type: 'video', completed: false, description: 'Os três princípios do DUA: múltiplos meios de representação, ação e expressão, e engajamento.' },
-      { id: 2, title: 'Diferenciação Pedagógica na prática', duration: '25 min', type: 'leitura', completed: false, description: 'Como planejar aulas que atendam diferentes ritmos e estilos de aprendizagem.' },
-      { id: 3, title: 'Tecnologia Assistiva em sala de aula', duration: '35 min', type: 'video', completed: false, description: 'Softwares de comunicação alternativa, apps e ferramentas digitais para inclusão.' },
-      { id: 4, title: 'Avaliação Inclusiva e Formativa', duration: '25 min', type: 'leitura', completed: false, description: 'Adaptações nos instrumentos e critérios de avaliação sem perda de qualidade.' },
-      { id: 5, title: 'Atividade: Plano de Aula Inclusivo', duration: '40 min', type: 'atividade', completed: false, description: 'Crie um plano de aula aplicando os princípios do DUA para uma turma com perfis variados.' },
-      { id: 6, title: 'Quiz — Práticas Inclusivas', duration: '10 min', type: 'quiz', completed: false, description: 'Teste seus conhecimentos sobre as metodologias estudadas neste módulo.' },
+      { 
+        id: 6, 
+        title: 'Os 3 Princípios do DUA', 
+        duration: '30 min', 
+        type: 'leitura', 
+        completed: false, 
+        description: 'Engajamento, Representação e Ação/Expressão.',
+        content: `### Resumo Teórico
+1. **Engajamento:** O Porquê (interesse).
+2. **Representação:** O Quê (múltiplos formatos).
+3. **Ação e Expressão:** O Como (diversas formas de demonstrar aprendizado).
+
+### Exemplo Prático (BNCC: EF03MA06)
+*Habilidade:* Resolver problemas de adição/subtração.
+*DUA:* Apresentar o problema em áudio, texto e material concreto (ábaco). O aluno pode responder gravando áudio ou manipulando objetos.`
+      },
+      { 
+        id: 7, 
+        title: 'Planejamento Proativo', 
+        duration: '40 min', 
+        type: 'atividade', 
+        completed: false, 
+        description: 'Criando aulas que não precisam de adaptações posteriores.',
+        content: `Escolha um objetivo da BNCC e desenhe três formas diferentes de representação para ele.`
+      },
     ],
   },
   {
     id: 4,
     title: 'Módulo 4',
-    subtitle: 'Colaboração, Família e Rede de Apoio',
-    icon: 'fa-people-group',
+    subtitle: 'Avaliação Formativa e Estudo de Caso',
+    icon: 'fa-clipboard-check',
     color: 'from-amber-500 to-orange-700',
     description:
-      'A inclusão é construída coletivamente. Aprenda a fortalecer a parceria entre escola e família, a trabalhar em equipe multiprofissional e a articular serviços de saúde, assistência social e educação.',
+      'As 4 etapas do Estudo de Caso do novo Guia e como documentar o progresso contínuo.',
     objectives: [
-      'Construir uma relação colaborativa e acolhedora com as famílias',
-      'Trabalhar em equipe com mediadores, psicólogos e terapeutas',
-      'Articular a rede de proteção social em torno do aluno',
-      'Conduzir reuniões de equipe de forma produtiva e ética',
+      'Realizar o Estudo de Caso em 4 etapas',
+      'Mapear barreiras e potencialidades',
+      'Implementar a Avaliação para a Aprendizagem',
     ],
     lessons: [
-      { id: 1, title: 'Família como parceira da inclusão', duration: '25 min', type: 'video', completed: false, description: 'Como estabelecer uma comunicação efetiva e empática com as famílias de alunos com NEE.' },
-      { id: 2, title: 'O papel do professor de AEE', duration: '20 min', type: 'leitura', completed: false, description: 'Atribuições do Atendimento Educacional Especializado e sua articulação com a sala regular.' },
-      { id: 3, title: 'Trabalho colaborativo com mediadores', duration: '25 min', type: 'leitura', completed: false, description: 'Como professores e mediadores podem co-planejar para maximizar o desenvolvimento do aluno.' },
-      { id: 4, title: 'Rede intersetorial: saúde, assistência e educação', duration: '30 min', type: 'video', completed: false, description: 'Como acionar e integrar os serviços disponíveis no município para o aluno com deficiência.' },
-      { id: 5, title: 'Atividade: Roteiro de reunião com família', duration: '30 min', type: 'atividade', completed: false, description: 'Elabore um roteiro de reunião com a família de um aluno com TEA, priorizando escuta ativa e plano de ação.' },
+      { 
+        id: 8, 
+        title: 'As 4 Etapas do Estudo de Caso', 
+        duration: '35 min', 
+        type: 'leitura', 
+        completed: false, 
+        description: 'O fluxo de avaliação do Guia MEC 2026.',
+        content: `### Etapas do Guia MEC 2026
+1. **Identificação das Barreiras:** O que impede a participação?
+2. **Mapeamento de Potencialidades:** O que o aluno já sabe?
+3. **Plano de Intervenção:** Estratégias e recursos.
+4. **Reavaliação:** O plano funcionou?
+
+### Exemplo Prático (BNCC: EF02CI01)
+*Habilidade:* Identificar materiais dos objetos.
+*Inclusão:* Para aluno com barreira motora, a avaliação é sensorial (caixa misteriosa), focando no progresso da percepção científica.`
+      },
     ],
   },
   {
     id: 5,
     title: 'Módulo 5',
-    subtitle: 'Documentação, PEI e Avaliação de Impacto',
-    icon: 'fa-file-medical',
+    subtitle: 'Planejamento Prático e PEI',
+    icon: 'fa-file-signature',
     color: 'from-rose-600 to-rose-800',
     description:
-      'Domine a elaboração do Plano Educacional Individualizado (PEI), aprenda a registrar o desenvolvimento do aluno de forma sistemática e avalie o impacto das práticas inclusivas adotadas.',
+      'Transforme objetivos da BNCC em metas específicas para o Plano Educacional Individualizado (PEI).',
     objectives: [
-      'Elaborar um Plano Educacional Individualizado (PEI) completo',
-      'Registrar observações pedagógicas de forma sistemática',
-      'Usar indicadores para avaliar o progresso do aluno',
-      'Conhecer as diretrizes do MEC 2026 para documentação inclusiva',
+      'Construir metas SMART no PEI',
+      'Flexibilizar habilidades complexas da BNCC',
+      'Garantir a colaboração no planejamento',
     ],
     lessons: [
-      { id: 1, title: 'O que é o PEI e por que ele importa', duration: '20 min', type: 'video', completed: false, description: 'Conceito, estrutura e importância do Plano Educacional Individualizado no contexto da LBI.' },
-      { id: 2, title: 'Como elaborar um PEI efetivo', duration: '40 min', type: 'leitura', completed: false, description: 'Passo a passo para construir um PEI com metas funcionais, acadêmicas e socioemocionais.' },
-      { id: 3, title: 'Registros pedagógicos diários e seu valor', duration: '20 min', type: 'leitura', completed: false, description: 'Instrumentos de observação e registro que alimentam o PEI e comunicam progresso à família.' },
-      { id: 4, title: 'Avaliação de impacto das práticas inclusivas', duration: '25 min', type: 'video', completed: false, description: 'Indicadores qualitativos e quantitativos para medir o sucesso da inclusão na sua turma.' },
-      { id: 5, title: 'Diretrizes MEC 2026 para Educação Inclusiva', duration: '30 min', type: 'leitura', completed: false, description: 'Atualização sobre as orientações nacionais mais recentes para a implementação da inclusão.' },
-      { id: 6, title: 'Atividade Final: Elabore um PEI completo', duration: '60 min', type: 'atividade', completed: false, description: 'Exercício integrador: construa um PEI completo para um aluno fictício utilizando os conhecimentos de todos os módulos.' },
-      { id: 7, title: 'Quiz Final — Certificação do Curso', duration: '20 min', type: 'quiz', completed: false, description: 'Avaliação final para obtenção do certificado de conclusão do curso.' },
+      { 
+        id: 9, 
+        title: 'Transformando BNCC em Metas PEI', 
+        duration: '45 min', 
+        type: 'leitura', 
+        completed: false, 
+        description: 'Como ajustar a complexidade sem perder o objetivo central.',
+        content: `### Exemplo Prático (BNCC: EF05HI01)
+*Habilidade:* Formação das culturas e povos.
+*Meta PEI (D.I.):* Identificar 3 elementos culturais (comida, música, roupa) através de imagens, relacionando-os ao clima. A meta é derivada da BNCC, mas funcional para o aluno.`
+      },
+      { 
+        id: 10, 
+        title: 'Quiz Final e Certificação', 
+        duration: '20 min', 
+        type: 'quiz', 
+        completed: false, 
+        description: 'Avaliação final integradora.',
+        content: `Parabéns por chegar até aqui! Este quiz validará seus conhecimentos sobre o Marco Legal 2026 e as práticas de DUA/PEI.`
+      },
     ],
   },
 ];
 
 const typeConfig: Record<string, { icon: string; label: string; color: string }> = {
-  video:      { icon: 'fa-play-circle',   label: 'Vídeo',     color: 'bg-blue-100 text-blue-700' },
+  
   leitura:    { icon: 'fa-book',          label: 'Leitura',   color: 'bg-emerald-100 text-emerald-700' },
   atividade:  { icon: 'fa-pencil',        label: 'Atividade', color: 'bg-amber-100 text-amber-700' },
   quiz:       { icon: 'fa-circle-question',label: 'Quiz',     color: 'bg-violet-100 text-violet-700' },
@@ -359,18 +451,42 @@ const CourseTab: React.FC = () => {
                     {/* Expanded content */}
                     {isExpanded && (
                       <div className="px-6 pb-4 ml-12">
-                        <p className="text-sm text-gray-600 leading-relaxed mb-3">{lesson.description}</p>
-                        <button
-                          onClick={() => toggleComplete(activeModule.id, lesson.id)}
-                          className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
-                            lesson.completed
-                              ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              : 'bg-emerald-500 text-white hover:bg-emerald-600'
-                          }`}
-                        >
-                          <i className={`fa-solid ${lesson.completed ? 'fa-rotate-left' : 'fa-check'} mr-2`} />
-                          {lesson.completed ? 'Desfazer conclusão' : 'Marcar como concluída'}
-                        </button>
+                        <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
+                          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <i className="fa-solid fa-book-open text-blue-500" /> Conteúdo da Lição
+                          </p>
+                          <div className="prose prose-slate prose-sm max-w-none">
+                            {lesson.content ? (
+                              <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
+                                {lesson.content.split('\n').map((line, i) => {
+                                  if (line.startsWith('###')) {
+                                    return <h3 key={i} className="text-lg font-black text-slate-900 mt-4 mb-2">{line.replace('### ', '')}</h3>;
+                                  }
+                                  if (line.startsWith('*')) {
+                                    return <li key={i} className="ml-4 mb-1 list-disc">{line.replace('* ', '')}</li>;
+                                  }
+                                  return <p key={i} className="mb-2">{line}</p>;
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-600 leading-relaxed italic">Conteúdo em desenvolvimento para esta lição.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex gap-3">
+                          <button
+                            onClick={() => toggleComplete(activeModule.id, lesson.id)}
+                            className={`text-xs font-bold px-6 py-2.5 rounded-xl shadow-sm transition-all ${
+                              lesson.completed
+                                ? 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-emerald-100'
+                            }`}
+                          >
+                            <i className={`fa-solid ${lesson.completed ? 'fa-rotate-left' : 'fa-check'} mr-2`} />
+                            {lesson.completed ? 'Desfazer conclusão' : 'Concluir Lição'}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
