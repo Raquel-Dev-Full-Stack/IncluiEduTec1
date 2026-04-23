@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Student, Class, Attendance, User, StudentRecord } from '../types';
+import { Student, Class, Attendance, User, StudentRecord, SOSStrategy } from '../types';
+import { supabase } from '../lib/supabaseClient';
 import Table from './Table';
 
 interface TeacherStudentsProps {
@@ -33,6 +34,10 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     value: '',
     observation: ''
   });
+
+  const [showSOSModal, setShowSOSModal] = useState<string | null>(null);
+  const [sosStrategies, setSosStrategies] = useState<SOSStrategy[]>([]);
+  const [isLoadingSOS, setIsLoadingSOS] = useState(false);
 
   const [selectedBatchTurno, setSelectedBatchTurno] = useState<'Manhã' | 'Tarde' | 'Integral'>('Manhã');
   const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
@@ -154,6 +159,31 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     setShowRegisterModal(null);
     setIndividualRecord({ type: 'atividade', value: '', observation: '' });
     setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const handleOpenSOS = async (student: Student) => {
+    if (!student.deficiency) {
+      alert('Este aluno não possui tipo de deficiência registrado para consulta.');
+      return;
+    }
+
+    setIsLoadingSOS(true);
+    setShowSOSModal(student.id);
+
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_base_sos')
+        .select('*')
+        .eq('disability_type', student.deficiency);
+
+      if (error) throw error;
+      setSosStrategies(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar estratégias:', error);
+      setFeedback({ message: 'Erro ao carregar estratégias de adaptação.', type: 'error' });
+    } finally {
+      setIsLoadingSOS(false);
+    }
   };
 
   return (
@@ -421,6 +451,13 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                       <i className="fa-solid fa-graduation-cap"></i>
                     </button>
                   )}
+                  <button
+                    onClick={() => handleOpenSOS(s)}
+                    className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all border border-rose-100 group shadow-sm"
+                    title="SOS Adaptação"
+                  >
+                    <i className="fa-solid fa-kit-medical animate-pulse"></i>
+                  </button>
                 </div>
               )
             }
@@ -557,6 +594,103 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal SOS Adaptação */}
+      {showSOSModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowSOSModal(null)}></div>
+          <div className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <header className="bg-rose-600 p-8 text-white flex items-center justify-between">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner">
+                  <i className="fa-solid fa-kit-medical"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight">SOS Adaptação</h3>
+                  <p className="text-rose-100 text-[10px] font-black uppercase tracking-[0.2em]">Estratégias Pedagógicas Inclusivas</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSOSModal(null)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-all flex items-center justify-center">
+                <i className="fa-solid fa-xmark text-xl"></i>
+              </button>
+            </header>
+
+            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="mb-8 p-6 bg-rose-50 rounded-3xl border border-rose-100 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-rose-500 shadow-sm font-bold text-lg">
+                  {students.find(s => s.id === showSOSModal)?.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Aluno(a)</p>
+                  <h4 className="font-bold text-gray-900 text-lg leading-none">
+                    {students.find(s => s.id === showSOSModal)?.name}
+                  </h4>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-rose-200 text-rose-700 text-[9px] font-black uppercase rounded-md">
+                      {students.find(s => s.id === showSOSModal)?.deficiency || 'Não informada'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {isLoadingSOS ? (
+                <div className="py-20 text-center space-y-4">
+                  <div className="w-12 h-12 border-4 border-rose-100 border-t-rose-600 rounded-full animate-spin mx-auto"></div>
+                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Consultando Base de Conhecimento...</p>
+                </div>
+              ) : sosStrategies.length === 0 ? (
+                <div className="py-16 text-center bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                  <i className="fa-solid fa-triangle-exclamation text-gray-300 text-4xl mb-4"></i>
+                  <p className="text-gray-400 text-xs font-bold uppercase px-12">Nenhuma estratégia específica encontrada para este perfil na base de dados.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {sosStrategies.map((strategy, idx) => (
+                    <div key={strategy.id} className="group relative">
+                      <div className="absolute -left-3 top-0 bottom-0 w-1 bg-rose-200 rounded-full transition-all group-hover:bg-rose-500"></div>
+                      <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all hover:border-rose-100">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <span className="px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase rounded-lg tracking-widest">
+                            BNCC: {strategy.bncc_code}
+                          </span>
+                          <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-xs">
+                            {idx + 1}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <h5 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-1">Estratégia de Mediação</h5>
+                            <p className="text-gray-800 font-semibold leading-relaxed">
+                              {strategy.strategy_description}
+                            </p>
+                          </div>
+                          
+                          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                              <i className="fa-solid fa-lightbulb text-amber-400"></i>
+                              Exemplo Prático de Adaptação
+                            </h5>
+                            <p className="text-gray-600 text-sm italic">
+                              "{strategy.adaptation_example}"
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <footer className="p-6 bg-gray-50 border-t border-gray-100 flex justify-center">
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest text-center max-w-sm">
+                Estas orientações baseiam-se no Guia de Avaliação Inclusiva e Legislação Vigente.
+              </p>
+            </footer>
           </div>
         </div>
       )}

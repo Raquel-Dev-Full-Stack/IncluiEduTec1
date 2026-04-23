@@ -269,3 +269,12 @@ export interface ActivityLog {
   school_id?: string;
   criado_em: string;
 }
+
+export interface SOSStrategy {
+  id: string;
+  disability_type: string;
+  bncc_code: string;
+  strategy_description: string;
+  adaptation_example: string;
+  created_at?: string;
+}

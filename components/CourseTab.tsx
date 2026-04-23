@@ -40,37 +40,80 @@ const MODULES: Module[] = [
       { 
         id: 1, 
         title: 'Histórico e o Binômio Educar-Cuidar', 
-        duration: '20 min', 
+        duration: '45 min', 
         type: 'leitura', 
-        completed: true, 
-        description: 'Evolução histórica e a indissociabilidade entre o educar e o cuidar.',
-        content: `### Resumo Teórico
-Historicamente, passamos da exclusão para a inclusão. O binômio **Educar e Cuidar** é indissociável: o cuidado garante a dignidade e a prontidão para o aprender. A **Mediação Humanizadora** atua como a ponte entre o aluno e o conhecimento.
+        completed: false, 
+        description: 'A evolução do olhar sobre a deficiência e a indissociabilidade do cuidado.',
+        content: `### O Paradigma da Inclusão Radical
+A trajetória da educação especial no Brasil evoluiu de um modelo de segregação para um paradigma de inclusão radical. Segundo o Guia MEC 2026, a verdadeira inclusão ocorre quando há o rompimento das barreiras pedagógicas e atitudinais, permitindo que o estudante pertença e participe ativamente.
 
-### Diretriz MEC 2026
-O suporte à vida escolar (higiene, locomoção) é parte integrante do projeto pedagógico, não devendo ser separado das atividades de ensino.
+### O Binômio Educar-Cuidar
+Superar a dicotomia entre o "educar" e o "cuidar" é central. A teoria postula que cada momento de interação, como a alimentação ou higiene, é uma oportunidade pedagógica para trabalhar autonomia e comunicação, fundamentais para a dignidade humana.
 
-### Exemplo Prático (BNCC: EI03EO01)
-*Habilidade:* Demonstrar empatia pelos outros.
-*Flexibilização:* Para um aluno com TEA, use cartões visuais com fotos reais dos colegas. O professor narra as emoções: "O Pedro está sorrindo porque gostou da brincadeira".`
+### Avaliação para Aprendizagem
+O cuidado não é uma interrupção, mas uma base ética de suporte. Ao cuidar, estabelece-se um vínculo de confiança onde a aprendizagem floresce. Sem segurança emocional, o acesso cognitivo torna-se extremamente dificultado.
+
+### Atitude Mediadora Humanizadora
+Reconhecer o aluno como sujeito de direitos e olhar para as potencialidades, além do diagnóstico clínico. O foco muda de "o que o aluno não consegue" para "como podemos organizar o ambiente para que ele consiga".
+
+### Planejamento Colaborativo
+A gestão deve garantir espaços para o diálogo entre professores e mediadores. Quando a equipe fala a mesma língua pedagógica, a mediação torna-se uma ponte eficaz para a equidade e autonomia do estudante.
+
+**Integração BNCC:**
+* **Código:** \`EF01HI01\` - Identificar aspectos do seu crescimento por meio do registro das lembranças de sua memória...
+* **Estratégia DUA:** No pilar da **Representação**, utilize objetos táteis e registros sonoros além de fotos. Isso permite que alunos com deficiência visual ou intelectual acessem a noção de tempo de forma concreta.`
       },
       { 
         id: 2, 
         title: 'Mediação Humanizadora na Prática', 
-        duration: '25 min', 
+        duration: '40 min', 
         type: 'leitura', 
-        completed: true, 
-        description: 'Como atuar como mediador do conhecimento respeitando a singularidade.',
-        content: `A mediação baseia-se na zona de desenvolvimento proximal. O professor não apenas entrega o conteúdo, mas cria estratégias para que o aluno com NEE acesse o mesmo objetivo que a turma, com suportes específicos.`
+        completed: false, 
+        description: 'Estratégias de Scaffolding (andaime) e a Zona de Desenvolvimento Proximal (ZPD).',
+        content: `### Expansão do Potencial
+A mediação fundamenta-se na ideia de que a inteligência pode ser expandida através da interação qualificada. O mediador atua na ZPD, oferecendo o "andaime" (scaffolding) necessário para novos níveis de autonomia.
+
+### Intencionalidade e Ajuste
+Diferente de apenas vigiar, o mediador humanizador atua com intencionalidade, provocando reflexão. A "Avaliação para Aprendizagem" (MEC 2026) exige ajustes de suporte em tempo real, celebrando microevoluções.
+
+### Escuta Sensível e Invisibilidade
+O mediador deve traduzir linguagens não verbais e gestos, garantindo que o aluno se sinta parte do grupo. É um ato de resistência contra a invisibilidade, reafirmando o lugar de aprender de todos.
+
+### Barreiras Atitudinais e Cooperação
+O foco deve estar na remoção de preconceitos, incentivando a turma a respeitar diferentes ritmos. Quando bem-sucedida, a mediação promove interação independente com o conhecimento e com os pares.
+
+### Rede de Apoio e Transdisciplinaridade
+A mediação faz parte de uma rede que envolve professor regente, AEE e família. O diálogo transdisciplinar garante que o suporte seja articulado com o currículo oficial e as necessidades do estudante.
+
+**Integração BNCC:**
+* **Código:** \`EF01GE01\` - Descrever características de seus lugares de vivência (moradia, escola etc.)...
+* **Estratégia DUA:** No pilar de **Ação e Expressão**, permita o uso de mapas táteis ou fotografias digitais. Múltiplas linguagens garantem que alunos com dificuldades motoras ou de fala expressem sua percepção do espaço.`
       },
       { 
         id: 3, 
         title: 'Atividade de Reflexão: Prática Diária', 
-        duration: '15 min', 
+        duration: '20 min', 
         type: 'atividade', 
         completed: false, 
-        description: 'Reflexão sobre a integração do educar e cuidar no seu cotidiano.',
-        content: `**Desafio:** Liste três momentos do seu dia onde o "cuidar" pareceu interromper o "educar". Como você pode transformar esses momentos em oportunidades de aprendizagem social ou de autonomia?`
+        description: 'Transformando momentos de rotina em oportunidades pedagógicas.',
+        content: `### O Motor da Transformação
+A reflexão sobre a prática diária impede que o automatismo bloqueie as oportunidades de mediação. Analise momentos da rotina sob a lente do Educar-Cuidar: onde há real promoção de aprendizado?
+
+### Autoavaliação Docente
+Praticar a "Avaliação para a Aprendizagem" de si mesmo envolve identificar barreiras criadas inconscientemente e buscar caminhos variados para o engajamento de todos os alunos.
+
+### Engajamento Afetivo
+A aprendizagem é emocional. Se o aluno não se sente seguro e valorizado, o processo cognitivo será superficial. Questione-se: "Meu aluno sentiu que sua presença fez diferença hoje?".
+
+### Diálogo e Formação Coletiva
+O compartilhamento de desafios entre mediador e professor regente fortalece a intervenção. A inclusão é trabalho de equipe e a reflexão compartilhada gera conhecimento prático vivo na escola.
+
+### Intencionalidade em Transições
+Escolha um momento de transição (como a chegada, o recreio ou a saída) e planeje uma intencionalidade pedagógica para ele. Como esse momento de "cuidado" ou "rotina" pode ser transformado em uma experiência de autonomia e descoberta para o aluno com deficiência?
+
+**Integração BNCC:**
+* **Código:** \`EF15AR01\` - Identificar e apreciar formas distintas das artes visuais...
+* **Estratégia DUA:** No pilar do **Engajamento**, promova uma "galeria de sensações" (tato, som, aroma). Isso permite que alunos com deficiências sensoriais se envolvam profundamente com a apreciação artística.`
       },
     ],
   },
@@ -96,15 +139,24 @@ O suporte à vida escolar (higiene, locomoção) é parte integrante do projeto 
         type: 'leitura', 
         completed: false, 
         description: 'A obrigatoriedade de garantir meios para que todos acessem o código escrito.',
-        content: `### Resumo Teórico
-A Lei 15.247/2025 combate a ideia de que alunos com deficiência "não alfabetizam". Todos devem acessar o código escrito até o final do 2º ano.
+        content: `### O Direito Inalienável à Escrita
+A Lei 15.247/2025 reafirma o direito de todo estudante à alfabetização. A escola deve garantir meios e adaptações curriculares para que o aluno percorra o ciclo de alfabetização junto aos seus pares cronológicos, invertendo a lógica da "eterna prontidão".
 
-### Diretriz MEC 2026
-**Fim da exigência de laudo:** O AEE deve ser iniciado com base nas barreiras identificadas pelo professor, sem aguardar diagnósticos clínicos.
+### Abordagens Multissensoriais
+Para alunos com TEA, dislexia ou DI, abordagens que estimulem múltiplos sentidos são cruciais. O uso de letras de lixa, escrita na areia e o método fônico-gestual garante que o cérebro processe a informação por diversos caminhos.
 
-### Exemplo Prático (BNCC: EF01LP01)
-*Habilidade:* Reconhecer a direção da escrita.
-*Flexibilização:* Use "janelas de leitura" (vazadores de papel) que isolam a linha, facilitando o foco para alunos com Deficiência Intelectual ou TDAH.`
+### Ferramenta de Libertação
+O Guia MEC 2026 propõe que a avaliação foque nos processos de construção da hipótese de escrita. Compreender a função social do texto é tão vital quanto a decodificação, exigindo flexibilidade sem abrir mão de altas expectativas.
+
+### Formação e DUA
+A alfabetização inclusiva beneficia toda a turma ao tornar o método regular acessível. Quando se usa imagens, sons e movimentos, respeita-se a diversidade de estilos de aprendizagem, elevando a qualidade do ensino para todos os estudantes.
+
+### Combatendo Mitos de Incapacidade
+A lei é categórica: o fracasso na alfabetização de um aluno PCD é um fracasso dos suportes oferecidos pela escola. Garantir o ler e escrever é garantir cidadania, autonomia e acesso ao patrimônio cultural da humanidade.
+
+**Integração BNCC:**
+* **Código:** \`EF01LP02\` - Escrever, espontaneamente ou por ditado, palavras e frases de forma alfabética...
+* **Estratégia DUA:** No pilar da **Representação**, use letras móveis magnéticas coloridas e softwares de síntese de voz. O feedback instantâneo por múltiplos canais facilita a associação fonema-grafema.`
       },
       { 
         id: 5, 
@@ -113,7 +165,24 @@ A Lei 15.247/2025 combate a ideia de que alunos com deficiência "não alfabetiz
         type: 'atividade', 
         completed: false, 
         description: 'Plano de ação para suporte imediato ao aluno.',
-        content: `Como sua escola pode organizar o suporte pedagógico imediato? Crie um fluxo de encaminhamento interno baseado na observação do professor regente.`
+        content: `### Fim da Barreira Clínica
+O Marco Legal 2025/2026 extingue a obrigatoriedade do laudo médico como condição para o AEE. Se a equipe escolar identifica barreiras pedagógicas significativas, o suporte especializado deve ser iniciado imediatamente.
+
+### Foco na Funcionalidade
+O AEE é um serviço pedagógico, não clínico. O foco está nas barreiras de atenção, comunicação e motricidade. Relatórios de Identificação de Necessidades Pedagógicas assinados pela escola passam a ter validade legal para recursos.
+
+### O Professor como Detetive de Barreiras
+O professor regente assume papel ativo na identificação de travas no aprendizado através da observação sistemática. O diagnóstico pedagógico oferece caminhos práticos de intervenção muito mais eficazes que um CID clínico isolado.
+
+### Agilidade e Gestão de Rede
+Essa mudança permite que a gestão municipal responda rapidamente à demanda real das escolas, sem os gargalos do sistema de saúde. A autonomia escolar é fortalecida, separando os tempos da burocracia dos tempos da aprendizagem.
+
+### Justiça Educacional e Autonomia
+Implementar o AEE sem laudo reconhece a soberania da escola sobre as necessidades de seus alunos. O IncluiEduTec apoia esse fluxo, documentando necessidades e garantindo que nenhum aluno espere por diagnósticos para aprender.
+
+**Integração BNCC:**
+* **Código:** \`EF15LP03\` - Localizar informações explícitas em textos.
+* **Estratégia DUA:** No pilar da **Representação**, use marcadores físicos ou digitais coloridos. Se o aluno não decodifica, ele busca a informação em um texto lido pelo mediador, apontando a ilustração correspondente.`
       },
     ],
   },
@@ -134,18 +203,28 @@ A Lei 15.247/2025 combate a ideia de que alunos com deficiência "não alfabetiz
       { 
         id: 6, 
         title: 'Os 3 Princípios do DUA', 
-        duration: '30 min', 
+        duration: '45 min', 
         type: 'leitura', 
         completed: false, 
         description: 'Engajamento, Representação e Ação/Expressão.',
-        content: `### Resumo Teórico
-1. **Engajamento:** O Porquê (interesse).
-2. **Representação:** O Quê (múltiplos formatos).
-3. **Ação e Expressão:** O Como (diversas formas de demonstrar aprendizado).
+        content: `### A Estrutura da Acessibilidade
+O DUA permite transformar a inclusão em realidade técnica. Planejamos desde o início para a diversidade. O primeiro princípio é o **Engajamento** (o "porquê"): focar em despertar o interesse, oferecer escolhas e conexão com a realidade.
 
-### Exemplo Prático (BNCC: EF03MA06)
-*Habilidade:* Resolver problemas de adição/subtração.
-*DUA:* Apresentar o problema em áudio, texto e material concreto (ábaco). O aluno pode responder gravando áudio ou manipulando objetos.`
+### Representação (O "Quê")
+Reconhece que os alunos percebem informações de formas diferentes. Exige conteúdos em múltiplos formatos: texto, vídeo, áudio, objetos concretos. A avaliação deve verificar se a forma de entrega não foi a barreira.
+
+### Ação e Expressão (O "Como")
+Permite que os alunos demonstrem o que aprenderam de formas variadas (computador, mapa mental, oral). A flexibilização dos meios de resposta garante que avaliamos o conhecimento, não a habilidade motora ou escrita.
+
+### Currículo Flexível vs. Deficiência
+A deficiência não está no aluno, mas no currículo inflexível. O DUA reduz a necessidade de PEIs complexos, pois o plano geral já contempla a maioria das necessidades, beneficiando alunos com e sem deficiência.
+
+### Criatividade e Rigor
+O educador deve abrir múltiplas portas de entrada para o conteúdo. A "Avaliação para Aprendizagem" torna-se análise de acessibilidade. Essa abordagem tira o peso do fracasso do aluno e foca na inovação docente.
+
+**Integração BNCC:**
+* **Código:** \`EF01MA01\` - Utilizar números naturais como indicador de quantidade ou de ordem em diferentes situações cotidianas...
+* **Estratégia DUA:** No pilar de **Engajamento**, use situações reais como numeração de salas ou códigos de barras. Materiais manipuláveis facilitam a conceituação para alunos com dificuldades de abstração.`
       },
       { 
         id: 7, 
@@ -154,7 +233,24 @@ A Lei 15.247/2025 combate a ideia de que alunos com deficiência "não alfabetiz
         type: 'atividade', 
         completed: false, 
         description: 'Criando aulas que não precisam de adaptações posteriores.',
-        content: `Escolha um objetivo da BNCC e desenhe três formas diferentes de representação para ele.`
+        content: `### Alma do DUA: Antecipação
+O planejamento proativo antecipa barreiras e já inclui suportes no design da aula. É a diferença entre projetar um edifício com acessibilidade universal desde a fundação versus colocar uma rampa improvisada depois.
+
+### Cuidado Pedagógico
+Alinha-se ao binômio 'Educar e Cuidar'. Garante que o aluno não se sinta um "corpo estranho". Quando ferramentas de acessibilidade são para toda a turma, o aluno PCD não é estigmatizado, promovendo segurança psicológica.
+
+### Dados e Evidências
+O planejamento deve ser baseado na "Avaliação para Aprendizagem". Se há alunos que precisam de rotinas visuais, o cronograma já deve estar no quadro. O planejamento deixa de ser burocracia e vira mapa de sucessos.
+
+### Colaboração Estreita
+Exige diálogo com o mediador. Antes de desenhar a aula, questione as barreiras previstas. Essa inteligência compartilhada cria suportes que potencializam a ação de "ponte" pedagógica do mediador.
+
+### Excelência e Respeito
+Um planejamento proativo é robusto e respeita a inteligência de cada estudante. É a afirmação de que ninguém é "menos" e que a escola está pronta para acolher a todos com o mesmo nível de dedicação.
+
+**Integração BNCC:**
+* **Código:** \`EF01CI01\` - Comparar características de diferentes materiais do cotidiano quanto a sua forma, textura, dureza, cor e brilho.
+* **Estratégia DUA:** No pilar de **Ação e Expressão**, organize uma "caixa de mistérios" para classificar materiais pelo tato. É equidade total para deficientes visuais e facilita a conceituação concreta para alunos com TEA.`
       },
     ],
   },
@@ -223,7 +319,26 @@ A Lei 15.247/2025 combate a ideia de que alunos com deficiência "não alfabetiz
         type: 'quiz', 
         completed: false, 
         description: 'Avaliação final integradora.',
-        content: `Parabéns por chegar até aqui! Este quiz validará seus conhecimentos sobre o Marco Legal 2026 e as práticas de DUA/PEI.`
+        content: `### Verificação de Conhecimentos
+Responda mentalmente ou anote suas respostas para validar seu aprendizado:
+
+**1. Segundo a Lei 15.247/2025, qual é o pré-requisito para iniciar o AEE?**
+a) Laudo médico com CID.
+b) Identificação de barreiras pedagógicas pelo professor.
+c) Autorização da Secretaria Estadual.
+
+**2. O binômio "Educar e Cuidar" significa:**
+a) Que o mediador cuida e o professor educa.
+b) Que o cuidado é parte integrante e indissociável do processo pedagógico.
+c) Que as atividades de higiene devem ser feitas fora do horário de aula.
+
+**3. No DUA, oferecer um texto em braille e em áudio atende a qual pilar?**
+a) Engajamento.
+b) Ação e Expressão.
+c) Representação.
+
+### Conclusão do Curso
+Parabéns! Você completou a formação **Inclusão na Prática**. Aplique esses conceitos no seu dia a dia e utilize as ferramentas do IncluiEduTec para documentar a evolução dos seus alunos. Seu certificado estará disponível assim que marcar todas as lições como concluídas.`
       },
     ],
   },
