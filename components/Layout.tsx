@@ -119,6 +119,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
+      id: 'curso_inclusao',
+      label: 'Curso de Inclusão',
+      icon: 'fa-graduation-cap',
+      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+    },
+    {
       id: 'configuracoes',
       label: 'Configurações',
       icon: 'fa-gear',

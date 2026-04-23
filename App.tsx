@@ -32,6 +32,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminRegistros from './components/AdminRegistros';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
+import CourseTab from './components/CourseTab';
 import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord, Report, Municipio } from './types';
 import { MOCK_USERS, MOCK_SCHOOLS, MOCK_STUDENTS, MOCK_MEDIATION_RECORDS, MOCK_CLASSES, MOCK_LESSON_PLANS, MOCK_MEALS } from './constants';
 import { supabase } from './lib/supabaseClient';
@@ -2971,6 +2972,9 @@ export default function App() {
             />
           </div>
         );
+
+      case 'curso_inclusao':
+        return <CourseTab />;
 
       default:
         return (
