@@ -27,10 +27,11 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [summaryFilter, setSummaryFilter] = useState<string>(new Date().toISOString().split('T')[0]); // 'all' or 'YYYY-MM-DD'
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
 
-  const handleDailyRecordChange = (
+  const handleDailyRecordChange = async (
     studentId: string, 
     field: 'cafe_da_manha' | 'colacao' | 'almoco' | 'lanche' | 'janta' | 'dormiu' | 'evacuou', 
     value: string | boolean
@@ -40,6 +41,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
     const student = students.find(s => s.id === studentId);
     if (!student) return;
 
+    setIsSaving(true);
     let updatedRefeicoes = [...(student.refeicoes || [])];
     let updatedEvacuacao = [...(student.evacuacao || [])];
 
@@ -66,10 +68,13 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
       }
     }
 
-    onUpdateStudentHealth(studentId, updatedRefeicoes, updatedEvacuacao);
+    const success = await (onUpdateStudentHealth(studentId, updatedRefeicoes, updatedEvacuacao) as any);
+    setIsSaving(false);
     
-    setFeedback(`Registro diário atualizado!`);
-    setTimeout(() => setFeedback(null), 2000);
+    if (success !== false) {
+      setFeedback(`Registro diário atualizado com sucesso!`);
+      setTimeout(() => setFeedback(null), 2000);
+    }
   };
 
   const selectedStudentForHistory = students.find(s => s.id === viewingHistory);
@@ -122,12 +127,40 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
             <i className="fa-solid fa-notes-medical"></i>
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Controle de Saúde e Refeições</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Controle de Saúde e Refeições</h1>
+              {isSaving && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 animate-pulse">
+                  <i className="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Salvando...</span>
+                </div>
+              )}
+            </div>
             <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Acompanhamento diário consolidado</p>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4">
+          {isRegistering && (
+            <button
+              onClick={() => {
+                setIsRegistering(false);
+                if (!isSaving) {
+                  setFeedback('Registros diários concluídos!');
+                  setTimeout(() => setFeedback(null), 3000);
+                }
+              }}
+              disabled={isSaving}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${
+                isSaving 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200 active:scale-95'
+              } animate-in fade-in slide-in-from-right-4 duration-300`}
+            >
+              <i className={`fa-solid ${isSaving ? 'fa-spinner fa-spin' : 'fa-check'}`}></i>
+              {isSaving ? 'Salvando...' : 'Salvar'}
+            </button>
+          )}
           <button
             onClick={() => setIsRegistering(!isRegistering)}
             className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${isRegistering

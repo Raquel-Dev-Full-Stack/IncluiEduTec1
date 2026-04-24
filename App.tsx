@@ -332,6 +332,8 @@ export default function App() {
       classroom: s.classroom || '',
       birthDate: s.birth_date,
       notas: s.notas || {},
+      refeicoes: s.refeicoes || {},
+      evacuacao: s.evacuacao || {},
       year: s.enrollment_year || s.year || 0
     })) as Student[]);
 
@@ -898,22 +900,30 @@ export default function App() {
   };
 
   const handleUpdateStudentHealth = async (studentId: string, refeicoes: any[], evacuacao: any[]) => {
-    if (!user) return;
+    if (!user) return false;
+    
     try {
       const { data, error } = await supabase
         .from('students')
-        .update({ refeicoes, evacuacao })
+        .update({ 
+          refeicoes, 
+          evacuacao,
+          last_monitoring_at: new Date().toISOString()
+        })
         .eq('id', studentId)
         .select();
 
       if (error) throw error;
 
-      if (data) {
+      if (data && data.length > 0) {
         setStudents(prev => prev.map(s => s.id === studentId ? { ...s, refeicoes, evacuacao } : s));
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error saving student health:', error);
       showNotification('Erro ao salvar registros de saúde.', 'error');
+      return false;
     }
   };
 
