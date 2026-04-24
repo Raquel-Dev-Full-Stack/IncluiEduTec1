@@ -9,11 +9,12 @@ interface TeacherInclusivePlansProps {
   classes: Class[];
   user: User;
   logActivity?: (log: any) => void;
+  onBack?: () => void;
 }
 
 type PlanType = 'PEI' | 'PDI' | 'PAEE';
 
-const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students, classes, user, logActivity }) => {
+const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students, classes, user, logActivity, onBack }) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [activePlan, setActivePlan] = useState<PlanType>('PEI');
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -224,6 +225,15 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
             <i className="fa-solid fa-file-medical"></i>
           </div>
           <div>
+            {onBack && (
+              <button 
+                onClick={onBack}
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-gray-400 hover:text-indigo-600 transition-colors mb-3 group"
+              >
+                <i className="fa-solid fa-arrow-left transition-transform group-hover:-translate-x-1"></i> 
+                Voltar ao Portal
+              </button>
+            )}
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">Planos Inclusivos</h1>
             <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Gestão Pedagógica Estruturada - AEE & Inclusão</p>
           </div>

@@ -2684,7 +2684,7 @@ export default function App() {
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
-          return <TeacherInclusivePlans students={teacherStudents} classes={teacherClasses} user={user} logActivity={logActivity} />;
+          return <TeacherInclusivePlans students={teacherStudents} classes={teacherClasses} user={user} logActivity={logActivity} onBack={() => setActiveTab('dashboard')} />;
         }
         return null;
 
