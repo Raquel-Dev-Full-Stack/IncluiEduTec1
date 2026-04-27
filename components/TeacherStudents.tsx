@@ -55,7 +55,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
       
       const filteredByTurno = students.filter(s => 
         s.attendancePeriod === selectedBatchTurno || 
-        s.turno === 'integral' ||
+        s.turno?.toLowerCase() === 'integral' ||
         selectedBatchTurno === 'Integral'
       );
 
@@ -265,7 +265,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {students.filter(s => 
               s.attendancePeriod === selectedBatchTurno || 
-              s.turno === 'integral' || 
+              s.turno?.toLowerCase() === 'integral' || 
               selectedBatchTurno === 'Integral'
             ).length === 0 ? (
               <div className="col-span-full py-8 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
@@ -274,7 +274,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
             ) : (
               students.filter(s => 
                 s.attendancePeriod === selectedBatchTurno || 
-                s.turno === 'integral' || 
+                s.turno?.toLowerCase() === 'integral' || 
                 selectedBatchTurno === 'Integral'
               ).map((student) => (
                 <div key={student.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between group hover:bg-white hover:border-emerald-200 transition-all shadow-sm">

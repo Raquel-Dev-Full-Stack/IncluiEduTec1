@@ -737,8 +737,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     .filter(school => selectedSchoolId === 'all' || school.id === selectedSchoolId)
     .map(school => {
       const schoolStudents = (students || []).filter(s => s.schoolId === school.id);
-      const parcial = schoolStudents.filter(s => s.turno === 'parcial').length;
-      const integral = schoolStudents.filter(s => s.turno === 'integral').length;
+      const parcial = schoolStudents.filter(s => {
+        const val = s.turno || s.schoolRegime;
+        return val?.toLowerCase() === 'parcial';
+      }).length;
+      const integral = schoolStudents.filter(s => {
+        const val = s.turno || s.schoolRegime;
+        return val?.toLowerCase() === 'integral';
+      }).length;
 
       return {
         name: school.name.split(' ').slice(0, 3).join(' '),

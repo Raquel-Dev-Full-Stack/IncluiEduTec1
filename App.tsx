@@ -322,7 +322,7 @@ export default function App() {
       deficiency: s.deficiency || '',
       schoolRegime: s.school_regime || 'Parcial',
       attendancePeriod: s.attendance_period || 'Manhã',
-      turno: s.turno,
+      turno: s.turno || (s.school_regime ? s.school_regime.toLowerCase() : s.schoolRegime?.toLowerCase()),
       description: s.description || '',
       guardians: s.guardians || [],
       hasMedicalReport: s.has_medical_report || false,
