@@ -1,11 +1,45 @@
 
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { DB_METRICS, STORAGE_DISTRIBUTION, SYSTEM_POLICIES } from '../constants';
+import { supabase } from '../lib/supabaseClient';
 
 const DBAnalysis: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [liveMetrics, setLiveMetrics] = useState(DB_METRICS);
+  const [supabaseMetrics, setSupabaseMetrics] = useState<any>(null);
+
+  const fetchSupabaseMetrics = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_db_metrics');
+      if (error) throw error;
+      setSupabaseMetrics(data);
+    } catch (err) {
+      console.error('Error fetching supabase metrics:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSupabaseMetrics();
+    const interval = setInterval(() => {
+      fetchSupabaseMetrics();
+    }, 5 * 60 * 1000); // 5 minutos
+    return () => clearInterval(interval);
+  }, []);
+
+  const getColorForPercent = (value: number, limit: number) => {
+    const percent = value / limit;
+    if (percent <= 0.7) return 'bg-emerald-500 text-emerald-600';
+    if (percent <= 0.9) return 'bg-amber-500 text-amber-600';
+    return 'bg-rose-500 text-rose-600';
+  };
+
+  const getStrokeColorForPercent = (value: number, limit: number) => {
+    const percent = value / limit;
+    if (percent <= 0.7) return '#10b981';
+    if (percent <= 0.9) return '#f59e0b';
+    return '#f43f5e';
+  };
 
   // Simulação de logs de auditoria em tempo real
   useEffect(() => {
@@ -226,6 +260,187 @@ const DBAnalysis: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Novas Métricas de Monitoramento do Supabase */}
+      <h2 className="text-xl font-black text-slate-800 dark:text-white mt-10 mb-6 flex items-center gap-3">
+        <i className="fa-solid fa-server text-blue-500"></i> Monitoramento Supabase (Real-time)
+      </h2>
+      
+      {supabaseMetrics ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* 1. Banco de Dados (Postgres) */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-4">
+               <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
+                 <i className="fa-solid fa-database text-xl"></i>
+               </div>
+               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Postgres DB</span>
+            </div>
+            <div>
+               <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Tamanho do Banco</h3>
+               <div className="flex items-baseline gap-1">
+                 <span className="text-3xl font-black text-gray-900 dark:text-white">{supabaseMetrics.db_size_mb.toFixed(2)}</span>
+                 <span className="text-xs font-bold text-gray-400">MB</span>
+               </div>
+            </div>
+            <div className="mt-4">
+               <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2 text-gray-500">
+                 <span>{((supabaseMetrics.db_size_mb / 500) * 100).toFixed(1)}% Usado</span>
+                 <span>Limite: 500 MB</span>
+               </div>
+               <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
+                 <div 
+                   className={`h-full rounded-full ${getColorForPercent(supabaseMetrics.db_size_mb, 500).split(' ')[0]}`}
+                   style={{ width: `${Math.min((supabaseMetrics.db_size_mb / 500) * 100, 100)}%` }}
+                 ></div>
+               </div>
+            </div>
+          </div>
+
+          {/* 3. Usuários Ativos Mensais (MAUs) */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-4">
+               <div className="p-3 rounded-xl bg-purple-50 text-purple-600">
+                 <i className="fa-solid fa-users text-xl"></i>
+               </div>
+               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Auth</span>
+            </div>
+            <div>
+               <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">MAUs (Mensal)</h3>
+               <div className="flex items-baseline gap-1">
+                 <span className={`text-3xl font-black ${getColorForPercent(supabaseMetrics.mau, 50000).split(' ')[1]}`}>{supabaseMetrics.mau.toLocaleString()}</span>
+               </div>
+            </div>
+            <div className="mt-4">
+               <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2 text-gray-500">
+                 <span>{((supabaseMetrics.mau / 50000) * 100).toFixed(1)}% Usado</span>
+                 <span>Limite: 50.000</span>
+               </div>
+               <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
+                 <div 
+                   className={`h-full rounded-full ${getColorForPercent(supabaseMetrics.mau, 50000).split(' ')[0]}`}
+                   style={{ width: `${Math.min((supabaseMetrics.mau / 50000) * 100, 100)}%` }}
+                 ></div>
+               </div>
+            </div>
+          </div>
+
+          {/* 5. Funções Edge */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-4">
+               <div className="p-3 rounded-xl bg-orange-50 text-orange-600">
+                 <i className="fa-solid fa-bolt text-xl"></i>
+               </div>
+               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Edge</span>
+            </div>
+            <div>
+               <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Invocações</h3>
+               <div className="flex items-baseline gap-1">
+                 <span className={`text-3xl font-black ${getColorForPercent(supabaseMetrics.edge_invocations, 500000).split(' ')[1]}`}>{supabaseMetrics.edge_invocations.toLocaleString()}</span>
+               </div>
+            </div>
+            <div className="mt-4 h-16 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[{ name: 'Edge', value: supabaseMetrics.edge_invocations }]}>
+                   <Bar dataKey="value" fill={getStrokeColorForPercent(supabaseMetrics.edge_invocations, 500000)} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-2 text-right">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Limite: 500.000</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="animate-pulse flex gap-6">
+          <div className="h-40 bg-gray-200 dark:bg-slate-700 rounded-[2rem] flex-1"></div>
+          <div className="h-40 bg-gray-200 dark:bg-slate-700 rounded-[2rem] flex-1"></div>
+          <div className="h-40 bg-gray-200 dark:bg-slate-700 rounded-[2rem] flex-1"></div>
+        </div>
+      )}
+
+      {/* Gráficos Supabase */}
+      {supabaseMetrics && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+          {/* 2. Armazenamento de Arquivos */}
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                 <i className="fa-solid fa-box text-blue-500"></i> Storage Buckets
+              </h3>
+              <span className="text-[9px] font-black bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-gray-500 uppercase">Limite: 1 GB</span>
+            </div>
+            <div className="h-64 w-full">
+              {supabaseMetrics.storage && supabaseMetrics.storage.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={supabaseMetrics.storage}
+                      cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5}
+                      dataKey="size_mb" nameKey="bucket_id"
+                    >
+                      {supabaseMetrics.storage.map((_: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => `${value.toFixed(2)} MB`} />
+                    <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400 text-sm font-medium">Nenhum dado de bucket</div>
+              )}
+            </div>
+            {supabaseMetrics.storage && supabaseMetrics.storage.length > 0 && (
+              <div className="mt-4">
+                 <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                   <div 
+                     className={`h-full rounded-full ${getColorForPercent(supabaseMetrics.storage.reduce((a: any, b: any) => a + b.size_mb, 0), 1024).split(' ')[0]}`}
+                     style={{ width: `${Math.min((supabaseMetrics.storage.reduce((a: any, b: any) => a + b.size_mb, 0) / 1024) * 100, 100)}%` }}
+                   ></div>
+                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Tráfego de Saída (Egress) */}
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-700">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                 <i className="fa-solid fa-network-wired text-emerald-500"></i> Tráfego de Saída (Egress)
+              </h3>
+              <span className="text-[9px] font-black bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-gray-500 uppercase">Limite: 500 MB/mês</span>
+            </div>
+            <div className="h-64 w-full">
+               <ResponsiveContainer width="100%" height="100%">
+                 <LineChart data={supabaseMetrics.egress}>
+                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dx={-10} />
+                   <Tooltip 
+                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                     formatter={(value: number) => [`${value} MB`, 'Egress']}
+                   />
+                   <Line 
+                     type="monotone" 
+                     dataKey="egress_mb" 
+                     stroke={getStrokeColorForPercent(supabaseMetrics.egress.reduce((acc: number, item: any) => acc + item.egress_mb, 0), 500)} 
+                     strokeWidth={3} 
+                     dot={{ r: 4, strokeWidth: 2 }} 
+                     activeDot={{ r: 6 }} 
+                   />
+                 </LineChart>
+               </ResponsiveContainer>
+            </div>
+            <div className="mt-4 flex justify-between items-center text-xs font-bold text-gray-500">
+              <span>Total no Mês: {supabaseMetrics.egress.reduce((acc: number, item: any) => acc + item.egress_mb, 0).toFixed(2)} MB</span>
+              <span className={getColorForPercent(supabaseMetrics.egress.reduce((acc: number, item: any) => acc + item.egress_mb, 0), 500).split(' ')[1]}>
+                {((supabaseMetrics.egress.reduce((acc: number, item: any) => acc + item.egress_mb, 0) / 500) * 100).toFixed(1)}% do limite
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
