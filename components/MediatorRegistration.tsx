@@ -38,7 +38,6 @@ const MediatorRegistration: React.FC<MediatorRegistrationProps> = ({ onSave, onC
       newErrors.name = 'Insira o nome completo (pelo menos duas palavras).';
     }
 
-    if (!formData.phone?.trim()) newErrors.phone = 'Número de contato é obrigatório.';
 
     // E-mail: Regex mais rigoroso
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -113,7 +112,7 @@ const MediatorRegistration: React.FC<MediatorRegistrationProps> = ({ onSave, onC
 
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <i className="fa-solid fa-phone text-indigo-400"></i> Número de Contato *
+              <i className="fa-solid fa-phone text-indigo-400"></i> Número de Contato
             </label>
             <input
               type="text"

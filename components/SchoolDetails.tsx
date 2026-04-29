@@ -389,9 +389,9 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           <Table<any>
             data={schoolTeachers}
             columns={[
-              { header: 'NOME', accessor: (u) => <span className="font-bold text-slate-800">{u.name}</span> },
+              { header: 'NOME', accessor: (u) => <span className="font-bold text-slate-800 dark:text-slate-100">{u.name}</span> },
               { header: 'E-MAIL', accessor: (u) => u.email || 'N/A' },
-              { header: 'STATUS', accessor: (u) => u.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-slate-600 uppercase text-[10px]">Inativo</span> }
+              { header: 'STATUS', accessor: (u) => u.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-slate-600 dark:text-slate-400 uppercase text-[10px]">Inativo</span> }
             ]}
           />
         );
@@ -400,10 +400,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           <Table<Student>
             data={schoolStudents}
             columns={[
-              { header: 'ALUNO', accessor: (s) => <span className="font-bold text-slate-800">{s.name}</span> },
+              { header: 'ALUNO', accessor: (s) => <span className="font-bold text-slate-800 dark:text-slate-100">{s.name}</span> },
               { header: 'RA', accessor: 'ra' },
               { header: 'DEFICIÊNCIA', accessor: 'deficiency' },
-              { header: 'AEE', accessor: (s) => s.aee ? <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black uppercase">SIM</span> : 'NÃO' }
+              { header: 'AEE', accessor: (s) => s.aee ? <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-[10px] font-black uppercase">SIM</span> : 'NÃO' }
             ]}
           />
         );
@@ -535,14 +535,14 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                     accessor: (m) => (
                       <button 
                         onClick={() => setSelectedMediatorId(m.id)}
-                        className={`font-bold text-left transition-all hover:underline ${selectedMediatorId === m.id ? 'text-indigo-600' : 'text-slate-800'}`}
+                        className={`font-bold text-left transition-all hover:underline ${selectedMediatorId === m.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-100'}`}
                       >
                         {m.name}
                       </button>
                     ) 
                   },
                   { header: 'E-MAIL/CONTATO', accessor: (m) => m.email || 'N/A' },
-                  { header: 'STATUS', accessor: (m) => m.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-slate-600 uppercase text-[10px]">Inativo</span> }
+                  { header: 'STATUS', accessor: (m) => m.active ? <span className="text-emerald-500 font-bold uppercase text-[10px]">Ativo</span> : <span className="text-slate-600 dark:text-slate-400 uppercase text-[10px]">Inativo</span> }
                 ]}
               />
             </div>
@@ -778,10 +778,10 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                   header: 'USUÁRIO', 
                   accessor: (u) => (
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600 text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 text-sm">
                         <i className="fa-solid fa-user-gear"></i>
                       </div>
-                      <span className="font-bold text-slate-800">{u.name}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{u.name}</span>
                     </div>
                   ) 
                 },

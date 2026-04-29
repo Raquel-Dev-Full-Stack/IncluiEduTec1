@@ -165,7 +165,7 @@ export interface Student {
   year?: number;
   created_at?: string;
   last_monitoring_at?: string;
-  notas?: Record<string, Record<string, number>>;
+  notas?: Record<string, Record<string, any>>;
   refeicoes?: any[];
   evacuacao?: any[];
 }

@@ -101,6 +101,7 @@ export default function App() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedClassIdForActivity, setSelectedClassIdForActivity] = useState<string | null>(null);
+  const [selectedClassIdForStudents, setSelectedClassIdForStudents] = useState<string | null>(null);
   const [selectedSecretariaId, setSelectedSecretariaId] = useState<string | null>(null);
   const [selectedStudentIdForView, setSelectedStudentIdForView] = useState<string | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -2547,9 +2548,44 @@ export default function App() {
       case 'turmas':
         if (user.profile === UserProfile.SECRETARIA) return null;
 
+        if (selectedClassIdForStudents) {
+          const cls = classes.find(c => c.id === selectedClassIdForStudents);
+          const classStudents = students.filter(s => s.classId === selectedClassIdForStudents);
+          if (cls) {
+            return (
+              <ModuleWrapper
+                title={`Alunos da Turma: ${cls.name}`}
+                description={`Lista de alunos matriculados no ano letivo de ${cls.year}.`}
+                onAdd={undefined}
+              >
+                <div className="mb-6">
+                  <button
+                    onClick={() => setSelectedClassIdForStudents(null)}
+                    className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 hover:text-blue-600 transition-all flex items-center gap-2 shadow-sm"
+                  >
+                    <i className="fa-solid fa-arrow-left"></i> Voltar para Turmas
+                  </button>
+                </div>
+                <Table<Student>
+                  data={classStudents}
+                  columns={[
+                    { header: 'Nome do Aluno', accessor: 'name' },
+                    { header: 'RA', accessor: 'ra' },
+                    { header: 'Deficiência', accessor: 'deficiency' },
+                    { header: 'AEE', accessor: (s) => s.aee ? <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-[10px] font-black uppercase">SIM</span> : 'NÃO' },
+                    { header: 'Data de Nascimento', accessor: (s) => s.birthDate ? new Date(s.birthDate).toLocaleDateString('pt-BR') : 'N/A' }
+                  ]}
+                />
+              </ModuleWrapper>
+            );
+          }
+        }
+
         const filteredClasses = user.profile === UserProfile.DIRETOR
           ? classes.filter(c => c.schoolId === user.schoolId)
-          : classes;
+          : user.profile === UserProfile.PROFESSOR
+            ? classes.filter(c => c.teacherId === user.id)
+            : classes;
 
         return (
           <ModuleWrapper
@@ -2559,6 +2595,7 @@ export default function App() {
           >
             <Table<Class>
               data={filteredClasses}
+              onRowClick={(c) => setSelectedClassIdForStudents(c.id)}
               onEdit={user.profile === UserProfile.DIRETOR ? (c) => { setClassToEdit(c); setActiveTab('class_registration'); } : undefined}
               onDelete={user.profile === UserProfile.DIRETOR ? handleDeleteClass : undefined}
               columns={[
@@ -2713,9 +2750,16 @@ export default function App() {
           return <TeacherStudents students={teacherStudents} classes={teacherClasses} attendances={attendances} onSaveAttendance={handleSaveAttendance} onSaveStudentRecord={handleSaveStudentRecord} currentUser={user} onViewProfile={setSelectedStudentIdForView} />;
         }
         if (user.profile === UserProfile.MEDIADOR) {
-          const mediatorStudents = students.filter(s => user.studentIds?.includes(s.id));
-          const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
-          return <MediatorRecords records={mediationRecords} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} onViewProfile={setSelectedStudentIdForView} />;
+          const mediatorStudents = students.filter(s => s.mediatorId === user.id || user.studentIds?.includes(s.id));
+          return <MediatorStudents 
+                    students={mediatorStudents} 
+                    classes={classes} 
+                    attendances={attendances}
+                    mediationRecords={mediationRecords}
+                    onSaveAttendance={handleSaveAttendance}
+                    onSaveMediationRecord={handleSaveMediationRecord}
+                    currentUser={user} 
+                  />;
         }
 
         const filteredStudents = user.profile === UserProfile.DIRETOR
@@ -2792,7 +2836,9 @@ export default function App() {
 
       case 'mediation':
         if (user.profile === UserProfile.MEDIADOR) {
-          return <MediatorRecords records={mediationRecords.filter(r => r.authorId === user.id)} students={students} classes={classes} />;
+          const mediatorStudents = students.filter(s => s.mediatorId === user.id || user.studentIds?.includes(s.id));
+          const filteredStudentRecords = studentRecords.filter(r => mediatorStudents.some(s => s.id === r.studentId));
+          return <MediatorRecords records={mediationRecords.filter(r => r.authorId === user.id)} studentRecords={filteredStudentRecords} students={mediatorStudents} classes={classes} onViewProfile={setSelectedStudentIdForView} />;
         }
 
         if (isAddingMediator && user.profile === UserProfile.DIRETOR) {
@@ -2949,7 +2995,7 @@ export default function App() {
 
       case 'relatorios':
         if (user.profile === UserProfile.MEDIADOR) {
-          return <MediatorReports students={students.filter(s => user.studentIds?.includes(s.id))} classes={classes} />;
+          return <MediatorReports students={students.filter(s => s.mediatorId === user.id || user.studentIds?.includes(s.id))} classes={classes} />;
         }
         return null;
 

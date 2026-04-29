@@ -125,6 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
   const [selectedMunicipioId, setSelectedMunicipioId] = useState<string>('');
+  const [selectedTeacherStudentId, setSelectedTeacherStudentId] = useState<string>('all');
 
   const [directorData, setDirectorData] = useState({
     alunos_atendidos: 0,
@@ -527,7 +528,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Renderização específica para o Mediador
   if (isMediador) {
-    const myStudents = (students || []).filter(s => user.studentIds?.includes(s.id));
+    const myStudents = (students || []).filter(s => s.mediatorId === user.id || user.studentIds?.includes(s.id));
     const myRecords = (mediationRecords || []).filter(r => r.authorId === user.id);
     const myReports = (reports || []).filter(r => myStudents.some(s => s.id === r.studentId));
 
@@ -709,6 +710,85 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Seção de Evolução — Professor */}
+        <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden mt-8">
+          <div className="px-8 py-7 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-gray-50/50 to-white">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-xl shadow-blue-100">
+                <i className="fa-solid fa-chart-line text-lg"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Evolução dos Alunos</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Acompanhamento das Suas Turmas</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Selecionar Aluno</label>
+                <select 
+                  value={selectedTeacherStudentId}
+                  onChange={(e) => setSelectedTeacherStudentId(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700"
+                >
+                  <option value="all">Todos os Seus Alunos</option>
+                  {myStudents.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo</label>
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                  <option>Todos</option>
+                  <option>Presença</option>
+                  <option>Refeição</option>
+                  <option>Atividade</option>
+                  <option>Notas</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Período</label>
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                  <option>Mês Atual</option>
+                  <option>Semana</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="h-[300px] w-full bg-gray-50/30 rounded-[2rem] border border-gray-50 p-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={studentRecords && studentRecords.length > 0 ?
+                  Array.from(new Set(studentRecords
+                    .filter(r => selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)
+                    .map(r => r.date))).sort().slice(-7).map(date => ({
+                    date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                    presenca: studentRecords.filter(r => r.date === date && r.recordType === 'presenca' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 10,
+                    refeicao: studentRecords.filter(r => r.date === date && r.recordType === 'refeicao' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 15,
+                    atividades: studentRecords.filter(r => r.date === date && r.recordType === 'atividade' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 5,
+                    notas: studentRecords.filter(r => r.date === date && r.recordType === 'atividade' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 8,
+                  })) : [
+                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 60, notas: 75 },
+                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 80, notas: 82 },
+                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 85, notas: 88 },
+                  ]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
+                  <Line type="monotone" dataKey="presenca" name="Presença" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="refeicao" name="Refeição" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="notas" name="Notas" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>

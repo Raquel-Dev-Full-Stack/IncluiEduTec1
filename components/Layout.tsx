@@ -77,15 +77,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
-      id: 'inclusive_plans',
-      label: 'Planos Inclusivos',
-      icon: 'fa-file-medical',
-      profileOnly: [UserProfile.PROFESSOR]
-    },
-    {
       id: 'refeicoes',
       label: 'Refeições',
       icon: 'fa-utensils',
+      profileOnly: [UserProfile.PROFESSOR]
+    },
+    {
+      id: 'inclusive_plans',
+      label: 'Planos Inclusivos',
+      icon: 'fa-file-medical',
       profileOnly: [UserProfile.PROFESSOR]
     },
     {

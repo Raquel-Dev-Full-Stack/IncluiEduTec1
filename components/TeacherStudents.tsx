@@ -26,6 +26,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
   const [feedback, setFeedback] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [showRegisterModal, setShowRegisterModal] = useState<string | null>(null);
+  const [showGradesModal, setShowGradesModal] = useState<string | null>(null);
   const [isRegisteringAttendance, setIsRegisteringAttendance] = useState(false);
 
   // Estado para registro individual
@@ -38,6 +39,14 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
   const [showSOSModal, setShowSOSModal] = useState<string | null>(null);
   const [sosStrategies, setSosStrategies] = useState<SOSStrategy[]>([]);
   const [isLoadingSOS, setIsLoadingSOS] = useState(false);
+
+  // Estado para lançar notas
+  const [gradeRecord, setGradeRecord] = useState({
+    bimester: '1º_bimestre',
+    discipline: '',
+    grade: '',
+    observation: ''
+  });
 
   const [selectedBatchTurno, setSelectedBatchTurno] = useState<'Manhã' | 'Tarde' | 'Integral'>('Manhã');
   const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
@@ -159,6 +168,56 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
     setShowRegisterModal(null);
     setIndividualRecord({ type: 'atividade', value: '', observation: '' });
     setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const handleSaveGrades = async (studentId: string) => {
+    if (!gradeRecord.discipline || !gradeRecord.grade) {
+      alert('Preencha a disciplina e a nota.');
+      return;
+    }
+
+    const numericGrade = parseFloat(gradeRecord.grade);
+    if (isNaN(numericGrade) || numericGrade < 0 || numericGrade > 10) {
+      alert('Nota inválida. Insira um valor numérico entre 0 e 10.');
+      return;
+    }
+
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const currentNotas = student.notas || {};
+    const bimesterNotas = currentNotas[gradeRecord.bimester] || {};
+    
+    const updatedNotas = {
+      ...currentNotas,
+      [gradeRecord.bimester]: {
+        ...bimesterNotas,
+        [gradeRecord.discipline]: {
+          grade: numericGrade,
+          observation: gradeRecord.observation
+        }
+      }
+    };
+
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ notas: updatedNotas })
+        .eq('id', studentId);
+
+      if (error) throw error;
+
+      // Update local state directly to reflect immediately
+      student.notas = updatedNotas;
+
+      setFeedback({ message: `Nota de ${gradeRecord.discipline} lançada com sucesso no ${gradeRecord.bimester.replace('_', ' ')}!`, type: 'success' });
+      setShowGradesModal(null);
+      setGradeRecord({ bimester: '1º_bimestre', discipline: '', grade: '', observation: '' });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (err) {
+      console.error("Erro ao salvar notas:", err);
+      alert('Ocorreu um erro ao salvar a nota. Tente novamente.');
+    }
   };
 
   const handleOpenSOS = async (student: Student) => {
@@ -446,11 +505,18 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                     <button
                       onClick={() => onViewProfile(s.id)}
                       className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 group shadow-sm"
-                      title="Ver Perfil / Notas"
+                      title="Ver Perfil do Aluno"
                     >
                       <i className="fa-solid fa-graduation-cap"></i>
                     </button>
                   )}
+                  <button
+                    onClick={() => setShowGradesModal(s.id)}
+                    className="p-2.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all border border-amber-100 group shadow-sm"
+                    title="Lançar Notas"
+                  >
+                    <i className="fa-solid fa-star-half-stroke"></i>
+                  </button>
                   <button
                     onClick={() => handleOpenSOS(s)}
                     className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all border border-rose-100 group shadow-sm"
@@ -533,6 +599,124 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
                 <i className="fa-solid fa-save"></i>
                 Salvar Registro
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showGradesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowGradesModal(null)}></div>
+          <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in-95 duration-300 space-y-6">
+            <header className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                  <i className="fa-solid fa-star-half-stroke"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 tracking-tight">Lançar Notas</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    {students.find(s => s.id === showGradesModal)?.name}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowGradesModal(null)} className="text-gray-400 hover:text-gray-900 p-2">
+                <i className="fa-solid fa-xmark text-xl"></i>
+              </button>
+            </header>
+
+            <div className="space-y-6">
+              <div className="flex gap-4 p-1.5 bg-gray-50 rounded-2xl border border-gray-100 overflow-x-auto custom-scrollbar">
+                {(['1º_bimestre', '2º_bimestre', '3º_bimestre', '4º_bimestre'] as const).map(bimester => (
+                  <button
+                    key={bimester}
+                    onClick={() => setGradeRecord(prev => ({ ...prev, bimester }))}
+                    className={`flex-1 min-w-[80px] py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${gradeRecord.bimester === bimester
+                      ? 'bg-white text-amber-600 shadow-sm border border-amber-100'
+                      : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                  >
+                    {bimester.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Disciplina
+                  </label>
+                  <input
+                    type="text"
+                    value={gradeRecord.discipline}
+                    onChange={(e) => setGradeRecord(prev => ({ ...prev, discipline: e.target.value }))}
+                    placeholder="Ex: Matemática"
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Nota
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={gradeRecord.grade}
+                    onChange={(e) => setGradeRecord(prev => ({ ...prev, grade: e.target.value }))}
+                    placeholder="Ex: 8.5"
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Observações (Opcional)</label>
+                <textarea
+                  value={gradeRecord.observation}
+                  onChange={(e) => setGradeRecord(prev => ({ ...prev, observation: e.target.value }))}
+                  placeholder="Comentários sobre o desempenho..."
+                  rows={3}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none shadow-inner"
+                />
+              </div>
+
+              <button
+                onClick={() => handleSaveGrades(showGradesModal)}
+                className="w-full py-4 bg-amber-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-amber-100 hover:bg-amber-600 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+              >
+                <i className="fa-solid fa-save"></i>
+                Salvar Nota
+              </button>
+
+              {/* Lista de notas já lançadas */}
+              {(() => {
+                const student = students.find(s => s.id === showGradesModal);
+                const notas = student?.notas?.[gradeRecord.bimester];
+                if (!notas || Object.keys(notas).length === 0) return null;
+
+                return (
+                  <div className="pt-6 border-t border-gray-100 space-y-3">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      Notas Registradas
+                    </h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                      {Object.entries(notas).map(([disc, data]: [string, any]) => (
+                        <div key={disc} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{disc}</p>
+                            {data.observation && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{data.observation}</p>}
+                          </div>
+                          <div className="px-3 py-1 bg-amber-50 border border-amber-100 text-amber-700 font-black rounded-lg text-sm">
+                            {data.grade}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
