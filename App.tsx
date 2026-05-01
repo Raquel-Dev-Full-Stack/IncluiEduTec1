@@ -945,7 +945,7 @@ export default function App() {
       const { data, error } = await supabase
         .from('meals')
         .upsert([recordToSave], {
-          onConflict: 'aluno_id, meal_date, tipo_refeicao'
+          onConflict: 'aluno_id,meal_date,tipo_refeicao'
         })
         .select();
 
@@ -997,7 +997,7 @@ export default function App() {
       const { data, error } = await supabase
         .from('student_records')
         .upsert([recordToSave], {
-          onConflict: 'student_id, date, record_type, shift'
+          onConflict: 'student_id,date,record_type,shift'
         })
         .select();
 
@@ -1071,29 +1071,102 @@ export default function App() {
     }
   };
 
-  const handleSaveMediationRecord = (recordData: Omit<MediationRecord, 'id'>) => {
-    const newRecord: MediationRecord = {
-      ...recordData,
-      id: `med_${Date.now()}`
-    };
-    setMediationRecords(prev => [...prev, newRecord]);
+  const handleSaveMediationRecord = async (recordData: Omit<MediationRecord, 'id'>) => {
+    if (!user) return;
 
-    if (user) {
+    try {
+      const recordToInsert = {
+        student_id: recordData.studentId,
+        class_id: recordData.classId || null,
+        school_id: recordData.schoolId || user.schoolId || null,
+        mediator_id: user.id, // Must be user.id to satisfy Foreign Key to public.users
+        notes: recordData.description,
+        behavior_status: recordData.behaviorStatus,
+        status: recordData.status || 'finalizado',
+        date: recordData.date || new Date().toISOString()
+      };
+
+      // Limpar nulls para evitar erro de tipo caso a coluna não suporte
+      if (!recordToInsert.class_id) delete recordToInsert.class_id;
+
+      const { data, error } = await supabase
+        .from('mediator_records')
+        .insert([recordToInsert])
+        .select();
+
+      if (error) {
+        console.warn('Erro ao salvar em mediator_records:', error.message);
+        
+        if (error.message.includes('row-level security policy')) {
+           showNotification('Erro: Permissão negada no banco de dados. O administrador precisa liberar acesso de INSERT na tabela mediator_records no Supabase.', 'error');
+           return;
+        }
+
+        // Tentativa de fallback apenas se o erro for sobre nomes de coluna
+        if (error.message.includes('column')) {
+            const fallbackInsert = {
+              student_id: recordData.studentId,
+              class_id: recordData.classId || null,
+              school_id: recordData.schoolId || user.schoolId || null,
+              mediator_id: user.id,
+              content: recordData.description,
+              behavior_status: recordData.behaviorStatus,
+              status: recordData.status || 'finalizado',
+              created_at: recordData.date || new Date().toISOString()
+            };
+            if (!fallbackInsert.class_id) delete fallbackInsert.class_id;
+            
+            const { data: fbData, error: fbError } = await supabase
+              .from('mediator_records')
+              .insert([fallbackInsert])
+              .select();
+              
+            if (fbError) {
+              if (fbError.message.includes('row-level security policy')) {
+                 showNotification('Erro RLS: Permissão negada no Supabase (tabela mediator_records).', 'error');
+                 return;
+              }
+              throw fbError;
+            }
+            
+            if (fbData && fbData.length > 0) {
+              const newRecord: MediationRecord = {
+                ...recordData,
+                id: fbData[0].id
+              };
+              setMediationRecords(prev => [...prev, newRecord]);
+            }
+        } else {
+            throw error;
+        }
+      } else if (data && data.length > 0) {
+        const newRecord: MediationRecord = {
+          ...recordData,
+          id: data[0].id
+        };
+        setMediationRecords(prev => [...prev, newRecord]);
+      }
+
       logActivity(
         'Lançar Registro de Mediação',
         `Lançou registro de mediação para o aluno ID: ${recordData.studentId}`,
         user.municipio_id,
         user.schoolId
       );
+      showNotification('Registro salvo com sucesso!', 'success');
+      
+    } catch (err: any) {
+      console.error('Erro ao salvar registro de mediação:', err);
+      showNotification(`Erro ao salvar: ${err.message}`, 'error');
     }
   };
 
   const handleSaveSchool = async (newSchoolData: School) => {
     if (!user) return;
 
-    // RESTRIÇÃO: Apenas Secretaria de Educação pode salvar/editar escolas
-    if (user.profile !== UserProfile.SECRETARIA) {
-      alert('Acesso negado. Apenas a Secretaria de Educação pode gerenciar unidades escolares.');
+    // RESTRIÇÃO: Apenas Secretaria de Educação ou Admin pode salvar/editar escolas
+    if (user.profile !== UserProfile.SECRETARIA && user.profile !== UserProfile.ADMIN) {
+      alert('Acesso negado. Apenas a Secretaria de Educação ou Administrador podem gerenciar unidades escolares.');
       return;
     }
 
@@ -1201,7 +1274,7 @@ export default function App() {
             active: true
           };
         });
-        const { error: teacherError } = await supabase.from('users').upsert(teachersToInsert, { onConflict: 'name, school_id' });
+        const { error: teacherError } = await supabase.from('users').upsert(teachersToInsert, { onConflict: 'name,school_id' });
         if (teacherError) throw teacherError;
       }
 
@@ -1228,7 +1301,7 @@ export default function App() {
             active: true
           };
         });
-        const { error: mediatorError } = await supabase.from('users').upsert(mediatorsToInsert, { onConflict: 'name, school_id' });
+        const { error: mediatorError } = await supabase.from('users').upsert(mediatorsToInsert, { onConflict: 'name,school_id' });
         if (mediatorError) throw mediatorError;
       }
 
@@ -1241,7 +1314,7 @@ export default function App() {
           shift: c.shift,
           school_id: currentSchoolId
         }));
-        const { error: classError } = await supabase.from('classes').upsert(classesToInsert, { onConflict: 'name, school_id' });
+        const { error: classError } = await supabase.from('classes').upsert(classesToInsert, { onConflict: 'name,school_id' });
         if (classError) throw classError;
       }
 
@@ -2371,7 +2444,7 @@ export default function App() {
             <ModuleWrapper
               title={selectedSecName ? `Escolas — Secretaria ${selectedSecName}` : "Escolas"}
               description={selectedSecName ? `Visualizando unidades vinculadas à secretaria selecionada.` : "Gerenciamento das unidades escolares municipais e monitoramento operacional."}
-              onAdd={user.profile === UserProfile.SECRETARIA ? () => { setSchoolToEdit(null); setActiveTab('school_registration'); } : undefined}
+              onAdd={(user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN) ? () => { setSchoolToEdit(null); setActiveTab('school_registration'); } : undefined}
             >
               <div className="flex flex-col gap-6">
                 {user.profile === UserProfile.ADMIN && (
@@ -2427,7 +2500,7 @@ export default function App() {
                 ) : (
                   <Table<School>
                     data={filteredSchools}
-                    onEdit={user.profile === UserProfile.SECRETARIA ? (s) => {
+                    onEdit={(user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN) ? (s) => {
                       if (s.municipio_id !== user.municipio_id && user.profile !== UserProfile.ADMIN) {
                         alert('Permissão negada para editar unidades de outro município.');
                         return;
@@ -2452,7 +2525,7 @@ export default function App() {
                       setSchoolToEdit(hydratedSchool);
                       setActiveTab('school_registration');
                     } : undefined}
-                    onDelete={user.profile === UserProfile.SECRETARIA ? handleDeleteSchool : undefined}
+                    onDelete={(user.profile === UserProfile.SECRETARIA || user.profile === UserProfile.ADMIN) ? handleDeleteSchool : undefined}
                     columns={[
                       {
                         header: 'Unidade Escolar',
@@ -3015,6 +3088,14 @@ export default function App() {
       case 'school_registration':
         return (
           <div className="space-y-6">
+            <div className="mb-2">
+              <button
+                onClick={() => { setSchoolToEdit(null); setActiveTab('schools'); }}
+                className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 hover:text-blue-600 transition-all flex items-center gap-2 shadow-sm"
+              >
+                <i className="fa-solid fa-arrow-left"></i> Voltar para Escolas
+              </button>
+            </div>
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-black text-gray-800 tracking-tight">Cadastrar Nova Unidade</h1>

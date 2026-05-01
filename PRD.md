@@ -39,13 +39,15 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 
 ### 4.4. Gestão Pedagógica
 *   **Planejamento de Aulas**: Modelos alinhados às habilidades da BNCC e adaptações pedagógicas.
-*   **Planos Inclusivos**: Módulos específicos para PEI (Plano de Ensino Individualizado), PDI e PAEE.
+*   **Planos Inclusivos**: Módulos específicos para PEI (Plano de Ensino Individualizado), PDI e PAEE, com navegação aprimorada.
 *   **Linha do Tempo Histórica**: Acompanhamento da evolução do aluno através de diferentes turmas e anos.
+*   **SOS Adaptação**: Ferramenta de suporte pedagógico imediato (Knowledge Base) que sugere estratégias de inclusão e diretrizes baseadas na deficiência do aluno.
+*   **Formação Continuada**: Acesso integrado a módulos de curso (ex: "Inclusão na Prática") focados no binômio Educar-Cuidar, DUA e diretrizes MEC 2026.
 
 ### 4.5. Monitoramento Operacional
 *   **Controle de Frequência**: Registros diários de presença/falta dos alunos.
-*   **Gestão de Merenda**: Acompanhamento das refeições dos alunos para supervisão dietética.
-*   **Registros de Mediação**: Acompanhamento detalhado de crises, engajamento e atividades independentes.
+*   **Saúde e Nutrição (Merenda)**: Acompanhamento de refeições, restrições alimentares e registros de saúde dos alunos, com persistência robusta.
+*   **Registros de Mediação**: Acompanhamento detalhado de crises, engajamento e atividades independentes garantindo sincronização e histórico preciso no banco de dados.
 
 ### 4.6. Gestão de Escolas e Alunos
 *   **Perfil da Escola**: Registros INEP, contagem de equipe e demografia de alunos.
@@ -74,5 +76,4 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 
 ---
 **Início do Projeto:** 10 de Janeiro de 2026
-**Última Atualização:** 18 de Abril de 2026
- 
+**Última Atualização:** 30 de Abril de 2026
