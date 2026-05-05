@@ -1163,23 +1163,24 @@ export default function App() {
 
   const handleSaveSchool = async (newSchoolData: School) => {
     if (!user) return;
-
-    // RESTRIÇÃO: Apenas Secretaria de Educação ou Admin pode salvar/editar escolas
-    if (user.profile !== UserProfile.SECRETARIA && user.profile !== UserProfile.ADMIN) {
-      alert('Acesso negado. Apenas a Secretaria de Educação ou Administrador podem gerenciar unidades escolares.');
-      return;
-    }
-
-    // RESTRIÇÃO MUNICIPAL: Validar se a escola pertence ao município do usuário
-    // Na criação (sem ID), vinculamos automaticamente. Na edição, validamos.
-    if (schoolToEdit && schoolToEdit.municipio_id !== user.municipio_id && user.profile !== UserProfile.ADMIN) {
-      alert('Acesso negado. Você não tem permissão para editar escolas de outro município.');
-      return;
-    }
-
     setLoading(true);
 
     try {
+      // RESTRIÇÃO: Apenas Secretaria de Educação ou Admin pode salvar/editar escolas
+      if (user.profile !== UserProfile.SECRETARIA && user.profile !== UserProfile.ADMIN) {
+        alert('Acesso negado. Apenas a Secretaria de Educação ou Administrador podem gerenciar unidades escolares.');
+        setLoading(false);
+        return;
+      }
+
+      // RESTRIÇÃO MUNICIPAL: Validar se a escola pertence ao município do usuário
+      // Na criação (sem ID), vinculamos automaticamente. Na edição, validamos.
+      if (schoolToEdit && schoolToEdit.municipio_id !== user.municipio_id && user.profile !== UserProfile.ADMIN) {
+        alert('Acesso negado. Você não tem permissão para editar escolas de outro município.');
+        setLoading(false);
+        return;
+      }
+
       // 1. Preparar objeto da escola (Mapear camelCase para snake_case)
       // Sincronizar contadores com as listas detalhadas se fornecidas
       const schoolToSave = {
@@ -1214,7 +1215,10 @@ export default function App() {
           .update(schoolToSave)
           .eq('id', schoolToEdit.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('[handleSaveSchool] Erro ao atualizar escola:', error);
+          throw error;
+        }
       } else {
         const { data, error } = await supabase
           .from('schools')
@@ -1222,7 +1226,9 @@ export default function App() {
           .select();
 
         if (error) throw error;
-        if (data) currentSchoolId = data[0].id;
+        if (data) {
+          currentSchoolId = data[0].id;
+        }
       }
 
       if (!currentSchoolId) throw new Error("Falha ao obter ID da escola para salvamento detalhado.");
@@ -1232,16 +1238,13 @@ export default function App() {
 
       // 1. Processar Diretor
       if (newSchoolData.principalEmail) {
-        const res = await callUpsertUser(
+        await callUpsertUser(
           newSchoolData.principalEmail,
           newSchoolData.principalName || 'Diretor',
           'diretor',
           newSchoolData.principalPassword || undefined,
           currentSchoolId
         );
-        if (res.error) {
-          showNotification(`Escola salva! Mas erro nas credenciais do diretor: ${res.error}`, 'error');
-        }
       }
 
       // 3. Cadastrar Detalhes (Professores, Mediadores, Turmas, Alunos)
@@ -1250,15 +1253,12 @@ export default function App() {
 
       // Professores
       if (newSchoolData.teachers && newSchoolData.teachers.length > 0) {
-        // Primeiro salvamos em public.users via Edge Function se tiver email para garantir Auth
-        // Se não tiver email, o upsert bulk normal resolve.
         const authPromises = newSchoolData.teachers
           .filter(t => t.contact && isEmail(t.contact))
           .map(t => callUpsertUser(t.contact!.trim(), t.name, 'professor', undefined, currentSchoolId));
 
         await Promise.all(authPromises);
 
-        // Upsert bulk para garantir que todos (com ou sem email) estejam no public.users do município
         const teachersToInsert = newSchoolData.teachers.map(t => {
           const contact = t.contact?.trim() || '';
           const email = isEmail(contact) ? contact : null;
@@ -1274,8 +1274,20 @@ export default function App() {
             active: true
           };
         });
-        const { error: teacherError } = await supabase.from('users').upsert(teachersToInsert, { onConflict: 'name,school_id' });
-        if (teacherError) throw teacherError;
+
+        for (const teacher of teachersToInsert) {
+           const { data: existing } = await supabase.from('users')
+             .select('id')
+             .eq('name', teacher.name)
+             .eq('school_id', teacher.school_id)
+             .maybeSingle();
+           
+           if (existing) {
+             await supabase.from('users').update(teacher).eq('id', existing.id);
+           } else {
+             await supabase.from('users').insert([teacher]);
+           }
+        }
       }
 
       // Mediadores
@@ -1301,10 +1313,21 @@ export default function App() {
             active: true
           };
         });
-        const { error: mediatorError } = await supabase.from('users').upsert(mediatorsToInsert, { onConflict: 'name,school_id' });
-        if (mediatorError) throw mediatorError;
-      }
 
+        for (const mediator of mediatorsToInsert) {
+           const { data: existing } = await supabase.from('users')
+             .select('id')
+             .eq('name', mediator.name)
+             .eq('school_id', mediator.school_id)
+             .maybeSingle();
+           
+           if (existing) {
+             await supabase.from('users').update(mediator).eq('id', existing.id);
+           } else {
+             await supabase.from('users').insert([mediator]);
+           }
+        }
+      }
 
       // Turmas
       if (newSchoolData.classes && newSchoolData.classes.length > 0) {
@@ -1314,36 +1337,64 @@ export default function App() {
           shift: c.shift,
           school_id: currentSchoolId
         }));
-        const { error: classError } = await supabase.from('classes').upsert(classesToInsert, { onConflict: 'name,school_id' });
-        if (classError) throw classError;
+
+        for (const cls of classesToInsert) {
+           const { data: existing } = await supabase.from('classes')
+             .select('id')
+             .eq('name', cls.name)
+             .eq('school_id', cls.school_id)
+             .maybeSingle();
+           
+           if (existing) {
+             await supabase.from('classes').update(cls).eq('id', existing.id);
+           } else {
+             await supabase.from('classes').insert([cls]);
+           }
+        }
       }
 
       // Alunos
       if (newSchoolData.students && newSchoolData.students.length > 0) {
-        // Primeiro, precisamos buscar as turmas recém-criadas/atualizadas para ter os IDs corretos
         const { data: currentClasses } = await supabase
           .from('classes')
           .select('id, name')
           .eq('school_id', currentSchoolId);
 
         const studentsToInsert = newSchoolData.students.map(s => {
-          // Tenta encontrar o ID da turma pelo nome informado no formulário
           const matchedClass = currentClasses?.find(c => c.name === s.class_name);
-
           return {
             name: s.name,
             ra: s.ra,
             school_id: currentSchoolId,
-            class_id: matchedClass?.id || null, // Vincula se encontrar, senão deixa nulo
+            class_id: matchedClass?.id || null,
             active: true
           };
         });
-        const { error: studentError } = await supabase.from('students').upsert(studentsToInsert, { onConflict: 'ra' });
-        if (studentError) throw studentError;
+
+        for (const std of studentsToInsert) {
+           const { data: existing } = await supabase.from('students')
+             .select('id')
+             .eq('ra', std.ra)
+             .maybeSingle();
+           
+           if (existing) {
+             await supabase.from('students').update(std).eq('id', existing.id);
+           } else {
+             await supabase.from('students').insert([std]);
+           }
+        }
       }
 
       // 4. Finalização
-      // Recarregar os dados do banco para garantir que as listas (professores, turmas, alunos) estejam sincronizadas
+      const roleToProfileMap: Record<string, UserProfile> = {
+        'admin_geral': UserProfile.ADMIN,
+        'secretaria': UserProfile.SECRETARIA,
+        'diretor': UserProfile.DIRETOR,
+        'professor': UserProfile.PROFESSOR,
+        'mediador': UserProfile.MEDIADOR
+      };
+
+      // Recarregar os dados do banco
       const [
         { data: updatedSchools },
         { data: updatedUsers },
@@ -1356,53 +1407,45 @@ export default function App() {
         supabase.from('students').select('*')
       ]);
 
-      if (updatedSchools) setSchools(updatedSchools.map(s => ({
-        ...s,
-        zipCode: s.zip_code,
-        principalName: s.principal_name,
-        principalEmail: s.principal_email,
-        teacherCount: s.teacher_count,
-        mediatorCount: s.mediator_count,
-        classCount: s.class_count,
-        studentCount: s.student_count,
-        createdAt: s.created_at
-      })) as School[]);
-
+      if (updatedSchools) {
+        setSchools(updatedSchools.map(s => ({
+          ...s,
+          zipCode: s.zip_code,
+          principalName: s.principal_name,
+          principalEmail: s.principal_email,
+          principalPassword: s.principal_password,
+          teacherCount: s.teacher_count,
+          mediatorCount: s.mediator_count,
+          classCount: s.class_count,
+          studentCount: s.student_count
+        })) as School[]);
+      }
       if (updatedUsers) {
-        const roleToProfileMap: Record<string, UserProfile> = {
-          'admin_geral': UserProfile.ADMIN,
-          'secretaria': UserProfile.SECRETARIA,
-          'diretor': UserProfile.DIRETOR,
-          'professor': UserProfile.PROFESSOR,
-          'mediador': UserProfile.MEDIADOR
-        };
         setUsersList(updatedUsers.map(u => ({
           ...u,
           profile: roleToProfileMap[u.role] || u.role,
           schoolId: u.school_id
         })) as User[]);
       }
+      if (updatedClasses) {
+        setClasses(updatedClasses.map(c => ({
+          ...c,
+          schoolId: c.school_id,
+          teacherId: c.teacher_id,
+          mediatorId: c.mediator_id
+        })) as Class[]);
+      }
+      if (updatedStudents) {
+        setStudents(updatedStudents.map(s => ({
+          ...s,
+          ra: s.ra,
+          classId: s.class_id,
+          schoolId: s.school_id,
+          regentTeacherId: s.regent_teacher_id,
+          mediatorId: s.mediator_id
+        })) as Student[]);
+      }
 
-      if (updatedClasses) setClasses(updatedClasses.map(c => ({
-        ...c,
-        schoolId: c.school_id,
-        teacherId: c.teacher_id,
-        mediatorId: c.mediator_id
-      })) as Class[]);
-
-      if (updatedStudents) setStudents(updatedStudents.map(s => ({
-        ...s,
-        ra: s.ra,
-        classId: s.class_id,
-        schoolId: s.school_id,
-        regentTeacherId: s.regent_teacher_id,
-        mediatorId: s.mediator_id
-      })) as Student[]);
-
-
-      setSchoolToEdit(null);
-      setActiveTab('schools');
-      setRefreshKey(prev => prev + 1);
       const schoolFields = {
         name: 'Nome',
         inep: 'INEP',
@@ -1420,15 +1463,18 @@ export default function App() {
       await logActivity(
         schoolToEdit ? 'Editar Escola' : 'Criar Escola',
         logDetails,
-        schoolToEdit ? user.municipio_id : newSchoolData.municipio_id,
+        schoolToEdit ? user.municipio_id : user.municipio_id,
         currentSchoolId
       );
+
+      showNotification(schoolToEdit ? 'Unidade Escolar atualizada com sucesso!' : 'Unidade Escolar cadastrada com sucesso!', 'success');
+      setSchoolToEdit(null);
+      setActiveTab('schools');
+      setRefreshKey(prev => prev + 1);
       fetchData();
-      showNotification("Unidade Escolar atualizada com sucesso! Todos os perfis e turmas foram vinculados.", 'success');
 
     } catch (error: any) {
-      console.error('Erro no fluxo de salvamento:', error);
-      showNotification(`Erro ao salvar dados: ${error.message || 'Tente novamente.'}`, 'error');
+      showNotification(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`, 'error');
     } finally {
       setLoading(false);
     }
