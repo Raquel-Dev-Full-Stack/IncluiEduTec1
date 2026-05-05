@@ -7,9 +7,10 @@ interface TeacherRegistrationProps {
   onQuickAddClass: () => void;
   availableClasses: Class[];
   initialData?: User | null;
+  isLoading?: boolean;
 }
 
-const TeacherRegistration: React.FC<TeacherRegistrationProps> = ({ onSave, onCancel, onQuickAddClass, availableClasses, initialData }) => {
+const TeacherRegistration: React.FC<TeacherRegistrationProps> = ({ onSave, onCancel, onQuickAddClass, availableClasses, initialData, isLoading }) => {
   const isEditing = !!initialData;
 
   const [formData, setFormData] = useState<Partial<User>>({
@@ -215,10 +216,11 @@ const TeacherRegistration: React.FC<TeacherRegistrationProps> = ({ onSave, onCan
           </button>
           <button
             type="submit"
-            className="px-10 py-3.5 bg-blue-600 text-white font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+            disabled={isLoading}
+            className={`px-10 py-3.5 bg-blue-600 text-white font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <i className={`fa-solid ${isEditing ? 'fa-check' : 'fa-save'}`}></i>
-            {isEditing ? 'Salvar Alterações' : 'Salvar Professor'}
+            <i className={`fa-solid ${isLoading ? 'fa-circle-notch fa-spin' : (isEditing ? 'fa-check' : 'fa-save')}`}></i>
+            {isLoading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Salvar Professor')}
           </button>
         </div>
       </form>

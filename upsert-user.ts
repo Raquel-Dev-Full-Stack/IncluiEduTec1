@@ -65,12 +65,12 @@ Deno.serve(async (req: Request) => {
     
     const { data: upsertedResult, error: upsertErr } = await adminClient.rpc('execute_user_upsert', {
       p_auth_id: authUserId,
-      p_name: name,
+      p_name: name || 'Usuário',
       p_email: email,
       p_role: role,
-      p_school_id: school_id,
-      p_municipio_id: municipio_id,
-      p_password: password
+      p_school_id: school_id || null,
+      p_municipio_id: municipio_id || null,
+      p_password: password || null
     });
 
     if (upsertErr) throw upsertErr;

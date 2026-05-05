@@ -7,9 +7,10 @@ interface MediatorRegistrationProps {
   onCancel: () => void;
   availableStudents: Student[];
   initialData?: User | null;
+  isLoading?: boolean;
 }
 
-const MediatorRegistration: React.FC<MediatorRegistrationProps> = ({ onSave, onCancel, availableStudents, initialData }) => {
+const MediatorRegistration: React.FC<MediatorRegistrationProps> = ({ onSave, onCancel, availableStudents, initialData, isLoading }) => {
   const [formData, setFormData] = useState<Partial<User>>(initialData ? {
     ...initialData,
     phone: initialData.phone_number || initialData.phone || '',
@@ -207,10 +208,11 @@ const MediatorRegistration: React.FC<MediatorRegistrationProps> = ({ onSave, onC
           </button>
           <button
             type="submit"
-            className="px-10 py-3.5 bg-indigo-600 text-white font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+            disabled={isLoading}
+            className={`px-10 py-3.5 bg-indigo-600 text-white font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <i className="fa-solid fa-save"></i>
-            {isEditing ? 'Salvar Alterações' : 'Salvar Mediador'}
+            <i className={`fa-solid ${isLoading ? 'fa-circle-notch fa-spin' : (isEditing ? 'fa-user-check' : 'fa-save')}`}></i>
+            {isLoading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Salvar Mediador')}
           </button>
         </div>
       </form>

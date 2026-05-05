@@ -55,11 +55,14 @@ const fetchUserProfile = async (authUserId: string) => {
     error = fallback.error;
   }
 
-  if (error) {
-    console.error('Erro ao buscar perfil do usuário:', error);
-    return null;
+  if (data) {
+    return {
+      ...data,
+      schoolId: data.school_id,
+      municipio_id: data.municipio_id
+    };
   }
-  return data;
+  return null;
 };
 
 export default function App() {
@@ -199,7 +202,7 @@ export default function App() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const callUpsertUser = async (email: string, name: string, role: string, pass?: string, school_id?: string) => {
+  const callUpsertUser = async (email: string, name: string, role: string, pass?: string, school_id?: string, municipio_id?: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const jwt = session?.access_token;
@@ -217,8 +220,8 @@ export default function App() {
             password: pass || undefined,
             name: name || 'Usuário',
             role,
-            school_id: school_id || user?.schoolId,
-            municipio_id: user?.municipio_id
+            school_id: school_id || user?.schoolId || null,
+            municipio_id: municipio_id || user?.municipio_id || null
           })
         }
       );
@@ -374,8 +377,8 @@ export default function App() {
           id: u.id,
           name: nameValue,
           profile: roleToProfileMap[u.role] || (u.profile as UserProfile) || UserProfile.PROFESSOR,
-          schoolId: u.school_id || u.schoolId,
-          municipio_id: userMunicipioId,
+          schoolId: u.school_id || u.schoolId || null,
+          municipio_id: userMunicipioId || null,
           studentIds: linkedStudentIds
         };
       }) as User[];
@@ -696,6 +699,8 @@ export default function App() {
             ...adminData,
             name: nameValue,
             profile: UserProfile.ADMIN,
+            schoolId: adminData.school_id,
+            municipio_id: adminData.municipio_id,
             themePreference: 'light'
           } as unknown as User);
           setIsLoggedIn(true);
@@ -770,6 +775,8 @@ export default function App() {
           ...userData,
           name: userData.name || userData.nome || 'Admin Geral',
           profile: UserProfile.ADMIN,
+          schoolId: userData.school_id,
+          municipio_id: userData.municipio_id,
           themePreference: 'light'
         } as unknown as User);
         setIsLoggedIn(true);
@@ -792,6 +799,8 @@ export default function App() {
         ...userData,
         name: nameValue,
         profile: mappedProfile,
+        schoolId: userData.school_id,
+        municipio_id: userData.municipio_id,
         themePreference: 'light'
       } as unknown as User);
       setIsLoggedIn(true);
@@ -1243,7 +1252,8 @@ export default function App() {
           newSchoolData.principalName || 'Diretor',
           'diretor',
           newSchoolData.principalPassword || undefined,
-          currentSchoolId
+          currentSchoolId,
+          newSchoolData.municipio_id || user.municipio_id
         );
       }
 
@@ -1872,7 +1882,8 @@ export default function App() {
           newMediatorData.name || 'Mediador',
           'mediador',
           newMediatorData.password || undefined,
-          targetSchoolId
+          targetSchoolId,
+          targetMunicipioId
         );
 
         if (res.error) {
@@ -2091,7 +2102,8 @@ export default function App() {
           newTeacherData.name || 'Professor',
           'professor',
           newTeacherData.password || undefined, // Só envia se preenchido
-          user.schoolId
+          user.schoolId,
+          user.municipio_id
         );
 
         if (res.error) {
@@ -2833,6 +2845,7 @@ export default function App() {
             onCancel={() => { setTeacherToEdit(null); setActiveTab('teachers'); }}
             onQuickAddClass={() => setActiveTab('class_registration')}
             initialData={teacherToEdit}
+            isLoading={loading}
           />
         );
 
@@ -2975,6 +2988,7 @@ export default function App() {
                 onSave={handleSaveMediator}
                 onCancel={() => { setIsAddingMediator(false); setMediatorToEdit(null); }}
                 initialData={mediatorToEdit}
+                isLoading={loading}
               />
             </div>
           );
