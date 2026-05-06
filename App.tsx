@@ -1190,6 +1190,20 @@ export default function App() {
         return;
       }
 
+      let finalMunicipioId = user.municipio_id;
+      if (user.profile === UserProfile.ADMIN) {
+        if (schoolToEdit && schoolToEdit.municipio_id) {
+          finalMunicipioId = schoolToEdit.municipio_id;
+        } else {
+          // Na criação (ou edição de uma escola "Não vinculada") por Admin, tenta usar o filtro atual ou busca pelo nome da cidade
+          const matchedMunicipio = municipios.find(m => 
+            m.nome.toLowerCase() === newSchoolData.city.toLowerCase() || 
+            (newSchoolData.city && m.nome.toLowerCase().includes(newSchoolData.city.toLowerCase()))
+          );
+          finalMunicipioId = selectedMunicipioId || matchedMunicipio?.id || null;
+        }
+      }
+
       // 1. Preparar objeto da escola (Mapear camelCase para snake_case)
       // Sincronizar contadores com as listas detalhadas se fornecidas
       const schoolToSave = {
@@ -1200,7 +1214,7 @@ export default function App() {
         city: newSchoolData.city,
         state: newSchoolData.state,
         zip_code: newSchoolData.zipCode,
-        municipio_id: user.municipio_id,
+        municipio_id: finalMunicipioId,
         principal_name: newSchoolData.principalName,
         principal_email: newSchoolData.principalEmail,
         principal_password: newSchoolData.principalPassword,
@@ -1262,19 +1276,33 @@ export default function App() {
       const isEmail = (str: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
 
       // Professores
-      if (newSchoolData.teachers && newSchoolData.teachers.length > 0) {
+      if (newSchoolData.teachers) {
+        // Desvincular professores removidos
+        if (schoolToEdit) {
+          const incomingTeacherIds = newSchoolData.teachers.filter(t => t.id).map(t => t.id);
+          const query = supabase.from('users')
+            .update({ school_id: null })
+            .eq('school_id', currentSchoolId)
+            .eq('role', 'professor');
+          
+          if (incomingTeacherIds.length > 0) {
+            query.not('id', 'in', incomingTeacherIds);
+          }
+          await query;
+        }
+
         const authPromises = newSchoolData.teachers
           .filter(t => t.contact && isEmail(t.contact))
-          .map(t => callUpsertUser(t.contact!.trim(), t.name, 'professor', undefined, currentSchoolId));
+          .map(t => callUpsertUser(t.contact!.trim(), t.name, 'professor', undefined, currentSchoolId, user.municipio_id));
 
         await Promise.all(authPromises);
 
-        const teachersToInsert = newSchoolData.teachers.map(t => {
+        for (const t of newSchoolData.teachers) {
           const contact = t.contact?.trim() || '';
           const email = isEmail(contact) ? contact : null;
           const phone = !isEmail(contact) ? contact : null;
 
-          return {
+          const teacherData = {
             name: t.name,
             role: 'professor',
             school_id: currentSchoolId,
@@ -1283,37 +1311,53 @@ export default function App() {
             phone_number: phone,
             active: true
           };
-        });
 
-        for (const teacher of teachersToInsert) {
-           const { data: existing } = await supabase.from('users')
-             .select('id')
-             .eq('name', teacher.name)
-             .eq('school_id', teacher.school_id)
-             .maybeSingle();
-           
-           if (existing) {
-             await supabase.from('users').update(teacher).eq('id', existing.id);
-           } else {
-             await supabase.from('users').insert([teacher]);
-           }
+          if (t.id) {
+            await supabase.from('users').update(teacherData).eq('id', t.id);
+          } else {
+             const { data: existing } = await supabase.from('users')
+               .select('id')
+               .eq('name', t.name)
+               .eq('school_id', currentSchoolId)
+               .maybeSingle();
+             
+             if (existing) {
+               await supabase.from('users').update(teacherData).eq('id', existing.id);
+             } else {
+               await supabase.from('users').insert([teacherData]);
+             }
+          }
         }
       }
 
       // Mediadores
-      if (newSchoolData.mediators && newSchoolData.mediators.length > 0) {
+      if (newSchoolData.mediators) {
+        // Desvincular mediadores removidos
+        if (schoolToEdit) {
+          const incomingMediatorIds = newSchoolData.mediators.filter(m => m.id).map(m => m.id);
+          const query = supabase.from('users')
+            .update({ school_id: null })
+            .eq('school_id', currentSchoolId)
+            .eq('role', 'mediador');
+          
+          if (incomingMediatorIds.length > 0) {
+            query.not('id', 'in', incomingMediatorIds);
+          }
+          await query;
+        }
+
         const authPromises = newSchoolData.mediators
           .filter(m => m.contact && isEmail(m.contact))
-          .map(m => callUpsertUser(m.contact!.trim(), m.name, 'mediador'));
+          .map(m => callUpsertUser(m.contact!.trim(), m.name, 'mediador', undefined, currentSchoolId, user.municipio_id));
 
         await Promise.all(authPromises);
 
-        const mediatorsToInsert = newSchoolData.mediators.map(m => {
+        for (const m of newSchoolData.mediators) {
           const contact = m.contact?.trim() || '';
           const email = isEmail(contact) ? contact : null;
           const phone = !isEmail(contact) ? contact : null;
 
-          return {
+          const mediatorData = {
             name: m.name,
             role: 'mediador',
             school_id: currentSchoolId,
@@ -1322,76 +1366,120 @@ export default function App() {
             phone_number: phone,
             active: true
           };
-        });
 
-        for (const mediator of mediatorsToInsert) {
-           const { data: existing } = await supabase.from('users')
-             .select('id')
-             .eq('name', mediator.name)
-             .eq('school_id', mediator.school_id)
-             .maybeSingle();
-           
-           if (existing) {
-             await supabase.from('users').update(mediator).eq('id', existing.id);
-           } else {
-             await supabase.from('users').insert([mediator]);
-           }
+          if (m.id) {
+            await supabase.from('users').update(mediatorData).eq('id', m.id);
+          } else {
+             const { data: existing } = await supabase.from('users')
+               .select('id')
+               .eq('name', m.name)
+               .eq('school_id', currentSchoolId)
+               .maybeSingle();
+             
+             if (existing) {
+               await supabase.from('users').update(mediatorData).eq('id', existing.id);
+             } else {
+               await supabase.from('users').insert([mediatorData]);
+             }
+          }
         }
       }
 
       // Turmas
-      if (newSchoolData.classes && newSchoolData.classes.length > 0) {
-        const classesToInsert = newSchoolData.classes.map(c => ({
+      if (newSchoolData.classes) {
+        // 1. Identificar turmas para manter/atualizar e deletar as que saíram
+        if (schoolToEdit) {
+          const incomingClassIds = newSchoolData.classes.filter(c => c.id).map(c => c.id);
+          if (incomingClassIds.length > 0) {
+            await supabase.from('classes')
+              .delete()
+              .eq('school_id', currentSchoolId)
+              .not('id', 'in', incomingClassIds);
+          } else {
+            // Se a lista veio vazia ou sem IDs, mas havia turmas antes, deletar todas da escola
+            await supabase.from('classes')
+              .delete()
+              .eq('school_id', currentSchoolId);
+          }
+        }
+
+        const classesToUpsert = newSchoolData.classes.map(c => ({
+          id: c.id,
           name: c.name,
-          level: c.level,
+          year: c.level, // Mapeando 'level' do form para 'year' no banco
+          level: c.level, // Mantendo level também por compatibilidade
           shift: c.shift,
           school_id: currentSchoolId
         }));
 
-        for (const cls of classesToInsert) {
-           const { data: existing } = await supabase.from('classes')
-             .select('id')
-             .eq('name', cls.name)
-             .eq('school_id', cls.school_id)
-             .maybeSingle();
-           
-           if (existing) {
-             await supabase.from('classes').update(cls).eq('id', existing.id);
-           } else {
-             await supabase.from('classes').insert([cls]);
-           }
+        for (const cls of classesToUpsert) {
+          if (cls.id) {
+            await supabase.from('classes').update(cls).eq('id', cls.id);
+          } else {
+            // Tentar encontrar por nome se não tiver ID (evitar duplicata acidental)
+            // Usamos limit(1) para evitar erro caso já existam duplicatas no banco
+            const { data: existing } = await supabase.from('classes')
+              .select('id')
+              .eq('name', cls.name)
+              .eq('school_id', cls.school_id)
+              .limit(1)
+              .maybeSingle();
+            
+            if (existing) {
+              // Se achou pelo nome, atualiza esse registro em vez de criar outro
+              await supabase.from('classes').update(cls).eq('id', existing.id);
+            } else {
+              const { id, ...insertData } = cls;
+              await supabase.from('classes').insert([insertData]);
+            }
+          }
         }
       }
 
       // Alunos
-      if (newSchoolData.students && newSchoolData.students.length > 0) {
+      if (newSchoolData.students) {
+        // Deletar alunos removidos
+        if (schoolToEdit) {
+          const incomingStudentIds = newSchoolData.students.filter(s => s.id).map(s => s.id);
+          const query = supabase.from('students')
+            .delete()
+            .eq('school_id', currentSchoolId);
+          
+          if (incomingStudentIds.length > 0) {
+            query.not('id', 'in', incomingStudentIds);
+          }
+          await query;
+        }
+
         const { data: currentClasses } = await supabase
           .from('classes')
           .select('id, name')
           .eq('school_id', currentSchoolId);
 
-        const studentsToInsert = newSchoolData.students.map(s => {
+        for (const s of newSchoolData.students) {
           const matchedClass = currentClasses?.find(c => c.name === s.class_name);
-          return {
+          const studentData = {
             name: s.name,
             ra: s.ra,
             school_id: currentSchoolId,
             class_id: matchedClass?.id || null,
             active: true
           };
-        });
 
-        for (const std of studentsToInsert) {
-           const { data: existing } = await supabase.from('students')
-             .select('id')
-             .eq('ra', std.ra)
-             .maybeSingle();
-           
-           if (existing) {
-             await supabase.from('students').update(std).eq('id', existing.id);
-           } else {
-             await supabase.from('students').insert([std]);
-           }
+          if (s.id) {
+            await supabase.from('students').update(studentData).eq('id', s.id);
+          } else {
+             const { data: existing } = await supabase.from('students')
+               .select('id')
+               .eq('ra', s.ra)
+               .maybeSingle();
+             
+             if (existing) {
+               await supabase.from('students').update(studentData).eq('id', existing.id);
+             } else {
+               await supabase.from('students').insert([studentData]);
+             }
+          }
         }
       }
 
@@ -2472,6 +2560,7 @@ export default function App() {
               allReports={reports}
               teachersTable={teachersTable}
               mediatorsTable={mediatorsTable}
+              municipios={municipios}
               onBack={() => {}} // Diretor não volta para a lista
               onRefresh={() => { setRefreshKey(prev => prev + 1); }}
               showNotification={showNotification}
@@ -2568,16 +2657,16 @@ export default function App() {
                         ...s,
                         teachers: usersList
                           .filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.teacherId === u.id)))
-                          .map(u => ({ name: u.name, subject: 'Geral', contact: u.phone || '' })), 
+                          .map(u => ({ id: u.id, name: u.name, subject: 'Geral', contact: u.phone || '' })), 
                         mediators: usersList
                           .filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.mediatorId === u.id)))
-                          .map(u => ({ name: u.name, area: 'Inclusão', contact: u.phone || '' })),
+                          .map(u => ({ id: u.id, name: u.name, area: 'Inclusão', contact: u.phone || '' })),
                         classes: classes
                           .filter(c => c.schoolId === s.id)
-                          .map(c => ({ name: c.name, level: c.year, shift: c.shift || '' })),
+                          .map(c => ({ id: c.id, name: c.name, level: c.year, shift: c.shift || '' })),
                         students: students
                           .filter(st => st.schoolId === s.id)
-                          .map(st => ({ name: st.name, ra: st.ra, class_name: '' }))
+                          .map(st => ({ id: st.id, name: st.name, ra: st.ra, class_name: '' }))
                       };
 
                       setSchoolToEdit(hydratedSchool);
@@ -2670,6 +2759,7 @@ export default function App() {
             allReports={reports}
             teachersTable={teachersTable}
             mediatorsTable={mediatorsTable}
+            municipios={municipios}
             onBack={() => setSelectedSchoolId(null)}
             onRefresh={() => { setRefreshKey(prev => prev + 1); fetchData(); }}
             showNotification={showNotification}

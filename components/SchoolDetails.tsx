@@ -19,6 +19,7 @@ interface SchoolDetailsProps {
   mediatorsTable: any[];
   onRefresh?: () => void;
   showNotification?: (msg: string, type: 'success' | 'error' | 'info') => void;
+  municipios?: Municipio[];
 }
 
 const SchoolDetails: React.FC<SchoolDetailsProps> = ({
@@ -35,7 +36,8 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   teachersTable,
   mediatorsTable,
   onRefresh,
-  showNotification
+  showNotification,
+  municipios
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('administrativo');
   const [isAddingMediator, setIsAddingMediator] = useState(false);
@@ -108,39 +110,20 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
     fetchMediatorEvolution();
   }, [selectedMediatorId]);
 
-  // Buscar contadores reais do Supabase para esta escola
-  useEffect(() => {
-    const fetchSchoolStats = async () => {
-      if (!school.id) return;
+  // Cálculo de estatísticas reais a partir dos dados recebidos por props
+  const stats = useMemo(() => {
+    const classes = allClasses.filter(c => c.schoolId === school.id);
+    const studentsCount = allStudents.filter(s => s.schoolId === school.id || classes.some(c => c.id === s.classId)).length;
+    const teachersCount = allUsers.filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === school.id || classes.some(c => c.teacherId === u.id))).length;
+    const mediatorsCount = allUsers.filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === school.id || classes.some(c => c.mediatorId === u.id))).length;
 
-      try {
-        const [
-          { count: studentsCount },
-          { count: classesCount },
-          { count: teachersCount },
-          { count: mediatorsCount }
-        ] = await Promise.all([
-          supabase.from('students').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-          supabase.from('classes').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-          supabase.from('professor_details').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-          supabase.from('mediator_records').select('*', { count: 'exact', head: true }).eq('school_id', school.id)
-        ]);
-
-        setDynamicStats({
-          alunos_atendidos: studentsCount || 0,
-          turmas_ativas: classesCount || 0,
-          professores: teachersCount || 0,
-          mediadores: mediatorsCount || 0,
-          loading: false
-        });
-      } catch (error) {
-        console.error('Erro ao buscar estatísticas da escola:', error);
-        setDynamicStats(prev => ({ ...prev, loading: false }));
-      }
+    return {
+      alunos_atendidos: studentsCount,
+      turmas_ativas: classes.length,
+      professores: teachersCount,
+      mediadores: mediatorsCount
     };
-
-    fetchSchoolStats();
-  }, [school.id]);
+  }, [school.id, allClasses, allStudents, allUsers]);
 
   // Estados do formulário de novo mediador
   const [newMediator, setNewMediator] = useState({
@@ -156,15 +139,22 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   const schoolStudents = useMemo(() => allStudents.filter(s => s.schoolId === school.id || schoolClasses.some(c => c.id === s.classId)), [school.id, schoolClasses, allStudents]);
 
   const schoolTeachers = useMemo(() => {
-    const fromUsers = allUsers.filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === school.id || schoolClasses.some(c => c.teacherId === u.id)));
-    const fromTable = teachersTable.filter(t => t.school_id === school.id).map(t => ({
+    // Filtrar da lista global de usuários (mais confiável)
+    const fromUsers = allUsers.filter(u => 
+      u.profile === UserProfile.PROFESSOR && 
+      (u.schoolId === school.id || (u as any).school_id === school.id || schoolClasses.some(c => c.teacherId === u.id))
+    );
+    
+    // Fallback para teachersTable se fornecido
+    const fromTable = (teachersTable || []).filter(t => t.school_id === school.id).map(t => ({
       id: t.id,
       name: t.name,
       email: t.email || t.email_institucional,
       active: t.active !== false,
-      profile: UserProfile.PROFESSOR
+      profile: UserProfile.PROFESSOR,
+      schoolId: t.school_id
     }));
-    // Combinar e evitar duplicatas por ID ou nome
+
     const combined = [...fromUsers];
     fromTable.forEach(t => {
       if (!combined.some(u => u.id === t.id || u.name === t.name)) {
@@ -175,14 +165,22 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   }, [school.id, schoolClasses, allUsers, teachersTable]);
 
   const schoolMediators = useMemo(() => {
-    const fromUsers = allUsers.filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === school.id || schoolClasses.some(c => c.mediatorId === u.id)));
-    const fromTable = mediatorsTable.filter(m => m.school_id === school.id).map(m => ({
+    // Filtrar da lista global de usuários
+    const fromUsers = allUsers.filter(u => 
+      u.profile === UserProfile.MEDIADOR && 
+      (u.schoolId === school.id || (u as any).school_id === school.id || schoolClasses.some(c => c.mediatorId === u.id))
+    );
+
+    // Fallback para mediatorsTable se fornecido
+    const fromTable = (mediatorsTable || []).filter(m => m.school_id === school.id).map(m => ({
       id: m.id,
       name: m.name,
       email: m.email,
       active: m.active !== false,
-      profile: UserProfile.MEDIADOR
+      profile: UserProfile.MEDIADOR,
+      schoolId: m.school_id
     }));
+
     const combined = [...fromUsers];
     fromTable.forEach(m => {
       if (!combined.some(u => u.id === m.id || u.name === m.name)) {
@@ -329,7 +327,9 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1">Município / Estado</p>
-                  <p className="text-sm font-bold text-slate-800">{school.municipality || 'Maricá'} / {school.state || 'RJ'}</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {municipios?.find(m => m.id === school.municipio_id)?.nome || school.city || school.municipality || 'Maricá'} / {school.state || 'RJ'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -380,7 +380,8 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
             onRowClick={(c) => alert(`Turma: ${c.name}\nAno: ${c.year}\n\nEste registro é carregado dinamicamente do Supabase.\nNo perfil Secretaria, esta área é destinada apenas à visualização dos dados consolidados da unidade.`)}
             columns={[
               { header: 'TURMA', accessor: 'name' },
-              { header: 'ANO', accessor: 'year' }
+              { header: 'ANO', accessor: 'year' },
+              { header: 'TURNO', accessor: 'shift' }
             ]}
           />
         );
