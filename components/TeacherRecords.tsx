@@ -32,6 +32,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
   // Estados do Formulário
   const [formData, setFormData] = useState({
     temaAula: '',
+    diaDaSemana: '',
     classId: initialClassId || '',
     studentId: '', // Ainda mantido para registros individuais se necessário
     description: '',
@@ -80,6 +81,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
       id: editingId || undefined,
       classId: formData.classId,
       temaAula: formData.temaAula,
+      diaDaSemana: formData.diaDaSemana,
       description: formData.description,
       habilidadesBNCC: formData.habilidadesBNCC ? [formData.habilidadesBNCC] : [],
       adaptacoesMetodologia: formData.adaptacoesMetodologia,
@@ -92,6 +94,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
     setEditingId(null);
     setFormData({
       temaAula: '',
+      diaDaSemana: '',
       classId: '',
       studentId: '',
       description: '',
@@ -106,6 +109,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
   const handleEdit = (lesson: LessonPlan) => {
     setFormData({
       temaAula: lesson.temaAula,
+      diaDaSemana: lesson.diaDaSemana || '',
       classId: lesson.classId,
       studentId: '',
       description: lesson.description || '',
@@ -154,8 +158,11 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
     doc.text(`DATA: ${new Date(lesson.createdAt).toLocaleDateString('pt-BR')}`, 20, y + 10);
     doc.text(`TURMA: ${className}`, 20, y + 17);
     doc.text(`TEMA: ${lesson.temaAula}`, 100, y + 10);
+    if (lesson.diaDaSemana) {
+      doc.text(`DIA: ${lesson.diaDaSemana}`, 100, y + 17);
+    }
     if (lesson.habilidadesBNCC?.[0]) {
-      doc.text(`BNCC: ${lesson.habilidadesBNCC[0]}`, 100, y + 17);
+      doc.text(`BNCC: ${lesson.habilidadesBNCC[0]}`, 100, lesson.diaDaSemana ? y + 24 : y + 17);
     }
     y += 35;
 
@@ -232,7 +239,7 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
           </h3>
 
           <form onSubmit={handleSaveSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tema da Aula *</label>
                 <input
@@ -243,6 +250,24 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dia da Semana</label>
+                <select
+                  value={formData.diaDaSemana}
+                  onChange={(e) => setFormData({ ...formData, diaDaSemana: e.target.value })}
+                  className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">Selecione o dia...</option>
+                  <option value="Segunda-feira">Segunda-feira</option>
+                  <option value="Terça-feira">Terça-feira</option>
+                  <option value="Quarta-feira">Quarta-feira</option>
+                  <option value="Quinta-feira">Quinta-feira</option>
+                  <option value="Sexta-feira">Sexta-feira</option>
+                  <option value="Sábado">Sábado</option>
+                  <option value="Domingo">Domingo</option>
+                </select>
               </div>
 
               <div className="space-y-2">
@@ -388,6 +413,11 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
                   <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black uppercase rounded-lg border border-blue-100">
                     {lesson.temaAula}
                   </span>
+                  {lesson.diaDaSemana && (
+                    <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase rounded-lg border border-indigo-100">
+                      {lesson.diaDaSemana}
+                    </span>
+                  )}
                   {lesson.habilidadesBNCC && lesson.habilidadesBNCC.length > 0 && (
                     <span
                       className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase rounded-lg border border-emerald-100 cursor-help"
@@ -470,6 +500,70 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
           ))
         )}
       </div>
+
+      {/* Planilha da Semana */}
+      <div className="mt-12 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm animate-in fade-in duration-500">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl">
+              <i className="fa-solid fa-calendar-week"></i>
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-gray-900 tracking-tight">Planilha da Semana</h2>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Visão Geral dos Planejamentos Diários</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+            {['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'].map(dia => {
+              const plansForDay = lessonPlans.filter(p => p.diaDaSemana === dia);
+              return (
+                <div key={dia} className="flex flex-col bg-gray-50/50 rounded-3xl border border-gray-100 overflow-hidden">
+                  <div className="p-4 bg-indigo-50/50 border-b border-indigo-100/50 text-center">
+                    <h3 className="text-[11px] font-black text-indigo-700 uppercase tracking-widest">{dia}</h3>
+                  </div>
+                  <div className="p-4 flex-1 space-y-3">
+                    {plansForDay.length === 0 ? (
+                      <p className="text-[10px] text-gray-400 font-bold uppercase text-center py-4 italic">Sem plano</p>
+                    ) : (
+                      plansForDay.map(plan => (
+                        <div key={plan.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group" onClick={() => {
+                          setFormData({
+                            temaAula: plan.temaAula,
+                            diaDaSemana: plan.diaDaSemana || '',
+                            classId: plan.classId,
+                            studentId: '',
+                            description: plan.description || '',
+                            habilidadesBNCC: plan.habilidadesBNCC?.[0] || '',
+                            adaptacoesMetodologia: plan.adaptacoesMetodologia || '',
+                            objetivos: plan.objetivos || '',
+                            estrategias: plan.estrategias || '',
+                            shared: plan.shared || false
+                          });
+                          setEditingId(plan.id);
+                          setIsAdding(true);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black uppercase rounded-md border border-blue-100 line-clamp-1" title={classes.find(c => c.id === plan.classId)?.name}>
+                              {classes.find(c => c.id === plan.classId)?.name || 'Turma N/A'}
+                            </span>
+                            {plan.shared && <i className="fa-solid fa-share-nodes text-[10px] text-emerald-500" title="Compartilhado"></i>}
+                          </div>
+                          <p className="text-xs font-bold text-gray-800 line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors">{plan.temaAula}</p>
+                          {plan.habilidadesBNCC?.[0] && (
+                            <span className="text-[8px] font-black text-gray-500 uppercase bg-gray-50 px-2 py-0.5 rounded border border-gray-100 block truncate" title={bnccData.find(b => b.codigo === plan.habilidadesBNCC[0])?.descricao}>
+                              BNCC: {plan.habilidadesBNCC[0]}
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
     </div>
   );
 };

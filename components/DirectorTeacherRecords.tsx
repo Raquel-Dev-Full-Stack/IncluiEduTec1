@@ -94,7 +94,16 @@ const DirectorTeacherRecords: React.FC<DirectorTeacherRecordsProps> = ({
               },
               {
                 header: 'Tema da Aula',
-                accessor: (r) => <span className="font-semibold text-indigo-600">{r.temaAula}</span>
+                accessor: (r) => (
+                  <span className="font-semibold text-indigo-600 flex items-center gap-2">
+                    {r.temaAula}
+                    {r.diaDaSemana && (
+                      <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[8px] font-black uppercase rounded-md border border-indigo-100">
+                        {r.diaDaSemana}
+                      </span>
+                    )}
+                  </span>
+                )
               },
               {
                 header: 'BNCC',
@@ -193,7 +202,14 @@ const DirectorTeacherRecords: React.FC<DirectorTeacherRecordsProps> = ({
                 </div>
                 <div className="space-y-1">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tema da Aula</p>
-                  <p className="text-sm font-bold text-gray-800">{selectedRecord.temaAula}</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {selectedRecord.temaAula}
+                    {selectedRecord.diaDaSemana && (
+                      <span className="ml-2 inline-block px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[8px] font-black uppercase rounded-md border border-indigo-100">
+                        {selectedRecord.diaDaSemana}
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Habilidade BNCC</p>

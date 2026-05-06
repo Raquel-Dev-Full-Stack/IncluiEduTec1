@@ -140,7 +140,14 @@ const TeacherDetails: React.FC<TeacherDetailsProps> = ({ teacher, lessonPlans, c
                 header: 'Conteúdo Registrado',
                 accessor: (p) => (
                   <div className="max-w-xs py-1">
-                    <p className="text-sm font-bold text-gray-800 leading-tight mb-1">{p.temaAula}</p>
+                    <p className="text-sm font-bold text-gray-800 leading-tight mb-1">
+                      {p.temaAula}
+                      {p.diaDaSemana && (
+                        <span className="ml-2 inline-block px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[8px] font-black uppercase rounded-md border border-indigo-100">
+                          {p.diaDaSemana}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[11px] text-gray-500 line-clamp-2" title={p.description}>
                       {p.description}
                     </p>

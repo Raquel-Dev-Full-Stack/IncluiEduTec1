@@ -237,6 +237,7 @@ export interface LessonPlan {
   classId: string;
   schoolId: string;
   temaAula: string;
+  diaDaSemana?: string;
   habilidadesBNCC: any;
   adaptacoesMetodologia: string;
   description?: string;
