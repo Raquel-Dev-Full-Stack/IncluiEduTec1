@@ -1,9 +1,80 @@
 
 import React, { useState } from 'react';
+import { User } from '../types';
+import { supabase } from '../lib/supabaseClient';
 
-const TeacherSettings: React.FC = () => {
+interface TeacherSettingsProps {
+  user: User;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  showNotification: (msg: string, type: 'success' | 'error') => void;
+}
+
+const TeacherSettings: React.FC<TeacherSettingsProps> = ({ user, setUser, showNotification }) => {
   const [notifications, setNotifications] = useState(true);
+  const [displayName, setDisplayName] = useState(user.name || '');
+  const [email, setEmail] = useState(user.email || '');
+  const [password, setPassword] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingCreds, setIsUpdatingCreds] = useState(false);
 
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      if (displayName.trim() !== user.name) {
+        const { error } = await supabase
+          .from('users')
+          .update({ name: displayName.trim() })
+          .eq('id', user.id);
+          
+        if (error) throw error;
+        
+        setUser({ ...user, name: displayName.trim() });
+      }
+      showNotification('Configurações aplicadas com sucesso!', 'success');
+    } catch (err) {
+      console.error('Erro ao salvar configurações:', err);
+      showNotification('Erro ao salvar configurações.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  const handleUpdateCredentials = async () => {
+    setIsUpdatingCreds(true);
+    try {
+      const updates: Partial<User> = {};
+      
+      if (displayName.trim() !== user.name) {
+        updates.name = displayName.trim();
+      }
+      
+      if (email.trim() !== user.email && email.trim() !== '') {
+        updates.email = email.trim();
+      }
+      
+      if (password) {
+        updates.password = password;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('users')
+          .update(updates)
+          .eq('id', user.id);
+          
+        if (error) throw error;
+        
+        setUser({ ...user, ...updates });
+      }
+      
+      showNotification('Credenciais e perfil atualizados com sucesso!', 'success');
+      setPassword(''); // Limpar campo de senha após sucesso
+    } catch (err) {
+      console.error('Erro ao atualizar credenciais:', err);
+      showNotification('Erro ao atualizar credenciais.', 'error');
+    } finally {
+      setIsUpdatingCreds(false);
+    }
+  };
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       <header className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
@@ -28,11 +99,25 @@ const TeacherSettings: React.FC = () => {
           </h3>
           <div className="space-y-4">
             <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome de Exibição</label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Seu nome no sistema"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+                <i className="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
+              </div>
+            </div>
+            <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">E-mail de Acesso</label>
               <div className="relative">
                 <input 
                   type="email" 
-                  defaultValue="professor@escola.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
                 <i className="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
@@ -43,14 +128,24 @@ const TeacherSettings: React.FC = () => {
               <div className="relative">
                 <input 
                   type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
                 <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
               </div>
             </div>
-            <button className="w-full py-3.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-gray-100 transition-all active:scale-95">
-              Atualizar Credenciais
+            <button 
+              onClick={handleUpdateCredentials}
+              disabled={isUpdatingCreds}
+              className={`w-full py-3.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-gray-100 transition-all active:scale-95 flex items-center justify-center gap-2 ${isUpdatingCreds ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {isUpdatingCreds ? (
+                <><i className="fa-solid fa-circle-notch fa-spin"></i> Atualizando...</>
+              ) : (
+                'Atualizar Credenciais'
+              )}
             </button>
           </div>
         </section>
@@ -97,8 +192,16 @@ const TeacherSettings: React.FC = () => {
           <p className="text-slate-400 text-xs font-medium">As mudanças nas notificações e e-mail serão aplicadas imediatamente.</p>
         </div>
         <div className="flex gap-4">
-          <button className="px-10 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-emerald-900/20 transition-all active:scale-95">
-            Aplicar Configurações
+          <button 
+            onClick={handleSaveSettings}
+            disabled={isSaving}
+            className={`px-10 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-emerald-900/20 transition-all active:scale-95 flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isSaving ? (
+              <><i className="fa-solid fa-circle-notch fa-spin"></i> Salvando...</>
+            ) : (
+              'Aplicar Configurações'
+            )}
           </button>
         </div>
       </div>

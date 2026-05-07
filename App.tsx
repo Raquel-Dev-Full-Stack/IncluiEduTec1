@@ -1262,14 +1262,21 @@ export default function App() {
 
       // 1. Processar Diretor
       if (newSchoolData.principalEmail) {
+        const dirEmail = newSchoolData.principalEmail.trim();
         await callUpsertUser(
-          newSchoolData.principalEmail,
+          dirEmail,
           newSchoolData.principalName || 'Diretor',
           'diretor',
           newSchoolData.principalPassword || undefined,
           currentSchoolId,
-          newSchoolData.municipio_id || user.municipio_id
+          finalMunicipioId
         );
+
+        // Forçar atualização via tabela (caso a Edge Function ou Trigger falhem em salvar o municipio)
+        await supabase
+          .from('users')
+          .update({ municipio_id: finalMunicipioId, school_id: currentSchoolId })
+          .eq('email', dirEmail);
       }
 
       // 3. Cadastrar Detalhes (Professores, Mediadores, Turmas, Alunos)
@@ -1294,7 +1301,11 @@ export default function App() {
 
         const authPromises = newSchoolData.teachers
           .filter(t => t.contact && isEmail(t.contact))
-          .map(t => callUpsertUser(t.contact!.trim(), t.name, 'professor', undefined, currentSchoolId, user.municipio_id));
+          .map(async t => {
+            const email = t.contact!.trim();
+            await callUpsertUser(email, t.name, 'professor', undefined, currentSchoolId, finalMunicipioId);
+            await supabase.from('users').update({ municipio_id: finalMunicipioId, school_id: currentSchoolId }).eq('email', email);
+          });
 
         await Promise.all(authPromises);
 
@@ -1347,11 +1358,15 @@ export default function App() {
           await query;
         }
 
-        const authPromises = newSchoolData.mediators
+        const medPromises = newSchoolData.mediators
           .filter(m => m.contact && isEmail(m.contact))
-          .map(m => callUpsertUser(m.contact!.trim(), m.name, 'mediador', undefined, currentSchoolId, user.municipio_id));
+          .map(async m => {
+            const email = m.contact!.trim();
+            await callUpsertUser(email, m.name, 'mediador', undefined, currentSchoolId, finalMunicipioId);
+            await supabase.from('users').update({ municipio_id: finalMunicipioId, school_id: currentSchoolId }).eq('email', email);
+          });
 
-        await Promise.all(authPromises);
+        await Promise.all(medPromises);
 
         for (const m of newSchoolData.mediators) {
           const contact = m.contact?.trim() || '';
@@ -3225,7 +3240,7 @@ export default function App() {
         return null;
 
       case 'configuracoes':
-        if (user.profile === UserProfile.PROFESSOR) return <TeacherSettings />;
+        if (user.profile === UserProfile.PROFESSOR) return <TeacherSettings user={user} setUser={setUser} showNotification={showNotification} />;
         if (user.profile === UserProfile.MEDIADOR) return <MediatorSettings />;
         return (
           <Settings 
