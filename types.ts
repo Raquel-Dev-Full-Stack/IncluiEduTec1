@@ -10,6 +10,7 @@ export enum UserProfile {
 
 export interface User {
   id: string;
+  auth_user_id?: string;
   email: string;
   name: string;
   profile: UserProfile;

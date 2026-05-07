@@ -517,14 +517,14 @@ export default function App() {
       // Define o usuário IMEDIATAMENTE usando metadados do Auth/JWT
       const mappedProfile = roleToProfileMap[metadata.role] || UserProfile.PROFESSOR;
       const initialUser = {
-        id: authUser.id, // Fallback se não encontrar o ID do public.users
+        id: authUser.id, 
         auth_user_id: authUser.id,
         name: metadata.name || 'Usuário',
         role: metadata.role || 'professor',
         profile: mappedProfile,
         schoolId: metadata.school_id,
         municipio_id: metadata.municipio_id,
-        themePreference: 'light' // Padrão inicial
+        themePreference: 'light'
       } as unknown as User;
 
       setUser(initialUser);
@@ -545,6 +545,7 @@ export default function App() {
               ...prev,
               ...userData,
               id: userData.id,
+              auth_user_id: userData.auth_user_id || authUser.id,
               name: nameValue,
               schoolId: userData.school_id || userData.schoolId || prev?.schoolId,
               municipio_id: userData.municipio_id || userData.municipioId || prev?.municipio_id,
@@ -798,6 +799,7 @@ export default function App() {
       const nameValue = userData.name || userData.nome || userData.email || 'Usuário';
       setUser({
         ...userData,
+        auth_user_id: authData.user?.id || userData.auth_user_id,
         name: nameValue,
         profile: mappedProfile,
         schoolId: userData.school_id,
@@ -1000,7 +1002,7 @@ export default function App() {
         record_type: recordData.recordType,
         value: recordData.value,
         observation: recordData.observation,
-        created_by: user.id,
+        created_by: user.auth_user_id || user.id,
         shift: recordData.shift || null
       };
 
@@ -1089,7 +1091,7 @@ export default function App() {
         student_id: recordData.studentId,
         class_id: recordData.classId || null,
         school_id: recordData.schoolId || user.schoolId || null,
-        mediator_id: user.id, // Must be user.id to satisfy Foreign Key to public.users
+        mediator_id: user.auth_user_id || user.id, // Prefer auth_user_id for RLS consistency
         notes: recordData.description,
         behavior_status: recordData.behaviorStatus,
         status: recordData.status || 'finalizado',
@@ -1118,7 +1120,7 @@ export default function App() {
               student_id: recordData.studentId,
               class_id: recordData.classId || null,
               school_id: recordData.schoolId || user.schoolId || null,
-              mediator_id: user.id,
+              mediator_id: user.auth_user_id || user.id,
               content: recordData.description,
               behavior_status: recordData.behaviorStatus,
               status: recordData.status || 'finalizado',
@@ -2022,8 +2024,17 @@ export default function App() {
         if (error) throw error;
         savedUser = data;
 
-        // Se houver nova senha, atualizar senha_hash
+        // Se houver nova senha, atualizar senha_hash E no Supabase Auth
         if (newMediatorData.password) {
+          await callUpsertUser(
+            mediatorToEdit.email!,
+            newMediatorData.name || mediatorToEdit.name,
+            'mediador',
+            newMediatorData.password,
+            user.schoolId,
+            user.municipio_id
+          );
+          
           const { error: pwdError } = await supabase.rpc('update_user_password_hash', {
             p_user_id: mediatorId,
             p_password: newMediatorData.password
@@ -2147,7 +2158,23 @@ export default function App() {
     if (!user) return;
 
     if (teacherToEdit) {
-      // Modo Edição Simples (apenas campos básicos)
+      // Se houver uma nova senha preenchida, chama a edge function para atualizar no Supabase Auth
+      if (newTeacherData.password) {
+        const authRes = await callUpsertUser(
+          teacherToEdit.email!,
+          newTeacherData.name || teacherToEdit.name,
+          'professor',
+          newTeacherData.password,
+          user.schoolId,
+          user.municipio_id
+        );
+        if (authRes.error) {
+          console.error('Erro ao atualizar senha no Auth:', authRes.error);
+          alert('Aviso: Os dados foram atualizados, mas houve falha ao redefinir a senha.');
+        }
+      }
+
+      // Modo Edição Simples (apenas campos básicos no public.users)
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -2456,7 +2483,7 @@ export default function App() {
       const planToSave = {
         school_id: user.schoolId,
         class_id: plan.classId,
-        teacher_id: user.id,
+        teacher_id: user.auth_user_id || user.id,
         tema_aula: plan.temaAula,
         dia_da_semana: plan.diaDaSemana,
         habilidades_bncc: plan.habilidadesBNCC,
