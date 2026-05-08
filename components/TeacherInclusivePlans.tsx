@@ -20,31 +20,107 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
 
-  // Estados para criação de novo plano
   const [creationData, setCreationData] = useState({
     studentId: '',
     type: 'PEI' as PlanType,
     content: ''
   });
 
+  // Estados para dados carregados do banco
+  const [peiData, setPeiData] = useState<any>(null);
+  const [pdiData, setPdiData] = useState<any>(null);
+  const [paeeData, setPaeeData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Efeito para carregar dados do aluno
+  React.useEffect(() => {
+    const fetchPlans = async () => {
+      if (!selectedStudentId) {
+        setPeiData(null);
+        setPdiData(null);
+        setPaeeData(null);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { data: allRecords, error } = await supabase
+          .from('student_records')
+          .select('*')
+          .eq('student_id', selectedStudentId)
+          .in('record_type', ['PEI', 'PDI', 'PAEE']);
+
+        if (error) throw error;
+
+        const peiRec = allRecords?.find(r => r.record_type === 'PEI');
+        const pdiRec = allRecords?.find(r => r.record_type === 'PDI');
+        const paeeRec = allRecords?.find(r => r.record_type === 'PAEE');
+
+        const parseData = (record: any, defaultData: any) => {
+          if (!record) return defaultData;
+          try {
+            const parsed = JSON.parse(record.observation);
+            return { ...defaultData, ...parsed, id: record.id };
+          } catch {
+            return { ...defaultData, content: record.observation, id: record.id };
+          }
+        };
+
+        setPeiData(parseData(peiRec, { student_id: selectedStudentId, content: '', metas: '', adaptacoes: '' }));
+        setPdiData(parseData(pdiRec, { student_id: selectedStudentId, content: '', desenvolvimento: '', social: '', autonomia: '' }));
+        setPaeeData(parseData(paeeRec, { student_id: selectedStudentId, content: '', recursos: '', barreiras: '', estrategias: '' }));
+      } catch (error) {
+        console.error("Erro ao carregar planos de student_records:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, [selectedStudentId]);
+
   const selectedStudent = useMemo(() =>
     students.find(s => s.id === selectedStudentId),
     [students, selectedStudentId]);
 
-  const handleSave = (type: PlanType) => {
+  const handleSave = async (type: PlanType) => {
     if (!selectedStudentId) {
       alert('Selecione um aluno primeiro.');
       return;
     }
-    setFeedback(`Plano ${type} atualizado com sucesso!`);
+
+    setFeedback(`Salvando Plano ${type}...`);
     
-    if (logActivity) {
-      logActivity(
-        `Atualizar Plano ${type}`,
-        `Atualizou o plano ${type} para o aluno ID: ${selectedStudentId}`,
-        user.municipio_id,
-        user.schoolId
-      );
+    try {
+      const dataToSave = type === 'PEI' ? peiData : type === 'PDI' ? pdiData : paeeData;
+      
+      const { error } = await supabase
+        .from('student_records')
+        .upsert({
+          id: dataToSave.id, 
+          student_id: selectedStudentId,
+          record_type: type,
+          observation: JSON.stringify(dataToSave),
+          value: 'finalizado',
+          date: new Date().toISOString().split('T')[0],
+          created_by: user.id
+        });
+
+      if (error) throw error;
+
+      setFeedback(`Plano ${type} atualizado com sucesso!`);
+      
+      if (logActivity) {
+        logActivity(
+          `Atualizar Plano ${type}`,
+          `Atualizou o plano ${type} para o aluno ID: ${selectedStudentId}`,
+          user.municipio_id,
+          user.schoolId
+        );
+      }
+    } catch (error: any) {
+      console.error("Erro ao salvar:", error);
+      setFeedback(`Erro ao salvar: ${error.message}`);
     }
 
     setTimeout(() => setFeedback(null), 3000);
@@ -56,12 +132,8 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
     setFeedback('Gerando Relatório Consolidado (PEI + PDI + PAEE)...');
 
     try {
-      // 1. Buscar dados no Supabase (PEI, PDI, PAEE)
-      const [{ data: peiData }, { data: pdiData }, { data: paeeData }] = await Promise.all([
-        supabase.from('pei').select('*').eq('student_id', selectedStudentId).maybeSingle(),
-        supabase.from('pdi').select('*').eq('student_id', selectedStudentId).maybeSingle(),
-        supabase.from('paee').select('*').eq('student_id', selectedStudentId).maybeSingle()
-      ]);
+      // Usar os dados do estado (real-time) em vez de buscar no banco novamente
+      // Isso garante que o que o professor escreveu agora saia no PDF
 
       // 2. Iniciar PDF
       const doc = new jsPDF();
@@ -111,16 +183,24 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       yPos += 12;
       doc.setTextColor(75);
       doc.setFont("helvetica", "normal");
-      if (peiData) {
-        const peiLines = doc.splitTextToSize(peiData.content || peiData.metas || 'Sem registros detalhados no sistema.', pageWidth - 50);
+      
+      const peiText = [
+        peiData?.metas ? `METAS: ${peiData.metas}` : '',
+        peiData?.adaptacoes ? `ADAPTAÇÕES: ${peiData.adaptacoes}` : '',
+        peiData?.content ? `OBSERVAÇÕES: ${peiData.content}` : ''
+      ].filter(Boolean).join('\n\n');
+
+      if (peiText) {
+        const peiLines = doc.splitTextToSize(peiText, pageWidth - 50);
         doc.text(peiLines, 25, yPos);
         yPos += (peiLines.length * 6) + 5;
       } else {
-        doc.text("Nenhum registro de PEI encontrado para este aluno.", 25, yPos);
+        doc.text("Nenhum registro de PEI preenchido para este aluno.", 25, yPos);
         yPos += 10;
       }
 
       // --- Seção PDI ---
+      if (yPos > 240) { doc.addPage(); yPos = 20; }
       yPos += 10;
       doc.setFont("helvetica", "bold");
       doc.setFillColor(147, 51, 234); // Purple 600
@@ -131,17 +211,24 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       yPos += 12;
       doc.setTextColor(75);
       doc.setFont("helvetica", "normal");
-      if (pdiData) {
-        const pdiLines = doc.splitTextToSize(pdiData.content || pdiData.desenvolvimento || 'Sem registros detalhados no sistema.', pageWidth - 50);
+
+      const pdiText = [
+        pdiData?.social ? `DIMENSÃO SOCIAL: ${pdiData.social}` : '',
+        pdiData?.autonomia ? `AUTONOMIA: ${pdiData.autonomia}` : '',
+        pdiData?.content ? `DESENVOLVIMENTO: ${pdiData.content}` : ''
+      ].filter(Boolean).join('\n\n');
+
+      if (pdiText) {
+        const pdiLines = doc.splitTextToSize(pdiText, pageWidth - 50);
         doc.text(pdiLines, 25, yPos);
         yPos += (pdiLines.length * 6) + 5;
       } else {
-        doc.text("Nenhum registro de PDI encontrado para este aluno.", 25, yPos);
+        doc.text("Nenhum registro de PDI preenchido para este aluno.", 25, yPos);
         yPos += 10;
       }
 
       // --- Seção PAEE ---
-      if (yPos > 240) { doc.addPage(); yPos = 20; }
+      if (yPos > 220) { doc.addPage(); yPos = 20; }
       yPos += 10;
       doc.setFont("helvetica", "bold");
       doc.setFillColor(5, 150, 105); // Emerald 600
@@ -152,12 +239,20 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       yPos += 12;
       doc.setTextColor(75);
       doc.setFont("helvetica", "normal");
-      if (paeeData) {
-        const paeeLines = doc.splitTextToSize(paeeData.content || paeeData.recursos || 'Sem registros detalhados no sistema.', pageWidth - 50);
+
+      const paeeText = [
+        paeeData?.barreiras ? `BARREIRAS: ${paeeData.barreiras}` : '',
+        paeeData?.recursos ? `RECURSOS: ${paeeData.recursos}` : '',
+        paeeData?.estrategias ? `ESTRATÉGIAS: ${paeeData.estrategias}` : '',
+        paeeData?.content ? `DETALHES: ${paeeData.content}` : ''
+      ].filter(Boolean).join('\n\n');
+
+      if (paeeText) {
+        const paeeLines = doc.splitTextToSize(paeeText, pageWidth - 50);
         doc.text(paeeLines, 25, yPos);
         yPos += (paeeLines.length * 6) + 5;
       } else {
-        doc.text("Nenhum registro de PAEE encontrado para este aluno.", 25, yPos);
+        doc.text("Nenhum registro de PAEE preenchido para este aluno.", 25, yPos);
         yPos += 10;
       }
 
@@ -174,7 +269,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
       // Finalizar e Salvar
       doc.save(`relatorio_consolidado_${selectedStudent.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
 
-      setFeedback("Relatório Consolidado (PEI + PDI + PAEE) exportado com sucesso!");
+      setFeedback("Relatório Consolidado exportado com sucesso!");
 
       if (logActivity) {
         logActivity(
@@ -195,25 +290,67 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
   };
 
   const handleCreatePlan = () => {
-    // Agora o botão abre o modo de criação em vez de apenas mostrar um alerta
     setIsCreatingNew(true);
-    if (selectedStudentId) {
-      setCreationData(prev => ({ ...prev, studentId: selectedStudentId }));
-    }
+    // Sincroniza o aluno selecionado no cabeçalho com o formulário de criação
+    setCreationData(prev => ({ 
+      ...prev, 
+      studentId: selectedStudentId || prev.studentId 
+    }));
   };
 
-  const handleFinalizeCreation = () => {
+  const handleFinalizeCreation = async () => {
     if (!creationData.studentId || !creationData.content) {
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    setFeedback(`Novo plano ${creationData.type} criado com sucesso para o aluno!`);
-    setIsCreatingNew(false);
-    setSelectedStudentId(creationData.studentId);
-    setActivePlan(creationData.type);
-    setCreationData({ studentId: '', type: 'PEI', content: '' });
-    setTimeout(() => setFeedback(null), 4000);
+    setLoading(true);
+    setFeedback(`Criando novo plano ${creationData.type}...`);
+
+    console.log("Iniciando salvamento do plano na tabela student_records:", { 
+      studentId: creationData.studentId, 
+      type: creationData.type
+    });
+
+    try {
+      const { error } = await supabase
+        .from('student_records')
+        .upsert({
+          student_id: creationData.studentId,
+          record_type: creationData.type,
+          observation: JSON.stringify({ content: creationData.content }),
+          value: 'finalizado',
+          date: new Date().toISOString().split('T')[0],
+          created_by: user.id
+        });
+
+      if (error) {
+        console.error("Erro Supabase:", error);
+        throw error;
+      }
+
+      console.log("Plano salvo com sucesso!");
+      setFeedback(`Novo plano ${creationData.type} criado com sucesso!`);
+      
+      // Delay para o usuário ver o feedback antes de fechar
+      setTimeout(() => {
+        setIsCreatingNew(false);
+        const tempId = creationData.studentId;
+        setSelectedStudentId('');
+        setTimeout(() => {
+          setSelectedStudentId(tempId);
+          setActivePlan(creationData.type);
+        }, 50);
+        setCreationData({ studentId: '', type: 'PEI', content: '' });
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("Erro ao criar plano:", error);
+      setFeedback(`Erro ao criar: ${error.message || 'Verifique sua conexão'}`);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setFeedback(null), 5000);
+    }
   };
 
   return (
@@ -282,10 +419,15 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
               <i className="fa-solid fa-plus-circle"></i>
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-2xl font-black text-gray-800">Elaborar Novo Plano Inclusivo</h2>
               <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Preencha os dados iniciais para o registro</p>
             </div>
+            {feedback && (
+              <div className="px-6 py-3 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse border border-blue-100">
+                <i className="fa-solid fa-circle-info mr-2"></i> {feedback}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -293,7 +435,10 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aluno Alvo *</label>
               <select
                 value={creationData.studentId}
-                onChange={(e) => setCreationData({ ...creationData, studentId: e.target.value })}
+                onChange={(e) => {
+                  setCreationData({ ...creationData, studentId: e.target.value });
+                  if (e.target.value) setSelectedStudentId(e.target.value);
+                }}
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
               >
                 <option value="">Selecione o Aluno...</option>
@@ -333,10 +478,15 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
             </button>
             <button
               onClick={handleFinalizeCreation}
-              className="px-12 py-4 bg-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-3"
+              disabled={loading}
+              className={`px-12 py-4 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center gap-3 shadow-xl ${
+                loading 
+                  ? 'bg-gray-400 cursor-wait shadow-gray-100' 
+                  : 'bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700'
+              }`}
             >
-              <i className="fa-solid fa-cloud-arrow-up"></i>
-              Finalizar e Salvar Plano
+              <i className={`fa-solid ${loading ? 'fa-circle-notch fa-spin' : 'fa-cloud-arrow-up'}`}></i>
+              {loading ? 'Salvando...' : 'Finalizar e Salvar Plano'}
             </button>
           </div>
         </div>
@@ -424,6 +574,8 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Metas Acadêmicas Curto/Médio Prazo</label>
                       <textarea
+                        value={peiData?.metas || ''}
+                        onChange={(e) => setPeiData({ ...peiData, metas: e.target.value })}
                         className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[150px]"
                         placeholder="Ex: Identificar números decimais, ampliar vocabulário..."
                       />
@@ -431,10 +583,22 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Adaptações Curriculares Necessárias</label>
                       <textarea
+                        value={peiData?.adaptacoes || ''}
+                        onChange={(e) => setPeiData({ ...peiData, adaptacoes: e.target.value })}
                         className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[150px]"
                         placeholder="Ex: Provas com letras ampliadas, tempo estendido..."
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Observações Gerais / Conteúdo Adicional</label>
+                    <textarea
+                      value={peiData?.content || ''}
+                      onChange={(e) => setPeiData({ ...peiData, content: e.target.value })}
+                      className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[100px]"
+                      placeholder="Outras informações relevantes..."
+                    />
                   </div>
 
                   <div className="space-y-4">
@@ -468,14 +632,33 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dimensão Social e Emocional</label>
-                        <textarea className="w-full p-5 bg-purple-50/30 border border-purple-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px]" placeholder="Interação com pares, autorregulação..." />
+                        <textarea 
+                          value={pdiData?.social || ''}
+                          onChange={(e) => setPdiData({ ...pdiData, social: e.target.value })}
+                          className="w-full p-5 bg-purple-50/30 border border-purple-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px]" 
+                          placeholder="Interação com pares, autorregulação..." 
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Autonomia e Funcionalidade</label>
-                        <textarea className="w-full p-5 bg-purple-50/30 border border-purple-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px]" placeholder="Higiene pessoal, organização de materiais..." />
+                        <textarea 
+                          value={pdiData?.autonomia || ''}
+                          onChange={(e) => setPdiData({ ...pdiData, autonomia: e.target.value })}
+                          className="w-full p-5 bg-purple-50/30 border border-purple-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px]" 
+                          placeholder="Higiene pessoal, organização de materiais..." 
+                        />
                       </div>
                     </div>
                     <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progresso / Desenvolvimento Geral</label>
+                        <textarea 
+                          value={pdiData?.content || pdiData?.desenvolvimento || ''}
+                          onChange={(e) => setPdiData({ ...pdiData, content: e.target.value })}
+                          className="w-full p-5 bg-purple-50/30 border border-purple-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-purple-500 outline-none min-h-[120px]" 
+                          placeholder="Observações sobre o desenvolvimento global..." 
+                        />
+                      </div>
                       <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white space-y-4">
                         <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Registro de Reuniões</h4>
                         <div className="space-y-3">
@@ -506,16 +689,41 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Barreiras Identificadas</label>
-                      <textarea className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" placeholder="Física, Atitudinal, Comunicacional..." />
+                      <textarea 
+                        value={paeeData?.barreiras || ''}
+                        onChange={(e) => setPaeeData({ ...paeeData, barreiras: e.target.value })}
+                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" 
+                        placeholder="Física, Atitudinal, Comunicacional..." 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recursos de Acessibilidade</label>
-                      <textarea className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" placeholder="Soroban, Teclado Adaptado, Prancha de CAA..." />
+                      <textarea 
+                        value={paeeData?.recursos || ''}
+                        onChange={(e) => setPaeeData({ ...paeeData, recursos: e.target.value })}
+                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" 
+                        placeholder="Soroban, Teclado Adaptado, Prancha de CAA..." 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estratégias de Intervenção</label>
-                      <textarea className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" placeholder="Atendimento em contraturno na SRM..." />
+                      <textarea 
+                        value={paeeData?.estrategias || ''}
+                        onChange={(e) => setPaeeData({ ...paeeData, estrategias: e.target.value })}
+                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" 
+                        placeholder="Atendimento em contraturno na SRM..." 
+                      />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conteúdo Detalhado PAEE</label>
+                    <textarea 
+                      value={paeeData?.content || ''}
+                      onChange={(e) => setPaeeData({ ...paeeData, content: e.target.value })}
+                      className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px]" 
+                      placeholder="Outros detalhes sobre o atendimento..." 
+                    />
                   </div>
 
                   <div className="bg-blue-50 p-6 rounded-[2.5rem] border border-blue-100 flex items-start gap-4">
@@ -540,18 +748,26 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
           </div>
         </div>
       ) : (
-        <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center space-y-4">
-          <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto text-indigo-600 text-3xl">
-            <i className="fa-solid fa-user-check"></i>
+        <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center space-y-6 max-w-2xl mx-auto shadow-sm">
+          <div className="w-24 h-24 bg-indigo-50 rounded-[2rem] flex items-center justify-center mx-auto text-indigo-600 text-4xl shadow-inner">
+            <i className="fa-solid fa-user-plus"></i>
           </div>
-          <h2 className="text-xl font-black text-gray-800 tracking-tight">Inicie selecionando um aluno</h2>
-          <p className="text-gray-400 text-sm max-w-xs mx-auto font-medium italic">Selecione o aluno no menu superior para visualizar seu histórico de planos inclusivos.</p>
-          <button
-            onClick={handleCreatePlan}
-            className="mt-4 px-8 py-3.5 bg-blue-50 text-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100"
-          >
-            Começar Nova Elaboração
-          </button>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-gray-800 tracking-tight">Pronto para elaborar um plano?</h2>
+            <p className="text-gray-500 text-sm font-medium leading-relaxed">
+              Você pode selecionar um aluno no menu superior para ver o histórico <br />
+              ou clicar no botão abaixo para criar um novo plano do zero.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button
+              onClick={handleCreatePlan}
+              className="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center gap-3"
+            >
+              <i className="fa-solid fa-plus-circle"></i>
+              Criar Novo Plano Agora
+            </button>
+          </div>
         </div>
       )}
     </div>
