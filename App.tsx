@@ -33,6 +33,8 @@ import AdminRegistros from './components/AdminRegistros';
 import ModuleWrapper from './components/ModuleWrapper';
 import Table from './components/Table';
 import CourseTab from './components/CourseTab';
+import HelpGuide from './components/HelpGuide';
+import ClassDiary from './components/ClassDiary';
 import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord, Report, Municipio } from './types';
 import { MOCK_USERS, MOCK_SCHOOLS, MOCK_STUDENTS, MOCK_MEDIATION_RECORDS, MOCK_CLASSES, MOCK_LESSON_PLANS, MOCK_MEALS } from './constants';
 import { supabase } from './lib/supabaseClient';
@@ -74,6 +76,7 @@ export default function App() {
   // Evita que o onAuthStateChange sobreponha o login manual em andamento
   const isHandlingLogin = React.useRef(false);
   const [teacherSubTab, setTeacherSubTab] = useState<'list' | 'records'>('list');
+  const [classDiaryTab, setClassDiaryTab] = useState<'turmas' | 'alunos' | 'planos' | 'planejamento'>('turmas');
 
   // Estados Locais Reativos (Iniciados vazios para carregar do Supabase)
   const [schools, setSchools] = useState<School[]>([]);
@@ -635,9 +638,16 @@ export default function App() {
       loadSettings();
     }
 
+    const handleTabChange = (e: any) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+
+    window.addEventListener('changeTab', handleTabChange);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('changeTab', handleTabChange);
     };
   }, [fetchData]);
 
@@ -2483,7 +2493,7 @@ export default function App() {
       const planToSave = {
         school_id: user.schoolId,
         class_id: plan.classId,
-        teacher_id: user.auth_user_id || user.id,
+        teacher_id: user.id,
         tema_aula: plan.temaAula,
         dia_da_semana: plan.diaDaSemana,
         habilidades_bncc: plan.habilidadesBNCC,
@@ -2519,10 +2529,44 @@ export default function App() {
         user.schoolId
       );
       fetchData();
-      setActiveTab('registros');
+      if (user.profile === UserProfile.PROFESSOR) {
+        setActiveTab('diario_classe');
+        setClassDiaryTab('planejamento');
+      } else {
+        setActiveTab('registros');
+      }
     } catch (err: any) {
       console.error('Erro ao salvar registro pedagógico:', err);
       showNotification(`Erro ao salvar: ${err.message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteLessonPlan = async (id: string) => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const plan = lessonPlans.find(p => p.id === id);
+      const { error } = await supabase
+        .from('lesson_plans')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      showNotification('Planejamento excluído com sucesso!', 'success');
+      await logActivity(
+        'Excluir Planejamento',
+        `Excluiu o planejamento: ${plan?.temaAula || id}`,
+        user.municipio_id,
+        user.schoolId
+      );
+      fetchData();
+    } catch (err: any) {
+      console.error('Erro ao excluir planejamento:', err);
+      showNotification(`Erro ao excluir: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -3306,6 +3350,61 @@ export default function App() {
 
       case 'curso_inclusao':
         return <CourseTab />;
+
+      case 'help':
+        return <HelpGuide />;
+
+      case 'diario_classe':
+        if (user.profile === UserProfile.PROFESSOR) {
+          const teacherClasses = classes.filter(c => c.teacherId === user.id);
+          const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
+          
+          return (
+            <ClassDiary
+              activeSubTab={classDiaryTab}
+              onSubTabChange={setClassDiaryTab}
+              classesComponent={
+                <TeacherClasses 
+                  classes={teacherClasses} 
+                  students={teacherStudents} 
+                  onRegisterActivity={(classId) => {
+                    setSelectedClassIdForActivity(classId);
+                    setClassDiaryTab('planejamento');
+                  }} 
+                />
+              }
+              studentsComponent={
+                <TeacherStudents 
+                  students={teacherStudents} 
+                  classes={teacherClasses} 
+                  attendances={attendances} 
+                  onSaveAttendance={handleSaveAttendance} 
+                  onSaveStudentRecord={handleSaveStudentRecord} 
+                  currentUser={user} 
+                  onViewProfile={setSelectedStudentIdForView} 
+                />
+              }
+              inclusivePlansComponent={
+                <TeacherInclusivePlans 
+                  students={teacherStudents} 
+                  classes={teacherClasses} 
+                  currentUser={user} 
+                />
+              }
+              pedagogicalPlanningComponent={
+                <TeacherRecords
+                  students={teacherStudents}
+                  classes={teacherClasses}
+                  lessonPlans={lessonPlans}
+                  initialClassId={selectedClassIdForActivity}
+                  onSave={handleSaveLessonPlan}
+                  onDelete={handleDeleteLessonPlan}
+                />
+              }
+            />
+          );
+        }
+        return null;
 
       default:
         return (

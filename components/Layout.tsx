@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { User, UserProfile } from '../types';
+import RoboChat from './RoboChat';
+import GuidedTour from './GuidedTour';
 
 interface LayoutProps {
   user: User;
@@ -13,6 +15,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab, children, backgroundTheme = 'padrao' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+
+  React.useEffect(() => {
+    const handleStartTour = () => setIsTourOpen(true);
+    window.addEventListener('startTour', handleStartTour);
+    return () => window.removeEventListener('startTour', handleStartTour);
+  }, []);
 
   const getBackgroundClass = (theme: string) => {
     switch (theme) {
@@ -59,10 +68,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR]
     },
     {
+      id: 'diario_classe',
+      label: 'Diário de Classe',
+      icon: 'fa-book-open-reader',
+      profileOnly: [UserProfile.PROFESSOR]
+    },
+    {
       id: 'turmas',
       label: 'Turmas',
       icon: 'fa-users-rectangle',
-      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.DIRETOR]
     },
     {
       id: 'teachers',
@@ -74,7 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'alunos',
       label: 'Alunos',
       icon: 'fa-children',
-      profileOnly: [UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+      profileOnly: [UserProfile.DIRETOR, UserProfile.MEDIADOR]
     },
     {
       id: 'refeicoes',
@@ -86,7 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'inclusive_plans',
       label: 'Planos Inclusivos',
       icon: 'fa-file-medical',
-      profileOnly: [UserProfile.PROFESSOR]
+      profileOnly: []
     },
     {
       id: 'mediation',
@@ -102,9 +117,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
     },
     {
       id: 'registros',
-      label: user.profile === UserProfile.ADMIN ? 'Secretarias de Educação' : (user.profile === UserProfile.PROFESSOR ? 'Planejamento Pedagógico' : 'Registros'),
+      label: user.profile === UserProfile.ADMIN ? 'Secretarias de Educação' : 'Registros',
       icon: 'fa-book',
-      profileOnly: [UserProfile.ADMIN, UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.ADMIN]
     },
     {
       id: 'relatorios',
@@ -116,12 +131,18 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'activity_logs',
       label: 'Registro de Atividades',
       icon: 'fa-clock-rotate-left',
-      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR]
+      profileOnly: [UserProfile.SECRETARIA, UserProfile.DIRETOR]
     },
     {
       id: 'curso_inclusao',
       label: 'Curso de Inclusão',
       icon: 'fa-graduation-cap',
+      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+    },
+    {
+      id: 'help',
+      label: 'Como Usar',
+      icon: 'fa-circle-question',
       profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
     },
     {
@@ -154,7 +175,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       )}
 
       {/* Sidebar */}
-      <aside className={`
+      <aside 
+        id="tour-sidebar"
+        className={`
         fixed inset-y-0 left-0 w-64 bg-slate-900 text-slate-300 flex flex-col z-40 transition-transform duration-300 transform
         ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 md:sticky md:top-0 md:h-screen md:flex-shrink-0
@@ -176,6 +199,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
             <button
               key={item.id}
               onClick={() => handleTabSelection(item.id)}
+              id={`tour-${item.id}`}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium text-left ${activeTab === item.id
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
                 : 'hover:bg-slate-800 hover:text-white'
@@ -187,7 +211,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-900">
+        <div id="tour-user" className="p-4 border-t border-slate-800 bg-slate-900">
           <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white uppercase">
@@ -243,6 +267,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
         <div className="p-4 md:p-8 flex-1">
           {children}
         </div>
+        <RoboChat activeTab={activeTab} userName={user.name} />
+        <GuidedTour 
+          isOpen={isTourOpen} 
+          onClose={() => setIsTourOpen(false)} 
+          menuItems={filteredMenuItems}
+        />
       </main>
     </div>
   );

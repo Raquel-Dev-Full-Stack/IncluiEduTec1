@@ -15,6 +15,7 @@ interface TeacherRecordsProps {
   lessonPlans: LessonPlan[];
   initialClassId?: string | null;
   onSave: (plan: Partial<LessonPlan>) => void;
+  onDelete: (id: string) => void;
 }
 
 const TeacherRecords: React.FC<TeacherRecordsProps> = ({
@@ -22,12 +23,14 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
   classes,
   lessonPlans,
   initialClassId,
-  onSave
+  onSave,
+  onDelete
 }) => {
   const [filterPeriod, setFilterPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [isAdding, setIsAdding] = useState(!!initialClassId);
   const [bnccData, setBnccData] = useState<BNCCData[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   // Estados do Formulário
   const [formData, setFormData] = useState({
@@ -491,10 +494,40 @@ const TeacherRecords: React.FC<TeacherRecordsProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center">
-                <button className="w-10 h-10 rounded-xl bg-white border border-gray-100 text-gray-400 hover:text-indigo-600 transition-all shadow-sm">
+              <div className="flex items-center relative">
+                <button 
+                  onClick={() => setActiveMenuId(activeMenuId === lesson.id ? null : lesson.id)}
+                  className={`w-10 h-10 rounded-xl bg-white border border-gray-100 transition-all shadow-sm flex items-center justify-center ${activeMenuId === lesson.id ? 'text-indigo-600 ring-2 ring-indigo-500' : 'text-gray-400 hover:text-indigo-600'}`}
+                >
                   <i className="fa-solid fa-ellipsis-vertical"></i>
                 </button>
+
+                {activeMenuId === lesson.id && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)}></div>
+                    <div className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 animate-in zoom-in-95 duration-200">
+                      <button 
+                        onClick={() => { handleEdit(lesson); setActiveMenuId(null); }}
+                        className="w-full px-4 py-2 text-left text-sm font-bold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2 transition-colors"
+                      >
+                        <i className="fa-solid fa-pen-to-square w-4"></i>
+                        Editar Registro
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('Tem certeza que deseja excluir este planejamento?')) {
+                            onDelete(lesson.id);
+                          }
+                          setActiveMenuId(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors"
+                      >
+                        <i className="fa-solid fa-trash w-4"></i>
+                        Excluir Plano
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ))
