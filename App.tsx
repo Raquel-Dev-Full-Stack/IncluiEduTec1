@@ -2696,6 +2696,23 @@ export default function App() {
   const renderModule = () => {
     if (!user) return null;
 
+    // Se houver um aluno selecionado para visualização, mostrar o perfil independente da aba ativa
+    if (selectedStudentIdForView) {
+      const student = students.find(s => s.id === selectedStudentIdForView);
+      if (student) {
+        return (
+          <StudentDetailsView
+            student={student}
+            studentClass={classes.find(c => c.id === student.classId)}
+            mediator={usersList.find(u => u.id === student.mediatorId)}
+            regentTeacher={usersList.find(u => u.id === student.regentTeacherId)}
+            onBack={() => setSelectedStudentIdForView(null)}
+            currentUser={user}
+          />
+        );
+      }
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -3159,22 +3176,6 @@ export default function App() {
       case 'alunos':
         if (user.profile === UserProfile.SECRETARIA) return null;
 
-        if (selectedStudentIdForView) {
-          const student = students.find(s => s.id === selectedStudentIdForView);
-          if (student) {
-            return (
-              <StudentDetailsView
-                student={student}
-                studentClass={classes.find(c => c.id === student.classId)}
-                mediator={usersList.find(u => u.id === student.mediatorId)}
-                regentTeacher={usersList.find(u => u.id === student.regentTeacherId)}
-                onBack={() => setSelectedStudentIdForView(null)}
-                currentUser={user}
-              />
-            );
-          }
-        }
-
         if (user.profile === UserProfile.PROFESSOR) {
           const teacherClasses = classes.filter(c => c.teacherId === user.id);
           const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
@@ -3258,10 +3259,29 @@ export default function App() {
         );
 
       case 'refeicoes':
-        if (user.profile === UserProfile.PROFESSOR) {
-          const teacherClasses = classes.filter(c => c.teacherId === user.id);
-          const teacherStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
-          return <TeacherMeals students={teacherStudents} classes={teacherClasses} meals={meals} onSaveMeal={handleSaveMeal} onUpdateStudentHealth={handleUpdateStudentHealth} currentUser={user} />;
+        if (user.profile === UserProfile.PROFESSOR || user.profile === UserProfile.MEDIADOR || user.profile === UserProfile.DIRETOR) {
+          const profileClasses = user.profile === UserProfile.PROFESSOR 
+            ? classes.filter(c => c.teacherId === user.id)
+            : user.profile === UserProfile.MEDIADOR 
+              ? classes.filter(c => c.mediatorId === user.id)
+              : classes.filter(c => c.schoolId === user.schoolId);
+          
+          const profileStudents = user.profile === UserProfile.PROFESSOR 
+            ? students.filter(s => profileClasses.some(c => c.id === s.classId))
+            : user.profile === UserProfile.MEDIADOR
+              ? students.filter(s => s.mediatorId === user.id || user.studentIds?.includes(s.id))
+              : students.filter(s => s.schoolId === user.schoolId);
+
+          return (
+            <TeacherMeals 
+              students={profileStudents} 
+              classes={profileClasses} 
+              meals={meals} 
+              onSaveMeal={handleSaveMeal}
+              onUpdateStudentHealth={handleUpdateStudentHealth} 
+              currentUser={user} 
+            />
+          );
         }
         return null;
 

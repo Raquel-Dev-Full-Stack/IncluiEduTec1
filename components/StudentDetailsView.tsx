@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Student, Class, User, Guardian, UserProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface StudentDetailsViewProps {
   student: Student;
@@ -48,8 +50,23 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
 
   const bimesters = ['1º_bimestre', '2º_bimestre', '3º_bimestre', '4º_bimestre'];
 
-  const getNotaValue = (val: any) => typeof val === 'object' && val !== null ? Number(val.nota || val.Nota || 0) : Number(val || 0);
-  const getNotaObs = (val: any) => typeof val === 'object' && val !== null ? val.observacao || val.obs || val.Observações || '' : '';
+  const getNotaValue = (val: any) => {
+    if (!val) return 0;
+    const target = Array.isArray(val) ? val[0] : val;
+    if (typeof target === 'object' && target !== null) {
+      return Number(target.nota || target.Nota || target.grade || 0);
+    }
+    return Number(target || 0);
+  };
+
+  const getNotaObs = (val: any) => {
+    if (!val) return '';
+    const target = Array.isArray(val) ? val[0] : val;
+    if (typeof target === 'object' && target !== null) {
+      return target.observacao || target.obs || target.observation || target.Observações || '';
+    }
+    return '';
+  };
 
   const chartData = bimesters.map(bim => {
     const bimData = notas[bim] || {};
@@ -206,18 +223,196 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
     return new Date(dateStr).toLocaleDateString('pt-BR');
   };
 
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Título e Header
+      doc.setFillColor(31, 41, 55); 
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('FICHA INDIVIDUAL DO ALUNO', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, 30, { align: 'center' });
+
+      let yPos = 50;
+
+      // Seção 1: Dados Pessoais
+      doc.setTextColor(31, 41, 55);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('1. DADOS PESSOAIS', 14, yPos);
+      yPos += 10;
+
+      const personalBody = [
+        ['Nome Completo', String(student?.name || 'N/A')],
+        ['RA (Registro Acadêmico)', String(student?.ra || 'N/A')],
+        ['Data de Nascimento', String(formatDate(student?.birthDate || student?.birth_date))],
+        ['Idade', String(calculateAge(student?.birthDate || student?.birth_date))],
+        ['Turma', String(studentClass?.name || 'Não vinculada')],
+        ['Série/Ano', String(student?.grade || studentClass?.level || 'N/A')],
+        ['Atendimento AEE', student?.aee ? 'Sim' : 'Não'],
+        ['Situação de Matrícula', student?.active !== false ? 'Ativa' : 'Inativa'],
+      ];
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Campo', 'Informação']],
+        body: personalBody,
+        theme: 'grid',
+        headStyles: { fillColor: [79, 70, 229] },
+        styles: { fontSize: 9 }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      // Seção 2: Perfil Clínico e Equipe
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('2. PERFIL CLÍNICO E APOIO', 14, yPos);
+      yPos += 10;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Campo', 'Informação']],
+        body: [
+          ['Deficiência Principal', String(student?.deficiency || 'Não informada')],
+          ['Diagnóstico/CID', String(student?.diagnosis || 'Pendente')],
+          ['Possui Laudo Médico', student?.hasMedicalReport ? 'Sim' : 'Não'],
+          ['Mediador Responsável', String(mediator?.name || 'Sem mediador')],
+          ['Professor Regente', String(regentTeacher?.name || 'Não identificado')],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [147, 51, 234] },
+        styles: { fontSize: 9 }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      // Seção 3: Responsáveis Familiares
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('3. RESPONSÁVEIS FAMILIARES', 14, yPos);
+      yPos += 10;
+
+      const guardianData = (student?.guardians || []).map(g => [
+        String(g.relation || '-'), 
+        String(g.name || '-'), 
+        String(g.phone || '-'), 
+        String(g.email || '-')
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Parentesco', 'Nome', 'Telefone', 'E-mail']],
+        body: guardianData.length > 0 ? guardianData : [['-', 'Nenhum cadastrado', '-', '-']],
+        theme: 'grid',
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { fontSize: 9 }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      // Seção 4: Histórico Pedagógico (Notas)
+      if (yPos > 230) { doc.addPage(); yPos = 20; }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('4. DESEMPENHO ACADÊMICO (NOTAS)', 14, yPos);
+      yPos += 10;
+
+      const allGrades: any[] = [];
+      ['1º_bimestre', '2º_bimestre', '3º_bimestre', '4º_bimestre'].forEach(bim => {
+        const bimNotas = notas?.[bim] || {};
+        Object.keys(bimNotas).forEach(sub => {
+          const val = bimNotas[sub];
+          const notaVal = getNotaValue(val);
+          allGrades.push([
+            String(bim.replace('_', ' ')), 
+            String(sub), 
+            typeof notaVal === 'number' ? notaVal.toFixed(1) : '0.0', 
+            String(getNotaObs(val) || '-')
+          ]);
+        });
+      });
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Bimestre', 'Disciplina', 'Nota', 'Observação']],
+        body: allGrades.length > 0 ? allGrades : [['-', 'Sem notas lançadas', '-', '-']],
+        theme: 'grid',
+        headStyles: { fillColor: [79, 70, 229] },
+        styles: { fontSize: 9 }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+
+      // Seção 5: Histórico de Saúde e Refeições
+      if (yPos > 230) { doc.addPage(); yPos = 20; }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('5. HISTÓRICO DE SAÚDE E REFEIÇÕES', 14, yPos);
+      yPos += 10;
+
+      const healthHistory = [...(student?.refeicoes || [])]
+        .filter(r => r && r.data)
+        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+        .slice(0, 20)
+        .map(r => {
+          const evac = (student?.evacuacao || []).find(e => e.data === r.data);
+          return [
+            String(formatDate(r.data)),
+            String(r.cafe_da_manha || '-'),
+            String(r.almoco || '-'),
+            String(r.lanche || '-'),
+            r.dormiu ? 'Sim' : 'Não',
+            evac?.evacuou ? 'Sim' : 'Não'
+          ];
+        });
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Data', 'Café', 'Almoço', 'Lanche', 'Dormiu?', 'Evacuou?']],
+        body: healthHistory.length > 0 ? healthHistory : [['-', '-', '-', '-', '-', '-']],
+        theme: 'grid',
+        headStyles: { fillColor: [245, 158, 11] },
+        styles: { fontSize: 8 }
+      });
+
+      doc.save(`Ficha_Aluno_${(student?.name || 'Aluno').replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Erro detalhado ao gerar PDF:', error);
+      alert('Houve um problema técnico ao gerar o PDF. Pode ser um bloqueio do navegador ou dados corrompidos no histórico. Tente atualizar a página e tentar novamente.');
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Botão Voltar */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-[10px] font-black uppercase text-gray-400 hover:text-indigo-600 transition-all group"
-      >
-        <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center group-hover:border-indigo-100 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-all shadow-sm">
-          <i className="fa-solid fa-arrow-left"></i>
-        </div>
-        Voltar para Lista de Alunos
-      </button>
+      {/* Botão Voltar e Exportar */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-[10px] font-black uppercase text-gray-400 hover:text-indigo-600 transition-all group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center group-hover:border-indigo-100 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-all shadow-sm">
+            <i className="fa-solid fa-arrow-left"></i>
+          </div>
+          Voltar para Lista de Alunos
+        </button>
+
+        <button
+          onClick={handleExportPDF}
+          className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all shadow-sm group"
+        >
+          <i className="fa-solid fa-file-pdf text-rose-500 text-lg group-hover:scale-110 transition-transform"></i>
+          Exportar Ficha em PDF
+        </button>
+      </div>
 
       {/* Header do Perfil */}
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-slate-800 shadow-xl shadow-blue-900/5 relative overflow-hidden">
@@ -728,17 +923,19 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Lanche</th>
                 <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Janta</th>
                 <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Dormiu?</th>
+                <th className="px-4 py-4 text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center">Evacuou?</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-indigo-500/10">
               {!student.refeicoes || student.refeicoes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-indigo-400 font-bold uppercase text-xs tracking-widest">
+                  <td colSpan={8} className="p-8 text-center text-indigo-400 font-bold uppercase text-xs tracking-widest">
                     Nenhum registro de alimentação encontrado.
                   </td>
                 </tr>
               ) : (
                 [...(student.refeicoes || [])].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map((r, i) => {
+                  const todayEvac = (student.evacuacao || []).find(e => e.data === r.data);
                   const formatMeal = (status: string) => {
                     if (status === 'tudo') return <span className="text-emerald-400">Comeu tudo</span>;
                     if (status === 'metade') return <span className="text-amber-400">Comeu pouco</span>;
@@ -768,6 +965,17 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-4 text-center">
+                        {todayEvac?.evacuou ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase">
+                            Sim
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-black uppercase">
+                            Não
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -777,48 +985,6 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
         </div>
       </div>
 
-      {/* SEÇÃO EVACUAÇÃO */}
-      <div className="bg-[#1a1b2e] p-8 rounded-[2.5rem] border border-indigo-500/20 shadow-2xl shadow-indigo-900/20 mt-8 mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-indigo-500/20 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-amber-500/30">
-              <i className="fa-solid fa-poop"></i>
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-white tracking-tight">Controle de Evacuação</h3>
-              <p className="text-amber-300/70 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Histórico diário</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {!student.evacuacao || student.evacuacao.length === 0 ? (
-            <div className="col-span-full py-8 text-center text-indigo-400 font-bold uppercase text-xs tracking-widest">
-              Nenhum registro de evacuação encontrado.
-            </div>
-          ) : (
-            [...(student.evacuacao || [])].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map((e, i) => (
-              <div key={i} className="bg-indigo-950/30 border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {e.data ? new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '--'}
-                </span>
-                {e.evacuou ? (
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500">
-                    <i className="fa-solid fa-check"></i>
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500">
-                    <i className="fa-solid fa-xmark"></i>
-                  </div>
-                )}
-                <span className={`text-[9px] font-black uppercase ${e.evacuou ? 'text-amber-400' : 'text-slate-500'}`}>
-                  {e.evacuou ? 'Evacuou' : 'Não'}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 };
