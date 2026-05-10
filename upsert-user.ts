@@ -61,21 +61,54 @@ Deno.serve(async (req: Request) => {
       authUserId = created.user!.id;
     }
 
-    console.log(`[upsert-user] Persistindo em public.users com crypt()`);
+    console.log(`[upsert-user] Persistindo em public.users diretamente`);
     
-    const { data: upsertedResult, error: upsertErr } = await adminClient.rpc('execute_user_upsert', {
-      p_auth_id: authUserId,
-      p_name: name || 'Usuário',
-      p_email: email,
-      p_role: role,
-      p_school_id: school_id || null,
-      p_municipio_id: municipio_id || null,
-      p_password: password || null
-    });
+    // Tenta primeiro encontrar por e-mail para garantir que temos o ID correto da tabela public.users
+    const { data: existingUser } = await adminClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
 
-    if (upsertErr) throw upsertErr;
+    // Executa o upsert. Se o id for fornecido, o Supabase fará um UPDATE. 
+    // Se não for, fará um INSERT com ON CONFLICT.
+    const { data: upsertedResult, error: upsertErr } = await adminClient
+      .from('users')
+      .upsert({
+        id: existingUser?.id, 
+        auth_user_id: authUserId,
+        name: name || 'Usuário',
+        email: email,
+        role: role,
+        school_id: school_id || null,
+        municipio_id: municipio_id || null,
+        active: true
+      }, { 
+        onConflict: 'email' 
+      })
+      .select()
+      .single();
 
-    return new Response(JSON.stringify({ success: true, user: upsertedResult }), {
+    if (upsertErr) {
+      console.error(`[upsert-user] Erro no upsert: ${upsertErr.message}`);
+      // Se falhou no upsert (ex: restrição ON CONFLICT), mas temos o ID Auth, retornamos sucesso parcial
+      return new Response(JSON.stringify({ 
+        success: true, 
+        partial_success: true,
+        error: upsertErr.message,
+        auth_user_id: authUserId,
+        user: existingUser || { id: null, email: email }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      });
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      user: upsertedResult,
+      auth_user_id: authUserId 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     });

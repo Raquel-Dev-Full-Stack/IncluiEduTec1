@@ -7,14 +7,14 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 *   **Centralizar Dados de Inclusão**: Fornecer uma fonte única de verdade para registros de alunos, planos inclusivos e diários de classe.
 *   **Eficiência Operacional**: Agilizar a alocação de mediadores e a gestão das unidades escolares.
 *   **Qualidade Pedagógica**: Facilitate o planejamento de aulas alinhado à BNCC e planos educacionais personalizados (PEI/PDI).
-*   **Transparência**: Permitir o monitoramento em tempo real para a Secretaria e Diretores Escolares.
+*   **Transparência**: Permitir o monitoramento em tempo real para a Secretaria e Diretores Escolares baseado em dados solidos.
 
 ## 3. Público-Alvo (Personas)
-| Persona | Descrição do Papel | Necessidades Chave |
+| Persona | Descrição do Papel | Necessidades Chave | Hierarquia
 | :--- | :--- | :--- |
 | **Admin Geral** | Administrador do Sistema | Gestão de multi-tenancy (municípios), configurações globais. |
-| **Secretaria** | Gestor da Rede de Ensino | Métricas macro, comparação entre escolas, supervisão de recursos. |
-| **Diretor** | Líder da Unidade Escolar | Gestão de equipe, matrícula de alunos, relatórios escolares. |
+| **Secretaria** | Gestor da Rede de Ensino | Métricas macro, comparação entre escolas, supervisão de recursos e relatorios comparativos. |
+| **Diretor** | Líder da Unidade Escolar | Gestão de equipe, matrícula de alunos, relatórios escolares e Pedagógico. |
 | **Professor** | Professor Regente | Planejamento de aulas, chamadas, registros pedagógicos. |
 | **Mediador** | Profissional de Apoio Especializado | Diários de interação, acompanhamento comportamental/operacional. |
 
