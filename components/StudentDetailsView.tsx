@@ -31,16 +31,69 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
   useEffect(() => {
     const fetchHistorico = async () => {
       try {
-        const { data, error } = await supabase
+        // 1. Buscar da tabela legada mediator_students
+        const { data: legacyData } = await supabase
           .from('mediator_students')
           .select('*')
           .eq('student_id', student.id)
           .limit(1);
         
-        if (data && data.length > 0) {
-          setMediatorStudentId(data[0].id);
-          setHistorico(data[0].historico || []);
+        let mergedHistorico: any[] = [];
+        if (legacyData && legacyData.length > 0) {
+          setMediatorStudentId(legacyData[0].id);
+          mergedHistorico = legacyData[0].historico || [];
         }
+
+        // 2. Buscar da nova tabela mediator_records
+        const { data: newRecords } = await supabase
+          .from('mediator_records')
+          .select('*')
+          .eq('student_id', student.id);
+
+        // 3. Buscar da tabela student_records (fallback de observações)
+        const { data: fallbackRecords } = await supabase
+          .from('student_records')
+          .select('*')
+          .eq('student_id', student.id)
+          .eq('record_type', 'observacao');
+
+        let finalHistory = [...mergedHistorico];
+
+        if (newRecords) {
+           newRecords.forEach(r => {
+             finalHistory.push({
+               id: r.id,
+               date: r.date,
+               observation: r.notes || 'Registro de monitoramento',
+               mediatorName: r.mediator_name || 'Mediador',
+               behaviorStatus: r.behavior_status,
+               hygiene: r.hygiene,
+               feeding: r.feeding,
+               mobility: r.mobility,
+               interactedStudents: r.interacted_students,
+               groupActivity: r.group_activity,
+               eyeContact: r.eye_contact,
+               isNewSystem: true
+             });
+           });
+        }
+
+        if (fallbackRecords) {
+          fallbackRecords.forEach(r => {
+            finalHistory.push({
+              id: r.id,
+              date: r.created_at || r.date,
+              observation: r.observation || r.value,
+              mediatorName: 'Sistema (Resiliente)',
+              isFallback: true
+            });
+          });
+        }
+
+        // Remover duplicados e ordenar
+        const uniqueFinal = Array.from(new Map(finalHistory.map(item => [item.id || item.createdAt || Math.random(), item])).values());
+        setHistorico(uniqueFinal.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
       } catch (err) {
         console.error('Erro ao buscar histórico do mediador:', err);
       }
@@ -893,9 +946,65 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                   <p className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-2">
                     {record.mediatorName || 'Mediador'}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 leading-relaxed italic">
+                  <p className="text-sm text-gray-600 dark:text-slate-400 leading-relaxed italic mb-4">
                     "{record.observation}"
                   </p>
+
+                  {/* Detalhes Adicionais do Novo Sistema */}
+                  {record.isNewSystem && (
+                    <div className="space-y-3 pt-3 border-t border-gray-50 dark:border-slate-700/50">
+                      {/* Estado Comportamental */}
+                      {record.behaviorStatus && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest w-20">Comportamento:</span>
+                          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter ${
+                            record.behaviorStatus === 'CALMO' ? 'bg-emerald-50 text-emerald-600' :
+                            record.behaviorStatus === 'AGITADO' ? 'bg-amber-50 text-amber-600' :
+                            record.behaviorStatus === 'EM CRISE' ? 'bg-rose-50 text-rose-600' :
+                            'bg-purple-50 text-purple-600'
+                          }`}>
+                            {record.behaviorStatus}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Interação Social */}
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest w-full mb-1">Interação Social:</span>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-bold ${record.interactedStudents ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400 opacity-50'}`}>
+                          <i className="fa-solid fa-users"></i> Interação Colegas
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-bold ${record.groupActivity ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-400 opacity-50'}`}>
+                          <i className="fa-solid fa-people-group"></i> Atividade Coletiva
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-bold ${record.eyeContact ? 'bg-cyan-50 text-cyan-600' : 'bg-gray-50 text-gray-400 opacity-50'}`}>
+                          <i className="fa-solid fa-eye"></i> Contato Visual
+                        </div>
+                      </div>
+
+                      {/* Autonomia / Assistência Física */}
+                      {(record.hygiene || record.feeding || record.mobility) && (
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest w-full mb-1">Assistência Física:</span>
+                          {record.hygiene && (
+                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-bold ${record.hygiene === 'AUTÔNOMO' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                              <i className="fa-solid fa-soap"></i> Higiene: {record.hygiene}
+                            </div>
+                          )}
+                          {record.feeding && (
+                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-bold ${record.feeding === 'AUTÔNOMO' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                              <i className="fa-solid fa-utensils"></i> Alimento: {record.feeding}
+                            </div>
+                          )}
+                          {record.mobility && (
+                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-bold ${record.mobility === 'AUTÔNOMO' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                              <i className="fa-solid fa-person-walking"></i> Mobilidade: {record.mobility}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))
