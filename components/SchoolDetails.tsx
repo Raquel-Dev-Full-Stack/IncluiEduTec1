@@ -112,10 +112,30 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
 
   // Cálculo de estatísticas reais a partir dos dados recebidos por props
   const stats = useMemo(() => {
-    const classes = allClasses.filter(c => c.schoolId === school.id);
-    const studentsCount = allStudents.filter(s => s.schoolId === school.id || classes.some(c => c.id === s.classId)).length;
-    const teachersCount = allUsers.filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === school.id || classes.some(c => c.teacherId === u.id))).length;
-    const mediatorsCount = allUsers.filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === school.id || classes.some(c => c.mediatorId === u.id))).length;
+    const schoolId = String(school.id || (school as any).uuid || '').toLowerCase();
+    const classes = allClasses.filter(c => String(c.schoolId || (c as any).school_id || '').toLowerCase() === schoolId);
+    
+    const studentsCount = allStudents.filter(s => {
+      const sSchoolId = String(s.schoolId || (s as any).school_id || '').toLowerCase();
+      const sClassId = String(s.classId || (s as any).class_id || '').toLowerCase();
+      return sSchoolId === schoolId || classes.some(c => String(c.id || '').toLowerCase() === sClassId);
+    }).length;
+
+    const teachersCount = allUsers.filter(u => {
+      const isProfessor = u.profile === UserProfile.PROFESSOR || (u as any).role?.toLowerCase() === 'professor';
+      const uSchoolId = String(u.schoolId || (u as any).school_id || '').toLowerCase();
+      const uId = String(u.id || '').toLowerCase();
+      const hasClass = classes.some(c => String(c.teacherId || (c as any).teacher_id || '').toLowerCase() === uId);
+      return isProfessor && (uSchoolId === schoolId || hasClass);
+    }).length;
+
+    const mediatorsCount = allUsers.filter(u => {
+      const isMediator = u.profile === UserProfile.MEDIADOR || (u as any).role?.toLowerCase() === 'mediador';
+      const uSchoolId = String(u.schoolId || (u as any).school_id || '').toLowerCase();
+      const uId = String(u.id || '').toLowerCase();
+      const hasClass = classes.some(c => String(c.mediatorId || (c as any).mediator_id || '').toLowerCase() === uId);
+      return isMediator && (uSchoolId === schoolId || hasClass);
+    }).length;
 
     return {
       alunos_atendidos: studentsCount,
@@ -135,67 +155,107 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
   });
 
   // Filtragem de dados REAIS vinculados a esta escola
-  const schoolClasses = useMemo(() => allClasses.filter(c => c.schoolId === school.id), [school.id, allClasses]);
-  const schoolStudents = useMemo(() => allStudents.filter(s => s.schoolId === school.id || schoolClasses.some(c => c.id === s.classId)), [school.id, schoolClasses, allStudents]);
-
-  const schoolTeachers = useMemo(() => {
-    // Filtrar da lista global de usuários (mais confiável)
-    const fromUsers = allUsers.filter(u => 
-      u.profile === UserProfile.PROFESSOR && 
-      (u.schoolId === school.id || (u as any).school_id === school.id || schoolClasses.some(c => c.teacherId === u.id))
+  const schoolClasses = useMemo(() => {
+    const targetId = String(school.id || (school as any).uuid || '').toLowerCase();
+    return allClasses.filter(c => 
+      String(c.schoolId || (c as any).school_id || '').toLowerCase() === targetId
     );
+  }, [school.id, allClasses]);
+  const schoolTeachers = useMemo(() => {
+    const schoolId = String(school.id || (school as any).uuid || '').toLowerCase();
     
-    // Fallback para teachersTable se fornecido
-    const fromTable = (teachersTable || []).filter(t => t.school_id === school.id).map(t => ({
+    // 1. Prioridade para o que já veio hidratado no objeto school (mais confiável e rápido)
+    const hydrated = (school.teachers || []).map(t => ({
+      ...t,
       id: t.id,
-      name: t.name,
-      email: t.email || t.email_institucional,
-      active: t.active !== false,
-      profile: UserProfile.PROFESSOR,
-      schoolId: t.school_id
+      name: t.name || 'Professor',
+      email: t.contact || t.email || '',
+      active: true // Se está no objeto de escola, consideramos ativo
     }));
 
-    const combined = [...fromUsers];
-    fromTable.forEach(t => {
-      if (!combined.some(u => u.id === t.id || u.name === t.name)) {
-        combined.push(t as any);
+    // 2. Complementar com a lista global de usuários
+    const fromUsers = allUsers.filter(u => {
+      const isProfessor = u.profile === UserProfile.PROFESSOR || (u as any).role?.toLowerCase() === 'professor';
+      const uSchoolId = String(u.schoolId || (u as any).school_id || '').toLowerCase();
+      const uId = String(u.id || '').toLowerCase();
+      
+      const isOfSchool = uSchoolId === schoolId;
+      const hasClassInSchool = schoolClasses.some(c => {
+        const cTeacherId = String(c.teacherId || (c as any).teacher_id || '').toLowerCase();
+        return cTeacherId === uId;
+      });
+      return isProfessor && (isOfSchool || hasClassInSchool);
+    });
+    
+    // Merge final garantindo unicidade por ID
+    const combined = [...hydrated];
+    fromUsers.forEach(u => {
+      if (!combined.some(c => c.id === u.id)) {
+        combined.push({
+          id: u.id,
+          name: u.name,
+          email: u.email || '',
+          active: u.active !== false
+        } as any);
       }
     });
+
     return combined;
-  }, [school.id, schoolClasses, allUsers, teachersTable]);
+  }, [school.id, school.teachers, schoolClasses, allUsers]);
+
+  const schoolStudents = useMemo(() => {
+    const schoolId = String(school.id || (school as any).uuid || '').toLowerCase();
+    return allStudents.filter(s => 
+      String(s.schoolId || (s as any).school_id || '').toLowerCase() === schoolId
+    );
+  }, [school.id, allStudents]);
 
   const schoolMediators = useMemo(() => {
-    // Filtrar da lista global de usuários
-    const fromUsers = allUsers.filter(u => 
-      u.profile === UserProfile.MEDIADOR && 
-      (u.schoolId === school.id || (u as any).school_id === school.id || schoolClasses.some(c => c.mediatorId === u.id))
-    );
-
-    // Fallback para mediatorsTable se fornecido
-    const fromTable = (mediatorsTable || []).filter(m => m.school_id === school.id).map(m => ({
+    const schoolId = String(school.id || (school as any).uuid || '').toLowerCase();
+    
+    // 1. Prioridade para hidratados
+    const hydrated = (school.mediators || []).map(m => ({
+      ...m,
       id: m.id,
-      name: m.name,
-      email: m.email,
-      active: m.active !== false,
-      profile: UserProfile.MEDIADOR,
-      schoolId: m.school_id
+      name: m.name || 'Mediador',
+      email: m.contact || m.email || '',
+      active: true
     }));
 
-    const combined = [...fromUsers];
-    fromTable.forEach(m => {
-      if (!combined.some(u => u.id === m.id || u.name === m.name)) {
-        combined.push(m as any);
+    const fromUsers = allUsers.filter(u => {
+      const isMediator = u.profile === UserProfile.MEDIADOR || (u as any).role?.toLowerCase() === 'mediador';
+      const isOfSchool = String(u.schoolId || (u as any).school_id || '').toLowerCase() === schoolId;
+      const hasClassInSchool = schoolClasses.some(c => {
+        const cSchoolId = String(c.schoolId || (c as any).school_id || '').toLowerCase();
+        const cMediatorId = c.mediatorId || (c as any).mediator_id;
+        return cSchoolId === schoolId && cMediatorId === u.id;
+      });
+      return isMediator && (isOfSchool || hasClassInSchool);
+    });
+
+    const combined = [...hydrated];
+    fromUsers.forEach(u => {
+      if (!combined.some(c => c.id === u.id)) {
+        combined.push({
+          id: u.id,
+          name: u.name,
+          email: u.email || '',
+          active: u.active !== false
+        } as any);
       }
     });
+
     return combined;
-  }, [school.id, schoolClasses, allUsers, mediatorsTable]);
+  }, [school.id, school.mediators, schoolClasses, allUsers]);
   
-  const schoolCredentials = useMemo(() => 
-    allUsers.filter(u => 
-      (u.profile === UserProfile.ESCOLA || u.profile === UserProfile.PROFESSOR || u.profile === UserProfile.MEDIADOR) && 
-      u.schoolId === school.id
-    ),
-  [school.id, allUsers]);
+  const schoolCredentials = useMemo(() => {
+    const schoolId = String(school.id || (school as any).uuid || '').toLowerCase();
+    return allUsers.filter(u => {
+      const isLinkedToSchool = String(u.schoolId || (u as any).school_id || '').toLowerCase() === schoolId;
+      const isRelevantProfile = u.profile === UserProfile.ESCOLA || u.profile === UserProfile.PROFESSOR || u.profile === UserProfile.MEDIADOR;
+      return isRelevantProfile && isLinkedToSchool;
+    });
+  }, [school.id, allUsers]);
 
   const schoolMediation = useMemo(() =>
     allMediationRecords.filter(r => (r as any).schoolId === school.id || schoolStudents.some(s => s.id === r.studentId)),
@@ -263,7 +323,7 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
           name: newCredential.name,
           role: newCredential.profile,
           school_id: school.id,
-          municipio_id: user.municipio_id
+          municipio_id: school.municipio_id || user.municipio_id
         })
       });
 

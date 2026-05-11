@@ -126,6 +126,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
   const [selectedMunicipioId, setSelectedMunicipioId] = useState<string>('');
   const [selectedTeacherStudentId, setSelectedTeacherStudentId] = useState<string>('all');
+  const [selectedRecordType, setSelectedRecordType] = useState<string>('all');
+  const [selectedDirectorStudentId, setSelectedDirectorStudentId] = useState<string>('all');
 
   const [directorData, setDirectorData] = useState({
     alunos_atendidos: 0,
@@ -471,7 +473,11 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
               <div className="md:col-span-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Selecionar Aluno</label>
-                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                <select 
+                  value={selectedDirectorStudentId}
+                  onChange={(e) => setSelectedDirectorStudentId(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                >
                   <option value="all">Todos os Alunos da Unidade</option>
                   {filteredStudents.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -480,16 +486,20 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo</label>
-                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
-                  <option>Todos</option>
-                  <option>Presença</option>
-                  <option>Refeição</option>
-                  <option>Atividade</option>
+                <select 
+                  value={selectedRecordType}
+                  onChange={(e) => setSelectedRecordType(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                >
+                  <option value="all">Todos</option>
+                  <option value="presenca">Presença</option>
+                  <option value="refeicao">Refeição</option>
+                  <option value="atividade">Atividade</option>
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Período</label>
-                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                   <option>Mês Atual</option>
                   <option>Semana</option>
                 </select>
@@ -499,24 +509,37 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="h-[300px] w-full bg-gray-50/30 rounded-[2rem] border border-gray-50 p-6">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={studentRecords && studentRecords.length > 0 ?
-                  Array.from(new Set(studentRecords.filter(r => filteredStudents.some(s => s.id === r.studentId)).map(r => r.date))).sort().slice(-7).map(date => ({
-                    date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                    presenca: studentRecords.filter(r => r.date === date && r.recordType === 'presenca').length * 10,
-                    refeicao: studentRecords.filter(r => r.date === date && r.recordType === 'refeicao').length * 15,
-                    atividades: studentRecords.filter(r => r.date === date && r.recordType === 'atividade').length * 5,
-                  })) : [
-                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 60 },
-                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 80 },
-                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 85 },
+                  Array.from(new Set(studentRecords
+                    .filter(r => selectedDirectorStudentId === 'all' ? filteredStudents.some(s => s.id === r.studentId) : r.studentId === selectedDirectorStudentId)
+                    .map(r => r.date))).sort().slice(-15).map(date => {
+                      const dayRecords = studentRecords.filter(r => r.date === date && (selectedDirectorStudentId === 'all' ? filteredStudents.some(s => s.id === r.studentId) : r.studentId === selectedDirectorStudentId));
+                      const totalStudentsOnDay = selectedDirectorStudentId === 'all' ? Math.max(1, filteredStudents.length) : 1;
+                      
+                      return {
+                        date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                        presenca: (dayRecords.filter(r => r.recordType === 'presenca' && r.value === 'presente').length / totalStudentsOnDay) * 100,
+                        refeicao: (dayRecords.filter(r => r.recordType === 'refeicao' && r.value !== 'não consumiu').length / totalStudentsOnDay) * 100,
+                        atividades: (dayRecords.filter(r => r.recordType === 'atividade').length / totalStudentsOnDay) * 10, // Escala diferente para atividades
+                      };
+                    }) : [
+                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 6 },
+                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 8 },
+                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 9 },
                   ]}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
                   <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
-                  <Line type="monotone" dataKey="presenca" name="Presença" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="refeicao" name="Refeição" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                  {(selectedRecordType === 'all' || selectedRecordType === 'presenca') && (
+                    <Line type="monotone" dataKey="presenca" name="Presença %" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedRecordType === 'all' || selectedRecordType === 'refeicao') && (
+                    <Line type="monotone" dataKey="refeicao" name="Refeição %" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedRecordType === 'all' || selectedRecordType === 'atividade') && (
+                    <Line type="monotone" dataKey="atividades" name="Atividades (Qtd)" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -744,17 +767,21 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo</label>
-                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
-                  <option>Todos</option>
-                  <option>Presença</option>
-                  <option>Refeição</option>
-                  <option>Atividade</option>
-                  <option>Notas</option>
+                <select 
+                  value={selectedRecordType}
+                  onChange={(e) => setSelectedRecordType(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                >
+                  <option value="all">Todos</option>
+                  <option value="presenca">Presença</option>
+                  <option value="refeicao">Refeição</option>
+                  <option value="atividade">Atividade</option>
+                  <option value="notas">Notas</option>
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Período</label>
-                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">
+                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                   <option>Mês Atual</option>
                   <option>Semana</option>
                 </select>
@@ -766,26 +793,39 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <LineChart data={studentRecords && studentRecords.length > 0 ?
                   Array.from(new Set(studentRecords
                     .filter(r => selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)
-                    .map(r => r.date))).sort().slice(-7).map(date => ({
-                    date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                    presenca: studentRecords.filter(r => r.date === date && r.recordType === 'presenca' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 10,
-                    refeicao: studentRecords.filter(r => r.date === date && r.recordType === 'refeicao' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 15,
-                    atividades: studentRecords.filter(r => r.date === date && r.recordType === 'atividade' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 5,
-                    notas: studentRecords.filter(r => r.date === date && r.recordType === 'atividade' && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)).length * 8,
-                  })) : [
-                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 60, notas: 75 },
-                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 80, notas: 82 },
-                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 85, notas: 88 },
+                    .map(r => r.date))).sort().slice(-15).map(date => {
+                      const dayRecords = studentRecords.filter(r => r.date === date && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId));
+                      const totalStudentsOnDay = selectedTeacherStudentId === 'all' ? Math.max(1, myStudents.length) : 1;
+
+                      return {
+                        date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                        presenca: (dayRecords.filter(r => r.recordType === 'presenca' && r.value === 'presente').length / totalStudentsOnDay) * 100,
+                        refeicao: (dayRecords.filter(r => r.recordType === 'refeicao' && r.value !== 'não consumiu').length / totalStudentsOnDay) * 100,
+                        atividades: (dayRecords.filter(r => r.recordType === 'atividade').length / totalStudentsOnDay) * 10,
+                        notas: (dayRecords.filter(r => r.recordType === 'nota' || r.recordType === 'notas').length / totalStudentsOnDay) * 10,
+                      };
+                    }) : [
+                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 6, notas: 7 },
+                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 8, notas: 8 },
+                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 9, notas: 9 },
                   ]}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
                   <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
-                  <Line type="monotone" dataKey="presenca" name="Presença" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="refeicao" name="Refeição" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="notas" name="Notas" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} />
+                  {(selectedRecordType === 'all' || selectedRecordType === 'presenca') && (
+                    <Line type="monotone" dataKey="presenca" name="Presença %" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedRecordType === 'all' || selectedRecordType === 'refeicao') && (
+                    <Line type="monotone" dataKey="refeicao" name="Refeição %" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedRecordType === 'all' || selectedRecordType === 'atividade') && (
+                    <Line type="monotone" dataKey="atividades" name="Atividades (Qtd)" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedRecordType === 'all' || selectedRecordType === 'notas') && (
+                    <Line type="monotone" dataKey="notas" name="Notas (Qtd)" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>

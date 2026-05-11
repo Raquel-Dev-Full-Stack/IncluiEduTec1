@@ -225,6 +225,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
 
   const handleExportPDF = () => {
     try {
+      console.log('Exporting PDF for student:', student.name);
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       
@@ -301,12 +302,12 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
       doc.text('3. RESPONSÁVEIS FAMILIARES', 14, yPos);
       yPos += 10;
 
-      const guardianData = (student?.guardians || []).map(g => [
+      const guardianData = Array.isArray(student?.guardians) ? student.guardians.map(g => [
         String(g.relation || '-'), 
         String(g.name || '-'), 
         String(g.phone || '-'), 
         String(g.email || '-')
-      ]);
+      ]) : [];
       
       autoTable(doc, {
         startY: yPos,
@@ -327,8 +328,9 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
       yPos += 10;
 
       const allGrades: any[] = [];
+      const safeNotas = notas || {};
       ['1º_bimestre', '2º_bimestre', '3º_bimestre', '4º_bimestre'].forEach(bim => {
-        const bimNotas = notas?.[bim] || {};
+        const bimNotas = safeNotas[bim] || {};
         Object.keys(bimNotas).forEach(sub => {
           const val = bimNotas[sub];
           const notaVal = getNotaValue(val);
@@ -359,17 +361,20 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
       doc.text('5. HISTÓRICO DE SAÚDE E REFEIÇÕES', 14, yPos);
       yPos += 10;
 
-      const healthHistory = [...(student?.refeicoes || [])]
+      const safeRefeicoes = Array.isArray(student?.refeicoes) ? student.refeicoes : [];
+      const safeEvacuacao = Array.isArray(student?.evacuacao) ? student.evacuacao : [];
+
+      const healthHistory = safeRefeicoes
         .filter(r => r && r.data)
         .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
         .slice(0, 20)
         .map(r => {
-          const evac = (student?.evacuacao || []).find(e => e.data === r.data);
+          const evac = safeEvacuacao.find(e => e.data === r.data);
           return [
             String(formatDate(r.data)),
-            String(r.cafe_da_manha || '-'),
-            String(r.almoco || '-'),
-            String(r.lanche || '-'),
+            String(r.cafe_da_manha || r.tipo_refeicao === 'Café da Manhã' ? r.status_consumo || 'Sim' : '-'),
+            String(r.almoco || r.tipo_refeicao === 'Almoço' ? r.status_consumo || 'Sim' : '-'),
+            String(r.lanche || r.tipo_refeicao === 'Lanche' ? r.status_consumo || 'Sim' : '-'),
             r.dormiu ? 'Sim' : 'Não',
             evac?.evacuou ? 'Sim' : 'Não'
           ];
@@ -385,9 +390,9 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
       });
 
       doc.save(`Ficha_Aluno_${(student?.name || 'Aluno').replace(/\s+/g, '_')}.pdf`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro detalhado ao gerar PDF:', error);
-      alert('Houve um problema técnico ao gerar o PDF. Pode ser um bloqueio do navegador ou dados corrompidos no histórico. Tente atualizar a página e tentar novamente.');
+      alert(`Houve um problema técnico ao gerar o PDF: ${error.message || 'Erro desconhecido'}. Tente atualizar a página.`);
     }
   };
 

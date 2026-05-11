@@ -279,7 +279,9 @@ export default function App() {
       reportsData,
       lessonPlansData,
       studentRecordsData,
-      municipiosData
+      municipiosData,
+      professorDetailsData,
+      classTeachersData
     ] = await Promise.all([
       safeFetch(['schools', 'escolas']),
       safeFetch(['students', 'alunos']),
@@ -292,7 +294,9 @@ export default function App() {
       safeFetch(['reports', 'relatorios']),
       safeFetch(['lesson_plans', 'planejamento', 'planejamento_diario']),
       safeFetch(['student_records', 'historico_aluno']),
-      safeFetch(['municipios', 'escopo_municipal'])
+      safeFetch(['municipios', 'escopo_municipal']),
+      safeFetch(['professor_details', 'detalhes_professores', 'professores']),
+      safeFetch(['class_teachers', 'vinculo_professor_turma', 'professores_turmas'])
     ]);
 
     // Busca direta e prioritária para logs de auditoria
@@ -353,53 +357,113 @@ export default function App() {
       year: c.year // Garantindo uso da coluna 'year'
     })) as Class[]);
 
-    if (usersData.length > 0) {
-      const roleToProfileMap: Record<string, UserProfile> = {
-        'admin_geral': UserProfile.ADMIN,
-        'secretaria': UserProfile.SECRETARIA,
-        'diretor': UserProfile.DIRETOR,
-        'professor': UserProfile.PROFESSOR,
-        'mediador': UserProfile.MEDIADOR,
-        'escola': UserProfile.ESCOLA,
-        'admin': UserProfile.ADMIN
+    const roleToProfileMap: Record<string, UserProfile> = {
+      'admin_geral': UserProfile.ADMIN,
+      'secretaria': UserProfile.SECRETARIA,
+      'diretor': UserProfile.DIRETOR,
+      'professor': UserProfile.PROFESSOR,
+      'mediador': UserProfile.MEDIADOR,
+      'escola': UserProfile.ESCOLA,
+      'admin': UserProfile.ADMIN
+    };
+
+    const enrichedUsers = (usersData || []).map(u => {
+      const userId = u.id || u.uuid || u.auth_user_id;
+      const linkedStudentIds = (mediatorStudentsData || [])
+        .filter((ms: any) => {
+          const mId = ms.mediator_id || ms.mediador_id;
+          return mId === userId || mId === u.auth_user_id;
+        })
+        .map((ms: any) => ms.student_id || ms.aluno_id);
+
+      // Tentar recuperar municipio_id se estiver faltando, mas houver school_id (aplica-se a professores, mediadores, etc.)
+      let userMunicipioId = u.municipio_id || u.municipioId;
+      if (!userMunicipioId && (u.school_id || u.schoolId)) {
+        const linkedSchool = schoolsData.find((s: any) => (s.id || s.uuid) === (u.school_id || u.schoolId));
+        if (linkedSchool) userMunicipioId = linkedSchool.municipio_id;
+      }
+
+      const roleKey = (u.role || '').toLowerCase();
+      const mappedProfile = roleToProfileMap[roleKey] || (u.profile as UserProfile) || UserProfile.PROFESSOR;
+
+      const nameValue = u.name || u.nome || u.email || 'Usuário';
+      return {
+        ...u,
+        id: userId,
+        name: nameValue,
+        profile: mappedProfile,
+        schoolId: u.school_id || u.schoolId || null,
+        municipio_id: userMunicipioId || null,
+        studentIds: linkedStudentIds
       };
+    }) as User[];
 
-      const enrichedUsers = usersData.map(u => {
-        const linkedStudentIds = mediatorStudentsData
-          .filter((ms: any) => (ms.mediator_id || ms.mediador_id) === u.id)
-          .map((ms: any) => ms.student_id || ms.aluno_id);
-
-        let userMunicipioId = u.municipio_id || u.municipioId;
-        if (!userMunicipioId && (u.role === 'secretaria' || u.profile === UserProfile.SECRETARIA) && (u.school_id || u.schoolId)) {
-          const linkedSchool = schoolsData.find((s: any) => s.id === (u.school_id || u.schoolId));
-          if (linkedSchool) userMunicipioId = linkedSchool.municipio_id;
+    // Merge with professor_details if they exist but are not in users list
+    if (professorDetailsData && professorDetailsData.length > 0) {
+      professorDetailsData.forEach((pd: any) => {
+        const userId = pd.user_id || pd.id || pd.uuid;
+        if (!enrichedUsers.some(u => u.id === userId)) {
+          enrichedUsers.push({
+            id: userId,
+            name: pd.name || pd.nome || 'Professor (Detalhes)',
+            email: pd.email || '',
+            profile: UserProfile.PROFESSOR,
+            schoolId: pd.school_id || pd.schoolId || null,
+            municipio_id: pd.municipio_id || null,
+            active: pd.active !== false
+          } as User);
+        } else {
+          // Update schoolId if missing in user but present in details
+          const idx = enrichedUsers.findIndex(u => u.id === userId);
+          if (enrichedUsers[idx] && !enrichedUsers[idx].schoolId) {
+            enrichedUsers[idx].schoolId = pd.school_id || pd.schoolId || null;
+          }
         }
+      });
+    }
 
-        const nameValue = u.name || u.nome || u.email || 'Usuário';
-        return {
-          ...u,
-          id: u.id,
-          name: nameValue,
-          profile: roleToProfileMap[u.role] || (u.profile as UserProfile) || UserProfile.PROFESSOR,
-          schoolId: u.school_id || u.schoolId || null,
-          municipio_id: userMunicipioId || null,
-          studentIds: linkedStudentIds
-        };
-      }) as User[];
-
-      setUsersList(enrichedUsers);
-
-      // Sincronizar o usuário logado com os dados enriquecidos (vínculos de alunos, etc)
-      if (user) {
-        const currentUserEnriched = enrichedUsers.find(u => 
-          u.id === user.id || 
-          u.auth_user_id === user.id ||
-          u.email === user.email
-        );
-        if (currentUserEnriched) {
-          console.log('fetchData: Sincronizando usuário logado com dados enriquecidos:', currentUserEnriched.name);
-          setUser(prev => prev ? ({ ...prev, ...currentUserEnriched }) : null);
+    // Merge with class_teachers links
+    if (classTeachersData && classTeachersData.length > 0) {
+      classTeachersData.forEach((ct: any) => {
+        const userId = ct.teacher_id || ct.user_id || ct.id;
+        const classId = ct.class_id || ct.turma_id;
+        if (userId && classId) {
+          const linkedClass = classesData.find((c: any) => (c.id || c.uuid) === classId);
+          const schoolIdFromClass = linkedClass?.school_id || linkedClass?.schoolId;
+          
+          if (schoolIdFromClass) {
+            const userIdx = enrichedUsers.findIndex(u => u.id === userId);
+            if (userIdx !== -1) {
+              if (!enrichedUsers[userIdx].schoolId) {
+                enrichedUsers[userIdx].schoolId = schoolIdFromClass;
+              }
+            } else {
+              // Create teacher placeholder if not found in users or professor_details
+              enrichedUsers.push({
+                id: userId,
+                name: ct.teacher_name || ct.name || 'Professor (Turma)',
+                email: ct.email || '',
+                profile: UserProfile.PROFESSOR,
+                schoolId: schoolIdFromClass,
+                active: true
+              } as User);
+            }
+          }
         }
+      });
+    }
+
+    setUsersList(enrichedUsers);
+
+    // Sincronizar o usuário logado com os dados enriquecidos
+    if (user) {
+      const currentUserEnriched = enrichedUsers.find(u => 
+        u.id === user.id || 
+        u.auth_user_id === user.id ||
+        u.email === user.email
+      );
+      if (currentUserEnriched) {
+        setUser(prev => prev ? ({ ...prev, ...currentUserEnriched }) : null);
       }
     }
 
@@ -1102,14 +1166,19 @@ export default function App() {
         student_id: recordData.studentId,
         class_id: recordData.classId || null,
         school_id: recordData.schoolId || user.schoolId || null,
-        mediator_id: user.auth_user_id || user.id, // Prefer auth_user_id for RLS consistency
+        mediator_id: user.id || user.auth_user_id,
         notes: recordData.description,
         behavior_status: recordData.behaviorStatus,
+        hygiene: recordData.hygiene,
+        feeding: recordData.feeding,
+        mobility: recordData.mobility,
+        interacted_students: recordData.interactedStudents === 'SIM',
+        group_activity: recordData.groupActivity === 'SIM',
+        eye_contact: recordData.eyeContact === 'SIM',
         status: recordData.status || 'finalizado',
         date: recordData.date || new Date().toISOString()
       };
 
-      // Limpar nulls para evitar erro de tipo caso a coluna não suporte
       if (!recordToInsert.class_id) delete recordToInsert.class_id;
 
       const { data, error } = await supabase
@@ -1120,19 +1189,40 @@ export default function App() {
       if (error) {
         console.warn('Erro ao salvar em mediator_records:', error.message);
         
+        // Trata erro de RLS (Permissão)
         if (error.message.includes('row-level security policy')) {
-           showNotification('Erro: Permissão negada no banco de dados. O administrador precisa liberar acesso de INSERT na tabela mediator_records no Supabase.', 'error');
-           return;
+           console.log('Tentando fallback para student_records devido a erro de RLS...');
+           const { error: srError } = await supabase
+             .from('student_records')
+             .insert([{
+               student_id: recordData.studentId,
+               record_type: 'observacao',
+               value: recordData.behaviorStatus || 'Monitoramento',
+               observation: recordData.description,
+               created_by: user.id,
+               created_at: recordData.date || new Date().toISOString()
+             }]);
+
+           if (srError) {
+             console.error('Falha no fallback para student_records:', srError.message);
+             showNotification('Erro: Permissão negada no banco de dados para mediação.', 'error');
+             throw error;
+           } else {
+             showNotification('Registro salvo como observação no prontuário do aluno.', 'success');
+             const newRecord: MediationRecord = { id: 'fallback-' + Date.now(), ...recordData };
+             setMediationRecords(prev => [...prev, newRecord]);
+             return newRecord;
+           }
         }
 
-        // Tentativa de fallback apenas se o erro for sobre nomes de coluna
+        // Trata erro de coluna inexistente
         if (error.message.includes('column')) {
             const fallbackInsert = {
               student_id: recordData.studentId,
               class_id: recordData.classId || null,
               school_id: recordData.schoolId || user.schoolId || null,
-              mediator_id: user.auth_user_id || user.id,
-              content: recordData.description,
+              mediator_id: user.id || user.auth_user_id,
+              notes: recordData.description,
               behavior_status: recordData.behaviorStatus,
               status: recordData.status || 'finalizado',
               created_at: recordData.date || new Date().toISOString()
@@ -1144,43 +1234,31 @@ export default function App() {
               .insert([fallbackInsert])
               .select();
               
-            if (fbError) {
-              if (fbError.message.includes('row-level security policy')) {
-                 showNotification('Erro RLS: Permissão negada no Supabase (tabela mediator_records).', 'error');
-                 return;
-              }
-              throw fbError;
-            }
+            if (fbError) throw fbError;
             
             if (fbData && fbData.length > 0) {
-              const newRecord: MediationRecord = {
-                ...recordData,
-                id: fbData[0].id
-              };
+              const newRecord: MediationRecord = { ...recordData, id: fbData[0].id };
               setMediationRecords(prev => [...prev, newRecord]);
+              showNotification('Monitoramento registrado com sucesso.', 'success');
+              return newRecord;
             }
-        } else {
-            throw error;
         }
-      } else if (data && data.length > 0) {
-        const newRecord: MediationRecord = {
-          ...recordData,
-          id: data[0].id
-        };
-        setMediationRecords(prev => [...prev, newRecord]);
+
+        throw error;
       }
 
-      logActivity(
-        'Lançar Registro de Mediação',
-        `Lançou registro de mediação para o aluno ID: ${recordData.studentId}`,
-        user.municipio_id,
-        user.schoolId
-      );
-      showNotification('Registro salvo com sucesso!', 'success');
-      
-    } catch (err: any) {
-      console.error('Erro ao salvar registro de mediação:', err);
-      showNotification(`Erro ao salvar: ${err.message}`, 'error');
+      if (data && data.length > 0) {
+        const newRecord: MediationRecord = { ...recordData, id: data[0].id };
+        setMediationRecords(prev => [...prev, newRecord]);
+        showNotification('Monitoramento registrado com sucesso.', 'success');
+        return newRecord;
+      }
+    } catch (error: any) {
+      console.error('Erro final no handleSaveMediationRecord:', error);
+      if (!error.message?.includes('row-level security policy')) {
+        showNotification('Erro ao salvar registro de mediação: ' + (error.message || 'Erro desconhecido'), 'error');
+      }
+      throw error;
     }
   };
 
@@ -1331,7 +1409,7 @@ export default function App() {
             name: t.name,
             role: 'professor',
             school_id: currentSchoolId,
-            municipio_id: user.municipio_id,
+            municipio_id: finalMunicipioId,
             email: email,
             phone_number: phone,
             active: true
@@ -2798,10 +2876,10 @@ export default function App() {
           const filteredSchools = schools.filter(s => {
             if (selectedSecretariaId) {
               const sec = usersList.find(u => u.id === selectedSecretariaId);
-              return s.municipio_id === sec?.municipio_id;
+              return String(s.municipio_id || '').toLowerCase() === String(sec?.municipio_id || '').toLowerCase();
             }
             if (user.profile === UserProfile.ADMIN) {
-              if (selectedMunicipioId) return s.municipio_id === selectedMunicipioId;
+              if (selectedMunicipioId) return String(s.municipio_id || '').toLowerCase() === String(selectedMunicipioId || '').toLowerCase();
               return true;
             }
             if (user.profile === UserProfile.SECRETARIA) {
@@ -2879,20 +2957,32 @@ export default function App() {
                         return;
                       }
 
+                      const schoolId = s.id || (s as any).uuid;
                       const hydratedSchool: School = {
                         ...s,
+                        id: schoolId,
                         teachers: usersList
-                          .filter(u => u.profile === UserProfile.PROFESSOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.teacherId === u.id)))
-                          .map(u => ({ id: u.id, name: u.name, subject: 'Geral', contact: u.phone || '' })), 
+                          .filter(u => {
+                            const isProfessor = u.profile === UserProfile.PROFESSOR || (u as any).role?.toLowerCase() === 'professor';
+                            const isOfSchool = u.schoolId === schoolId || (u as any).school_id === schoolId;
+                            const hasClassInSchool = classes.some(c => (c.schoolId === schoolId || (c as any).school_id === schoolId) && (c.teacherId === u.id || (c as any).teacher_id === u.id));
+                            return isProfessor && (isOfSchool || hasClassInSchool);
+                          })
+                          .map(u => ({ id: u.id, name: u.name, subject: 'Geral', contact: u.phone || u.email || '' })), 
                         mediators: usersList
-                          .filter(u => u.profile === UserProfile.MEDIADOR && (u.schoolId === s.id || classes.some(c => c.schoolId === s.id && c.mediatorId === u.id)))
-                          .map(u => ({ id: u.id, name: u.name, area: 'Inclusão', contact: u.phone || '' })),
+                          .filter(u => {
+                            const isMediator = u.profile === UserProfile.MEDIADOR || (u as any).role?.toLowerCase() === 'mediador';
+                            const isOfSchool = u.schoolId === schoolId || (u as any).school_id === schoolId;
+                            const hasClassInSchool = classes.some(c => (c.schoolId === schoolId || (c as any).school_id === schoolId) && (c.mediatorId === u.id || (c as any).mediator_id === u.id));
+                            return isMediator && (isOfSchool || hasClassInSchool);
+                          })
+                          .map(u => ({ id: u.id, name: u.name, area: 'Inclusão', contact: u.phone || u.email || '' })),
                         classes: classes
-                          .filter(c => c.schoolId === s.id)
-                          .map(c => ({ id: c.id, name: c.name, level: c.year, shift: c.shift || '' })),
+                          .filter(c => c.schoolId === schoolId || (c as any).school_id === schoolId)
+                          .map(c => ({ id: c.id, name: c.name, level: c.year || c.level, shift: c.shift || '' })),
                         students: students
-                          .filter(st => st.schoolId === s.id)
-                          .map(st => ({ id: st.id, name: st.name, ra: st.ra, class_name: '' }))
+                          .filter(st => st.schoolId === schoolId || (st as any).school_id === schoolId)
+                          .map(st => ({ id: st.id, name: st.name, ra: st.ra, class_name: classes.find(c => c.id === st.classId)?.name || '' }))
                       };
 
                       setSchoolToEdit(hydratedSchool);

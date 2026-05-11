@@ -31,7 +31,6 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
   const [hygiene, setHygiene] = useState('FEZ SOZINHO');
   const [feeding, setFeeding] = useState('FEZ SOZINHO');
   const [mobility, setMobility] = useState('FEZ SOZINHO');
-  const [medication, setMedication] = useState('FEZ SOZINHO');
   const [interacted, setInteracted] = useState(false);
   const [participated, setParticipated] = useState(false);
   const [eyeContact, setEyeContact] = useState(false);
@@ -57,7 +56,7 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const handleSaveGeneralMediation = () => {
+  const handleSaveGeneralMediation = async () => {
     if (!targetStudentId) {
       alert('Selecione um aluno para salvar o registro.');
       return;
@@ -65,27 +64,32 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
 
     const student = students.find(s => s.id === targetStudentId);
 
-    onSaveMediationRecord({
-      studentId: targetStudentId,
-      classId: student?.classId,
-      date: new Date().toISOString(),
-      behaviorStatus,
-      hygiene,
-      feeding,
-      mobility,
-      medication,
-      interactedStudents: interacted ? 'SIM' : 'NÃO',
-      groupActivity: participated ? 'SIM' : 'NÃO',
-      eyeContact: eyeContact ? 'SIM' : 'NÃO',
-      description: observation,
-      status: 'Finalizado',
-      authorId: currentUser.id,
-      type: 'Comportamental'
-    });
+    try {
+      await onSaveMediationRecord({
+        studentId: targetStudentId,
+        classId: student?.classId,
+        schoolId: student?.schoolId || (student as any)?.school_id,
+        date: new Date().toISOString(),
+        behaviorStatus,
+        hygiene,
+        feeding,
+        mobility,
+        interactedStudents: interacted ? 'SIM' : 'NÃO',
+        groupActivity: participated ? 'SIM' : 'NÃO',
+        eyeContact: eyeContact ? 'SIM' : 'NÃO',
+        description: observation,
+        status: 'Finalizado',
+        authorId: currentUser.id,
+        type: 'Comportamental'
+      });
 
-    setObservation('');
-    setFeedback('Monitoramento registrado com sucesso.');
-    setTimeout(() => setFeedback(null), 3000);
+      setObservation('');
+      setFeedback('Monitoramento registrado com sucesso.');
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (error) {
+      console.error('Erro ao salvar monitoramento:', error);
+      // O erro já é exibido via showNotification no App.tsx
+    }
   };
 
   const getTodayStatus = (studentId: string) => {
@@ -341,7 +345,6 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
                   { label: 'Higiene / Banheiro', state: hygiene, setter: setHygiene, icon: 'fa-restroom' },
                   { label: 'Alimentação / Lanche', state: feeding, setter: setFeeding, icon: 'fa-utensils' },
                   { label: 'Mobilidade / Locomoção', state: mobility, setter: setMobility, icon: 'fa-person-walking' },
-                  { label: 'Administração de Medicação', state: medication, setter: setMedication, icon: 'fa-pills' },
                 ].map((item, idx) => (
                   <div key={idx} className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-3">
                     <p className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2">
