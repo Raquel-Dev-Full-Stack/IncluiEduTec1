@@ -1286,6 +1286,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="md:col-span-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Selecionar Aluno</label>
               <select
+                value={selectedDirectorStudentId}
+                onChange={(e) => setSelectedDirectorStudentId(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               >
                 <option value="all">Visão Geral da Rede</option>
@@ -1296,12 +1298,16 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div>
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo de Registro</label>
-              <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                <option>Todos os Registros</option>
-                <option>Presença e Frequência</option>
-                <option>Consumo de Refeições</option>
-                <option>Atividades Pedagógicas</option>
-                <option>Observações Mediadas</option>
+              <select 
+                value={selectedRecordType}
+                onChange={(e) => setSelectedRecordType(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              >
+                <option value="all">Todos os Registros</option>
+                <option value="presenca">Presença e Frequência</option>
+                <option value="refeicao">Consumo de Refeições</option>
+                <option value="atividade">Atividades Pedagógicas</option>
+                <option value="nota">Notas e Desempenho</option>
               </select>
             </div>
             <div>
@@ -1314,65 +1320,110 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* Gráfico de Evolução Dinâmico (Simulado com base em studentRecords) */}
+          {/* Gráfico de Evolução Dinâmico (Filtrado por Aluno) */}
           <div className="h-[350px] w-full bg-gray-50/30 rounded-[2.5rem] border border-gray-50 p-6">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={studentRecords && studentRecords.length > 0 ?
-                // Agrupando dados por data (simplificado)
-                Array.from(new Set(studentRecords.map(r => r.date))).sort().slice(-7).map(date => ({
-                  date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                  presenca: studentRecords.filter(r => r.date === date && r.recordType === 'presenca').length * 10,
-                  refeicao: studentRecords.filter(r => r.date === date && r.recordType === 'refeicao').length * 15,
-                  atividades: studentRecords.filter(r => r.date === date && r.recordType === 'atividade').length * 5,
-                })) : [
-                  { date: '01/02', presenca: 90, refeicao: 85, atividades: 70 },
-                  { date: '05/02', presenca: 85, refeicao: 80, atividades: 75 },
-                  { date: '10/02', presenca: 95, refeicao: 90, atividades: 80 },
-                  { date: '15/02', presenca: 100, refeicao: 95, atividades: 90 },
-                  { date: '20/02', presenca: 92, refeicao: 88, atividades: 85 },
-                ]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                />
-                <Tooltip
-                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
-                />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }} />
-                <Line type="monotone" dataKey="presenca" name="Presença (%)" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                <Line type="monotone" dataKey="refeicao" name="Refeições (%)" stroke="#8b5cf6" strokeWidth={4} dot={{ r: 6, fill: '#8b5cf6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={4} dot={{ r: 6, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-              </LineChart>
+              {(() => {
+                const evolutionFiltered = (studentRecords || []).filter(r => 
+                  selectedDirectorStudentId === 'all' 
+                    ? filteredStudents.some(s => s.id === r.studentId)
+                    : r.studentId === selectedDirectorStudentId
+                );
+
+                const hasData = evolutionFiltered.length > 0;
+                const chartDataToRender = hasData ? 
+                  Array.from(new Set(evolutionFiltered.map(r => r.date))).sort().slice(-10).map(date => ({
+                    date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                    presenca: (evolutionFiltered.filter(r => r.date === date && r.recordType === 'presenca' && r.value === 'presente').length / (selectedDirectorStudentId === 'all' ? Math.max(1, filteredStudents.length) : 1)) * 100,
+                    refeicao: (evolutionFiltered.filter(r => r.date === date && r.recordType === 'refeicao' && r.value !== 'não consumiu').length / (selectedDirectorStudentId === 'all' ? Math.max(1, filteredStudents.length) : 1)) * 100,
+                    atividades: evolutionFiltered.filter(r => r.date === date && r.recordType === 'atividade').length * (selectedDirectorStudentId === 'all' ? 1 : 10),
+                  })) : [
+                    { date: '01/02', presenca: 90, refeicao: 85, atividades: 70 },
+                    { date: '05/02', presenca: 85, refeicao: 80, atividades: 75 },
+                    { date: '10/02', presenca: 95, refeicao: 90, atividades: 80 },
+                    { date: '15/02', presenca: 100, refeicao: 95, atividades: 90 },
+                    { date: '20/02', presenca: 92, refeicao: 88, atividades: 85 },
+                  ];
+
+                return (
+                  <LineChart data={chartDataToRender}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                      domain={[0, 100]}
+                    />
+                    {!hasData && (
+                      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-gray-300 font-bold text-sm uppercase tracking-widest opacity-50">
+                        Aguardando Registros Reais...
+                      </text>
+                    )}
+                    <Tooltip
+                      contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }} />
+                    <Line type="monotone" dataKey="presenca" name="Presença (%)" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="refeicao" name="Refeições (%)" stroke="#8b5cf6" strokeWidth={4} dot={{ r: 6, fill: '#8b5cf6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="atividades" name="Atividades" stroke="#f59e0b" strokeWidth={4} dot={{ r: 6, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                  </LineChart>
+                );
+              })()}
             </ResponsiveContainer>
           </div>
 
-          {/* Listagem de Destaques da Evolução */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
-              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Presença Média</p>
-              <h4 className="text-2xl font-black text-blue-700">92.4%</h4>
-            </div>
-            <div className="p-6 bg-purple-50/50 rounded-3xl border border-purple-100/50">
-              <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Refeições Ok</p>
-              <h4 className="text-2xl font-black text-purple-700">88.1%</h4>
-            </div>
-            <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50">
-              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Atividades Comcl.</p>
-              <h4 className="text-2xl font-black text-amber-700">142</h4>
-            </div>
-            <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50">
-              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Novas Observações</p>
-              <h4 className="text-2xl font-black text-emerald-700">28</h4>
-            </div>
-          </div>
+          {/* Listagem de Destaques da Evolução Dinâmicos */}
+          {(() => {
+            const currentFiltered = studentRecords?.filter(r => 
+              selectedDirectorStudentId === 'all' 
+                ? filteredStudents.some(s => s.id === r.studentId)
+                : r.studentId === selectedDirectorStudentId
+            ) || [];
+            
+            const hasData = currentFiltered.length > 0;
+            
+            const avgPresenca = hasData
+              ? (currentFiltered.filter(r => r.recordType === 'presenca' && r.value === 'presente').length / Math.max(1, currentFiltered.filter(r => r.recordType === 'presenca').length) * 100).toFixed(1)
+              : '92.4'; // Mock
+
+            const avgRefeicao = hasData
+              ? (currentFiltered.filter(r => r.recordType === 'refeicao' && r.value !== 'não consumiu').length / Math.max(1, currentFiltered.filter(r => r.recordType === 'refeicao').length) * 100).toFixed(1)
+              : '88.1'; // Mock
+            
+            const atividadesCount = hasData ? currentFiltered.filter(r => r.recordType === 'atividade').length : '142';
+            const observacoesCount = hasData ? currentFiltered.filter(r => r.recordType === 'observacao' || r.recordType === 'comportamento').length : '28';
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+                <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50 relative overflow-hidden">
+                  {!hasData && <div className="absolute top-2 right-2 px-2 py-0.5 bg-blue-100 text-[8px] font-black text-blue-600 rounded-full uppercase tracking-tighter">Exemplo</div>}
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Presença Média</p>
+                  <h4 className="text-2xl font-black text-blue-700">{avgPresenca}%</h4>
+                </div>
+                <div className="p-6 bg-purple-50/50 rounded-3xl border border-purple-100/50 relative overflow-hidden">
+                  {!hasData && <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-100 text-[8px] font-black text-purple-600 rounded-full uppercase tracking-tighter">Exemplo</div>}
+                  <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Refeições Ok</p>
+                  <h4 className="text-2xl font-black text-purple-700">{avgRefeicao}%</h4>
+                </div>
+                <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50 relative overflow-hidden">
+                  {!hasData && <div className="absolute top-2 right-2 px-2 py-0.5 bg-amber-100 text-[8px] font-black text-amber-600 rounded-full uppercase tracking-tighter">Exemplo</div>}
+                  <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Atividades Comcl.</p>
+                  <h4 className="text-2xl font-black text-amber-700">{atividadesCount}</h4>
+                </div>
+                <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 relative overflow-hidden">
+                  {!hasData && <div className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-100 text-[8px] font-black text-emerald-600 rounded-full uppercase tracking-tighter">Exemplo</div>}
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Novas Observações</p>
+                  <h4 className="text-2xl font-black text-emerald-700">{observacoesCount}</h4>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
