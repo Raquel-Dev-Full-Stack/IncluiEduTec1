@@ -20,6 +20,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
   const [selectedBimestre, setSelectedBimestre] = useState('1º_bimestre');
   const [editForm, setEditForm] = useState({ subject: '', grade: '', obs: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isPreviewingReport, setIsPreviewingReport] = useState(false);
 
   // Estados para o Histórico do Mediador
   const [historico, setHistorico] = useState<any[]>([]);
@@ -663,14 +664,24 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 </div>
                 
                 {student.hasMedicalReport && student.medicalReportUrl && (
-                  <a
-                    href={student.medicalReportUrl}
-                    download={`laudo-${student.name.split(' ')[0]}`}
-                    className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    <i className="fa-solid fa-download"></i>
-                    Baixar Documento
-                  </a>
+                  <div className="w-full flex flex-col gap-2">
+                    <button
+                      onClick={() => setIsPreviewingReport(true)}
+                      className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <i className="fa-solid fa-eye"></i>
+                      Visualizar Laudo Médico
+                    </button>
+                    
+                    <a
+                      href={student.medicalReportUrl}
+                      download={`laudo-${student.name.split(' ')[0]}`}
+                      className="w-full py-3.5 bg-white border border-indigo-100 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <i className="fa-solid fa-download"></i>
+                      Baixar Documento
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
@@ -1099,6 +1110,75 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
         </div>
       </div>
 
+
+
+      {/* Modal de Visualização de Laudo */}
+      {isPreviewingReport && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8">
+          <div 
+            className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
+            onClick={() => setIsPreviewingReport(false)}
+          ></div>
+          
+          <div className="relative w-full max-w-5xl h-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
+                  <i className="fa-solid fa-file-medical"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Visualização do Laudo Médico</h3>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{student.name}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <a
+                  href={student.medicalReportUrl}
+                  download={`laudo-${student.name.split(' ')[0]}`}
+                  className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 hover:text-indigo-600 flex items-center justify-center transition-all shadow-sm"
+                  title="Baixar Documento"
+                >
+                  <i className="fa-solid fa-download"></i>
+                </a>
+                <button
+                  onClick={() => setIsPreviewingReport(false)}
+                  className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 hover:text-rose-500 flex items-center justify-center transition-all shadow-sm"
+                  title="Fechar"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 bg-gray-100 dark:bg-slate-950 p-4 flex items-center justify-center relative overflow-hidden">
+              {student.medicalReportUrl ? (
+                <iframe
+                  src={`${student.medicalReportUrl}#toolbar=0`}
+                  className="w-full h-full rounded-xl border-none shadow-inner bg-white"
+                  title="Visualizador de Laudo"
+                ></iframe>
+              ) : (
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-3xl flex items-center justify-center mx-auto shadow-xl text-gray-200">
+                    <i className="fa-solid fa-file-circle-exclamation text-4xl"></i>
+                  </div>
+                  <p className="text-gray-500 dark:text-slate-400 font-bold uppercase text-xs tracking-widest">Documento não localizado</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex justify-center">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <i className="fa-solid fa-shield-halved text-emerald-500"></i>
+                Ambiente Seguro para Visualização de Dados Sensíveis
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

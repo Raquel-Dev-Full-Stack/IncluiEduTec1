@@ -70,24 +70,69 @@ Deno.serve(async (req: Request) => {
       .eq('email', email)
       .maybeSingle();
 
-    // Executa o upsert. Se o id for fornecido, o Supabase fará um UPDATE. 
-    // Se não for, fará um INSERT com ON CONFLICT.
-    const { data: upsertedResult, error: upsertErr } = await adminClient
-      .from('users')
-      .upsert({
-        id: existingUser?.id, 
-        auth_user_id: authUserId,
-        name: name || 'Usuário',
-        email: email,
-        role: role,
-        school_id: school_id || null,
-        municipio_id: municipio_id || null,
-        active: true
-      }, { 
-        onConflict: 'email' 
-      })
-      .select()
-      .single();
+    let upsertedResult;
+    let upsertErr;
+
+    if (existingUser?.id) {
+      console.log(`[upsert-user] Atualizando registro existente ID: ${existingUser.id}`);
+      const { data, error } = await adminClient
+        .from('users')
+        .update({
+          auth_user_id: authUserId,
+          name: name || 'Usuário',
+          email: email,
+          role: role,
+          school_id: school_id || null,
+          municipio_id: municipio_id || null,
+          active: true
+        })
+        .eq('id', existingUser.id)
+        .select()
+        .maybeSingle();
+      upsertedResult = data;
+      upsertErr = error;
+    } else {
+      console.log(`[upsert-user] Criando novo registro para ${email}`);
+      const { data, error } = await adminClient
+        .from('users')
+        .insert([{
+          auth_user_id: authUserId,
+          name: name || 'Usuário',
+          email: email,
+          role: role,
+          school_id: school_id || null,
+          municipio_id: municipio_id || null,
+          active: true
+        }])
+        .select()
+        .maybeSingle();
+      
+      // Se falhar por conflito de e-mail (mesmo sem o onConflict explícito, o banco pode barrar)
+      // tentamos uma última vez buscar e atualizar
+      if (error && (error.message?.includes('unique') || error.code === '23505')) {
+         const { data: retryUser } = await adminClient
+           .from('users')
+           .select('id')
+           .eq('email', email)
+           .maybeSingle();
+         
+         if (retryUser) {
+           const { data: updateData, error: updateErr } = await adminClient
+             .from('users')
+             .update({ auth_user_id: authUserId })
+             .eq('id', retryUser.id)
+             .select()
+             .maybeSingle();
+           upsertedResult = updateData;
+           upsertErr = updateErr;
+         } else {
+           upsertErr = error;
+         }
+      } else {
+        upsertedResult = data;
+        upsertErr = error;
+      }
+    }
 
     if (upsertErr) {
       console.error(`[upsert-user] Erro no upsert: ${upsertErr.message}`);

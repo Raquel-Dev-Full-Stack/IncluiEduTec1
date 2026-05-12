@@ -11,6 +11,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
   const [email, setEmail] = useState(() => localStorage.getItem('last_login_email') || '');
   const [password, setPassword] = useState('');
   const [profile, setProfile] = useState<UserProfile>(UserProfile.SECRETARIA);
+  const [municipioId, setMunicipioId] = useState('fba3593d-f83c-40cd-9f01-389123d028ba');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,21 +89,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Município de Acesso</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <i className="fa-solid fa-location-dot text-blue-500"></i>
-                </div>
-                <input
-                  type="text"
-                  disabled
-                  value="Maricá - RJ"
-                  className="w-full pl-11 pr-4 py-3 bg-gray-100 border border-transparent rounded-xl text-gray-700 font-medium focus:outline-none"
-                />
-              </div>
-            </div>
-
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Perfil Institucional</label>
               <div className="relative">

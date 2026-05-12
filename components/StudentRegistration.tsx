@@ -167,6 +167,7 @@ const StudentRegistration: React.FC<StudentRegistrationProps> = ({ onSave, onCan
                   placeholder="000000"
                   className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                 />
+                <p className="text-[9px] text-gray-400 font-medium italic mt-1 px-1">O RA deve ser único. Deixe em branco se não possuir.</p>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">

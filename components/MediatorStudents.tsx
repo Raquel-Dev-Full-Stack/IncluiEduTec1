@@ -34,7 +34,8 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
   const [interacted, setInteracted] = useState(false);
   const [participated, setParticipated] = useState(false);
   const [eyeContact, setEyeContact] = useState(false);
-  const [observation, setObservation] = useState('');
+   const [observation, setObservation] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const selectedStudent = useMemo(() => students.find(s => s.id === selectedStudentId), [students, selectedStudentId]);
   
@@ -77,7 +78,8 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
         interactedStudents: interacted ? 'SIM' : 'NÃO',
         groupActivity: participated ? 'SIM' : 'NÃO',
         eyeContact: eyeContact ? 'SIM' : 'NÃO',
-        description: observation,
+         description: observation,
+        date: selectedDate || new Date().toISOString(),
         status: 'Finalizado',
         authorId: currentUser.id,
         type: 'Comportamental'
@@ -262,16 +264,30 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           <div className="space-y-6">
             {/* Seleção de Aluno */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aluno Alvo *</label>
-              <select 
-                value={targetStudentId}
-                onChange={(e) => setTargetStudentId(e.target.value)}
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">Selecione o Aluno...</option>
-                {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Seleção de Aluno */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aluno Alvo *</label>
+                <select 
+                  value={targetStudentId}
+                  onChange={(e) => setTargetStudentId(e.target.value)}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">Selecione o Aluno...</option>
+                  {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+
+              {/* Seleção de Data */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data do Registro *</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer [color-scheme:light]"
+                />
+              </div>
             </div>
 
             {/* Registro / Histórico */}

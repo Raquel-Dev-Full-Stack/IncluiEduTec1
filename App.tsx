@@ -819,25 +819,44 @@ export default function App() {
         const roleFromMeta = metadata.role || 'professor';
         const mappedFromMeta = roleToProfileMap[roleFromMeta];
         
+        console.log('[Login] Usuário não encontrado no banco, usando metadados Auth:', { roleFromMeta, mappedFromMeta });
+
+        // Permitir login via metadados para qualquer perfil se o registro no banco falhar
+        const userFromMeta = {
+          id: authData.user.id,
+          auth_user_id: authData.user.id,
+          name: metadata.name || authData.user.email?.split('@')[0] || 'Usuário',
+          email: authData.user.email,
+          role: roleFromMeta,
+          profile: mappedFromMeta,
+          school_id: metadata.school_id || null,
+          schoolId: metadata.school_id || null,
+          municipio_id: metadata.municipio_id || null,
+          themePreference: 'light'
+        } as unknown as User;
+
+        setUser(userFromMeta);
+        setIsLoggedIn(true);
+        
+        // Redirecionamento baseado no perfil
         if (mappedFromMeta === UserProfile.ADMIN) {
-           setUser({
-            id: authData.user.id,
-            auth_user_id: authData.user.id,
-            name: metadata.name || authData.user.email || 'Admin Geral',
-            email: authData.user.email,
-            role: roleFromMeta,
-            profile: UserProfile.ADMIN,
-            themePreference: 'light'
-          } as unknown as User);
-          setIsLoggedIn(true);
           setActiveTab('admin_total');
           showNotification('Login de Administrador (Auth)!', 'success');
-          fetchData();
-          return;
+        } else if (mappedFromMeta === UserProfile.MEDIADOR) {
+          setActiveTab('mediator_dashboard');
+          showNotification('Login de Mediador (Auth)!', 'success');
+        } else if (mappedFromMeta === UserProfile.SECRETARIA) {
+          setActiveTab('secretaria_dashboard');
+          showNotification('Login de Secretaria (Auth)!', 'success');
+        } else if (mappedFromMeta === UserProfile.DIRETOR) {
+          setActiveTab('dashboard');
+          showNotification('Login de Diretor (Auth)!', 'success');
+        } else {
+          setActiveTab('dashboard');
+          showNotification('Login realizado via metadados Auth!', 'success');
         }
-
-        await supabase.auth.signOut();
-        showNotification('Perfil do usuário não configurado corretamente.', 'error');
+        
+        fetchData();
         return;
       }
 
@@ -1871,7 +1890,7 @@ export default function App() {
             birth_date: studentToSave.birthDate || null,
             class_id: studentToSave.classId,
             school_id: studentToSave.school_id,
-            ra: studentToSave.ra,
+            ra: studentToSave.ra?.trim() || null,
             aee: studentToSave.aee,
             deficiency: studentToSave.deficiency,
             mediator_id: studentToSave.mediatorId || null,
@@ -1941,7 +1960,7 @@ export default function App() {
             birth_date: studentToSave.birthDate || null,
             class_id: studentToSave.classId,
             school_id: studentToSave.school_id,
-            ra: studentToSave.ra,
+            ra: studentToSave.ra?.trim() || null,
             aee: studentToSave.aee,
             deficiency: studentToSave.deficiency,
             mediator_id: studentToSave.mediatorId || null,
@@ -2003,7 +2022,13 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Erro ao salvar aluno:', err);
-      alert(`Erro ao salvar aluno: ${err.message || 'Tente novamente.'} ${err.details || ''}`);
+      let errorMessage = err.message || 'Tente novamente.';
+      
+      if (err.code === '23505' || (err.message && err.message.includes('unique constraint'))) {
+        errorMessage = `O Registro Acadêmico (RA) "${studentData.ra}" já está cadastrado para outro aluno. O RA deve ser único para cada estudante.`;
+      }
+
+      alert(`Erro ao salvar aluno: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -2093,40 +2118,57 @@ export default function App() {
 
         console.log('[App] ID Detectado após Edge Function:', finalMediatorId);
 
-        // Fallback: Se ainda não temos o ID mas sabemos o e-mail, tentamos buscar no banco
+        // Fallback exaustivo: Se ainda não temos o ID, tentamos todas as formas de busca no banco
         if (!finalMediatorId && newMediatorData.email) {
-          console.log('[App] Tentando recuperar ID por e-mail:', newMediatorData.email);
-          const { data: fallbackUser } = await supabase
+          console.log('[App] Tentando recuperação exaustiva do ID:', newMediatorData.email);
+          
+          // 1. Buscar por e-mail
+          const { data: byEmail } = await supabase
             .from('users')
             .select('id')
             .eq('email', newMediatorData.email.trim())
             .maybeSingle();
           
-          if (fallbackUser) {
-            finalMediatorId = fallbackUser.id;
-            console.log('[App] ID recuperado via fallback:', finalMediatorId);
-          } else if (res.data?.auth_user_id) {
-            // Se não existe na tabela public.users mas temos o auth_user_id, tentamos criar agora
-            console.log('[App] Usuário não existe na tabela public.users, tentando criar manualmente...');
-            const { data: newUser, error: insertErr } = await supabase
-              .from('users')
-              .insert([{
-                auth_user_id: res.data.auth_user_id,
-                email: newMediatorData.email.trim(),
-                name: newMediatorData.name || 'Mediador',
-                role: 'mediador',
-                school_id: targetSchoolId,
-                municipio_id: targetMunicipioId,
-                active: true
-              }])
-              .select()
-              .single();
-            
-            if (newUser) {
-              finalMediatorId = newUser.id;
-              console.log('[App] Novo usuário criado manualmente:', finalMediatorId);
-            } else if (insertErr) {
-              console.error('[App] Erro ao criar usuário manualmente:', insertErr.message);
+          if (byEmail) {
+            finalMediatorId = byEmail.id;
+            console.log('[App] ID recuperado por e-mail:', finalMediatorId);
+          } else {
+            // 2. Se temos auth_user_id da resposta, buscar por ele
+            const authIdFromRes = res.data?.auth_user_id || (res.data?.user?.id && typeof res.data.user.id === 'string' ? res.data.user.id : null);
+            if (authIdFromRes) {
+              const { data: byAuthId } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth_user_id', authIdFromRes)
+                .maybeSingle();
+              
+              if (byAuthId) {
+                finalMediatorId = byAuthId.id;
+                console.log('[App] ID recuperado por auth_user_id:', finalMediatorId);
+              } else {
+                // 3. Se realmente não existe no banco público, TENTA CRIAR agora (sem upsert)
+                console.log('[App] Usuário ausente no banco público, criando agora...');
+                const { data: created, error: insertErr } = await supabase
+                  .from('users')
+                  .insert([{
+                    auth_user_id: authIdFromRes,
+                    email: newMediatorData.email.trim(),
+                    name: newMediatorData.name || 'Mediador',
+                    role: 'mediador',
+                    school_id: targetSchoolId,
+                    municipio_id: targetMunicipioId,
+                    active: true
+                  }])
+                  .select()
+                  .maybeSingle();
+                
+                if (created) {
+                  finalMediatorId = created.id;
+                  console.log('[App] Criado com sucesso manual:', finalMediatorId);
+                } else {
+                  console.error('[App] Falha na criação manual:', insertErr?.message);
+                }
+              }
             }
           }
         }
