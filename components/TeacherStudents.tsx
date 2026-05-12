@@ -210,6 +210,15 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
       // Update local state directly to reflect immediately
       student.notas = updatedNotas;
 
+      // Sincronizar com student_records para o gráfico de evolução
+      onSaveStudentRecord({
+        studentId,
+        date: new Date().toISOString().split('T')[0],
+        recordType: 'nota',
+        value: gradeRecord.grade,
+        observation: `${gradeRecord.discipline} - ${gradeRecord.bimester.replace('_', ' ')}`
+      });
+
       setFeedback({ message: `Nota de ${gradeRecord.discipline} lançada com sucesso no ${gradeRecord.bimester.replace('_', ' ')}!`, type: 'success' });
       setShowGradesModal(null);
       setGradeRecord({ bimester: '1º_bimestre', discipline: '', grade: '', observation: '' });

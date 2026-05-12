@@ -1024,6 +1024,22 @@ export default function App() {
 
       if (data && data.length > 0) {
         setStudents(prev => prev.map(s => s.id === studentId ? { ...s, refeicoes, evacuacao } : s));
+        
+        // Sincronizar com student_records para o gráfico de evolução
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Se houver refeições consumidas, registrar como 'refeicao' no student_records
+        const refeicoesConsumidas = refeicoes.filter(r => r.status !== 'não consumiu');
+        if (refeicoesConsumidas.length > 0) {
+          await handleSaveStudentRecord({
+            studentId,
+            date: today,
+            recordType: 'refeicao',
+            value: `${refeicoesConsumidas.length} refeições`,
+            observation: refeicoesConsumidas.map(r => r.tipo).join(', ')
+          });
+        }
+
         return true;
       }
       return false;
@@ -1076,6 +1092,18 @@ export default function App() {
           );
           return [...filtered, mapped];
         });
+
+        // Sincronizar com student_records para o gráfico de evolução
+        if (mapped.status !== 'não consumiu') {
+          handleSaveStudentRecord({
+            studentId: mapped.studentId,
+            date: mapped.date,
+            recordType: 'refeicao',
+            value: mapped.status,
+            observation: mapped.type
+          });
+        }
+
         setRefreshKey(prev => prev + 1);
         fetchData();
         showNotification('Acompanhamento de saúde registrado com sucesso!', 'success');
@@ -2761,6 +2789,33 @@ export default function App() {
       }
 
       if (error) throw error;
+
+      // Sincronizar com student_records como 'atividade' para todos os alunos da turma
+      if (!plan.id && plan.classId) {
+        const classStudents = students.filter(s => s.classId === plan.classId);
+        const today = new Date().toISOString().split('T')[0];
+        const authorId = user.auth_user_id || user.id;
+
+        const recordsToSave = classStudents.map(student => ({
+          student_id: student.id,
+          date: today,
+          record_type: 'atividade',
+          value: plan.temaAula,
+          observation: 'Planejamento Pedagógico: ' + plan.temaAula,
+          created_by: authorId
+        }));
+
+        if (recordsToSave.length > 0) {
+          const { error: bulkError } = await supabase
+            .from('student_records')
+            .upsert(recordsToSave, {
+              onConflict: 'student_id,date,record_type,shift'
+            });
+          
+          if (bulkError) console.error('Erro ao sincronizar atividades em lote:', bulkError);
+          // O fetchData() já é chamado abaixo, o que atualizará o estado global
+        }
+      }
 
       showNotification(plan.id ? 'Planejamento atualizado com sucesso!' : 'Registro pedagógico salvo com sucesso!', 'success');
       await logActivity(

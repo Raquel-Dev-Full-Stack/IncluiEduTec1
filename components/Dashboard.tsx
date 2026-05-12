@@ -1234,7 +1234,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Escola com mais Apoio</p>
           </div>
           <p className="text-2xl font-black text-slate-800">
-            {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) < Number(curr.relacao) ? prev : curr).name : 'N/A'}
+            {chartData.length > 0 ? chartData.reduce((prev, curr) => {
+              const rPrev = Number(prev.relacao);
+              const rCurr = Number(curr.relacao);
+              if (rCurr < rPrev) return curr;
+              if (rCurr === rPrev && curr.mediadores > prev.mediadores) return curr;
+              return prev;
+            }).name : 'N/A'}
           </p>
           <p className="text-xs text-slate-400 font-medium">Melhor taxa mediador/aluno</p>
         </div>
@@ -1247,7 +1253,14 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Ponto de Atenção</p>
           </div>
           <p className="text-2xl font-black text-slate-800">
-            {chartData.length > 0 ? chartData.reduce((prev, curr) => Number(prev.relacao) > Number(curr.relacao) ? prev : curr).name : 'N/A'}
+            {chartData.length > 0 ? chartData.reduce((prev, curr) => {
+              const rPrev = Number(prev.relacao);
+              const rCurr = Number(curr.relacao);
+              if (rCurr > rPrev) return curr;
+              // Se a proporção for igual, a escola com MENOS mediadores é o ponto de atenção
+              if (rCurr === rPrev && curr.mediadores < prev.mediadores) return curr;
+              return prev;
+            }).name : 'N/A'}
           </p>
           <p className="text-xs text-slate-400 font-medium">Maior carga por mediador</p>
         </div>
