@@ -203,7 +203,93 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
               />
             </div>
           </div>
-          <div className="overflow-x-auto">
+          {/* Layout Mobile (Cartões de Registro) */}
+          <div className="md:hidden space-y-4 px-4 py-6">
+            {students.length === 0 ? (
+              <div className="p-10 text-center bg-indigo-950/20 rounded-[2.5rem] border border-dashed border-indigo-500/20">
+                <p className="text-indigo-400 font-bold uppercase text-xs tracking-widest">Nenhum aluno encontrado.</p>
+              </div>
+            ) : (
+              students.map((student) => {
+                const todayRefeicao = (student.refeicoes || []).find(r => r.data === selectedDate) || {};
+                const todayEvacuacao = (student.evacuacao || []).find(e => e.data === selectedDate) || {};
+                
+                return (
+                  <div key={`mobile-daily-${student.id}`} className="bg-[#1e1f35] p-6 rounded-[2.5rem] border border-indigo-500/20 shadow-xl shadow-indigo-950/50 flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-500/20">
+                        {student.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-gray-100 text-sm">{student.name}</h4>
+                        <span className="text-[10px] font-black text-indigo-400/60 uppercase tracking-widest">RA: {student.ra}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {['cafe_da_manha', 'colacao', 'almoco', 'lanche', 'janta'].map((field) => (
+                        <div key={field} className="flex flex-col gap-2">
+                          <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest flex items-center gap-2">
+                            <i className={`fa-solid ${mealFields.find(m => m.id === field)?.icon} text-indigo-400 opacity-60`}></i>
+                            {mealFields.find(m => m.id === field)?.label}
+                          </label>
+                          <select 
+                            value={todayRefeicao[field] || ''}
+                            onChange={(e) => handleDailyRecordChange(student.id, field as any, e.target.value)}
+                            className="w-full bg-[#0f1021] border border-indigo-500/30 rounded-2xl px-4 py-3.5 text-xs font-bold text-gray-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                          >
+                            <option value="">-- Selecionar --</option>
+                            <option value="tudo">Comeu tudo</option>
+                            <option value="metade">Comeu pouco</option>
+                            <option value="repeticao">Repetiu</option>
+                            <option value="nao_comeu">Não comeu</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="flex flex-col gap-2.5">
+                        <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center flex items-center justify-center gap-2">
+                          <i className="fa-solid fa-bed text-indigo-400 opacity-60 text-xs"></i>
+                          Dormiu?
+                        </label>
+                        <div className="flex bg-[#0f1021] p-1.5 rounded-2xl border border-indigo-500/30">
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'dormiu', true)}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all ${todayRefeicao.dormiu === true ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >SIM</button>
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'dormiu', false)}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all ${todayRefeicao.dormiu === false ? 'bg-rose-500 text-white shadow-lg' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >NÃO</button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2.5">
+                        <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest text-center flex items-center justify-center gap-2">
+                          <i className="fa-solid fa-poop text-amber-500 opacity-60 text-xs"></i>
+                          Evacuou?
+                        </label>
+                        <div className="flex bg-[#0f1021] p-1.5 rounded-2xl border border-indigo-500/30">
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'evacuou', true)}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all ${todayEvacuacao.evacuou === true ? 'bg-purple-600 text-white shadow-lg' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >SIM</button>
+                          <button
+                            onClick={() => handleDailyRecordChange(student.id, 'evacuou', false)}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all ${todayEvacuacao.evacuou === false ? 'bg-purple-600 text-white shadow-lg' : 'text-indigo-400 hover:text-indigo-300'}`}
+                          >NÃO</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Layout Desktop (Tabela Original) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-indigo-950/50 border-b border-indigo-500/20">
@@ -322,7 +408,88 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
             )}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Layout Mobile (Cartões) */}
+        <div className="md:hidden space-y-4 px-4 pb-8">
+          {summaryRows.length === 0 ? (
+            <div className="p-16 text-center bg-indigo-950/20 rounded-[2.5rem] border border-dashed border-indigo-500/20">
+              <p className="text-indigo-400 font-bold uppercase text-xs tracking-widest">Nenhum registro encontrado.</p>
+            </div>
+          ) : (
+            summaryRows.map((row, idx) => (
+              <div key={`${row.student.id}-${row.date}-${idx}`} className="bg-[#1e1f35] p-6 rounded-[2.5rem] border border-indigo-500/20 shadow-xl shadow-indigo-950/50 flex flex-col gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                {/* 1. No topo: Nome e RA */}
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-500/20">
+                      {row.student.name.charAt(0)}
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-gray-100 text-sm leading-tight">{row.student.name}</h4>
+                        <button
+                          onClick={() => setViewingHistory(row.student.id)}
+                          className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] hover:bg-indigo-500 hover:text-white transition-all"
+                        >
+                          <i className="fa-solid fa-clock-rotate-left"></i>
+                        </button>
+                      </div>
+                      <span className="text-[10px] font-black text-indigo-400/60 uppercase tracking-widest">RA: {row.student.ra}</span>
+                    </div>
+                  </div>
+                  {summaryFilter === 'all' && (
+                    <span className="px-3 py-1 bg-indigo-950/50 text-indigo-300 text-[9px] font-black rounded-lg border border-indigo-500/20">
+                      {row.date ? new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR') : '--/--/----'}
+                    </span>
+                  )}
+                </div>
+
+                {/* 2. Blocos de Refeição (Vertical) */}
+                <div className="space-y-3">
+                  {mealFields.map(meal => (
+                    <div key={meal.id} className="flex items-center justify-between p-4 bg-indigo-950/40 rounded-2xl border border-indigo-500/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                          <i className={`fa-solid ${meal.icon}`}></i>
+                        </div>
+                        <span className="text-[11px] font-black text-indigo-200 uppercase tracking-widest">{meal.label}</span>
+                      </div>
+                      {getMealStatusDisplay(row.data[meal.id]) === 'Sim' ? (
+                        <span className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase rounded-lg border border-emerald-500/30">Consumiu</span>
+                      ) : (
+                        <span className="px-3 py-1.5 bg-slate-800 text-slate-500 text-[9px] font-black uppercase rounded-lg border border-slate-700">Não consumiu</span>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Saúde Complementar */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="flex flex-col items-center gap-2 p-4 bg-indigo-950/40 rounded-2xl border border-indigo-500/10">
+                      <div className="flex items-center gap-2">
+                        <i className="fa-solid fa-bed text-indigo-400 text-xs"></i>
+                        <span className="text-[10px] font-black text-indigo-400 uppercase">Dormiu</span>
+                      </div>
+                      <span className={`text-xs font-black uppercase ${row.data.dormiu ? 'text-indigo-300' : 'text-slate-600'}`}>
+                        {row.data.dormiu ? 'Sim' : 'Não'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 p-4 bg-indigo-950/40 rounded-2xl border border-indigo-500/10">
+                      <div className="flex items-center gap-2">
+                        <i className="fa-solid fa-poop text-amber-500 text-xs"></i>
+                        <span className="text-[10px] font-black text-indigo-400 uppercase">Evacuou</span>
+                      </div>
+                      <span className={`text-xs font-black uppercase ${row.data.evacuou ? 'text-amber-400' : 'text-slate-600'}`}>
+                        {row.data.evacuou ? 'Sim' : 'Não'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Layout Desktop (Tabela Original) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-indigo-950/50 border-b border-indigo-500/20">
@@ -418,6 +585,7 @@ const TeacherMeals: React.FC<TeacherMealsProps> = ({
             </tbody>
           </table>
         </div>
+
       </div>
 
       {/* Modal de Histórico Individual */}
