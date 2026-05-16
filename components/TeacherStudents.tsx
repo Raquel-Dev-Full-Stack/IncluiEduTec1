@@ -389,7 +389,125 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
+      {/* Layout Mobile (Cartões) */}
+      <div className="md:hidden space-y-4 px-2">
+        {students.map((s) => {
+          const dateStr = studentAttendanceDates[s.id] || new Date().toISOString().split('T')[0];
+          const existingAttendance = getAttendanceForDate(s.id, dateStr, s.attendancePeriod || s.turno);
+          const studentClassName = classes.find(c => c.id === s.classId)?.name || 'N/A';
+          const studentShift = s.attendancePeriod || s.turno || 'Manhã';
+          const history = studentHistory(s.id);
+          const total = history.length;
+          const presents = history.filter(a => a.status === 'presente').length;
+          const percentage = total > 0 ? Math.round((presents / total) * 100) : 100;
+
+          return (
+            <div key={s.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg shadow-gray-200/50 flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              {/* 1. No topo: Nome e RA */}
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm border border-emerald-100">
+                    {s.name.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <h4 className="font-black text-gray-900 text-sm leading-tight">{s.name}</h4>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">RA: {s.ra}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowHistory(s.id)}
+                  className="flex flex-col items-end gap-1"
+                >
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">{percentage}%</span>
+                  <div className="w-12 h-1 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${percentage >= 75 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percentage}%` }}></div>
+                  </div>
+                </button>
+              </div>
+
+              {/* 2. Turma e Turno */}
+              <div className="flex flex-row gap-3">
+                <div className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[9px] font-black uppercase rounded-lg border border-blue-100 flex items-center gap-1.5">
+                  <i className="fa-solid fa-users-rectangle opacity-50"></i>
+                  {studentClassName}
+                </div>
+                <div className="px-3 py-1.5 bg-amber-50 text-amber-600 text-[9px] font-black uppercase rounded-lg border border-amber-100 flex items-center gap-1.5">
+                  <i className="fa-solid fa-clock opacity-50"></i>
+                  {studentShift}
+                </div>
+              </div>
+
+              {/* 3. Chamada e Data */}
+              <div className="pt-4 border-t border-gray-50 flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Status da Chamada</p>
+                    {existingAttendance ? (
+                      <div className={`flex items-center justify-between px-4 py-2 rounded-xl border text-[9px] font-black uppercase ${
+                        existingAttendance.status === 'presente' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                      }`}>
+                        <span className="flex items-center gap-2">
+                          <i className={`fa-solid ${existingAttendance.status === 'presente' ? 'fa-check' : 'fa-xmark'}`}></i>
+                          {existingAttendance.status}
+                        </span>
+                        <button 
+                          onClick={() => handleAttendance(s.id, s.classId, existingAttendance.status === 'presente' ? 'falta' : 'presente')}
+                          className="text-[8px] underline opacity-60 font-bold"
+                        >
+                          Alterar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleAttendance(s.id, s.classId, 'presente')}
+                          className="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase border border-emerald-100 active:scale-95 transition-all"
+                        >
+                          Presente
+                        </button>
+                        <button 
+                          onClick={() => handleAttendance(s.id, s.classId, 'falta')}
+                          className="flex-1 py-2 bg-rose-50 text-rose-600 rounded-xl text-[9px] font-black uppercase border border-rose-100 active:scale-95 transition-all"
+                        >
+                          Ausente
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-fit">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1.5 text-right">Data</p>
+                    <input
+                      type="date"
+                      value={dateStr}
+                      onChange={(e) => updateStudentDate(s.id, e.target.value)}
+                      className="p-2 bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-bold text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 w-28 h-9"
+                    />
+                  </div>
+                </div>
+
+                {/* Ações Rápidas */}
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setShowRegisterModal(s.id)} className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 flex items-center justify-center transition-all active:scale-90"><i className="fa-solid fa-pen-to-square"></i></button>
+                    <button onClick={() => onViewProfile?.(s.id)} className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center justify-center transition-all active:scale-90"><i className="fa-solid fa-graduation-cap"></i></button>
+                    <button onClick={() => setShowGradesModal(s.id)} className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 flex items-center justify-center transition-all active:scale-90"><i className="fa-solid fa-star-half-stroke"></i></button>
+                    <button onClick={() => handleOpenSOS(s)} className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center justify-center transition-all active:scale-90"><i className="fa-solid fa-kit-medical"></i></button>
+                  </div>
+                  <button 
+                    onClick={() => setShowHistory(s.id)}
+                    className="text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-blue-600 transition-colors"
+                  >
+                    Ver Histórico <i className="fa-solid fa-chevron-right ml-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Layout Desktop (Tabela Original) */}
+      <div className="hidden md:block bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden">
         <Table<Student>
           data={students}
           columns={[
@@ -539,6 +657,7 @@ const TeacherStudents: React.FC<TeacherStudentsProps> = ({
           ]}
         />
       </div>
+
 
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">

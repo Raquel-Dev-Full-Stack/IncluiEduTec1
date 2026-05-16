@@ -54,7 +54,7 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 *   **Edição de Unidades**: Possibilidade da Secretaria editar todos os campos cadastrais, incluindo observações internas e status de ativação.
 *   **Filtragem por Jurisdição (Admin)**: O Administrador Geral pode filtrar a listagem de todas as escolas da rede por município, facilitando a supervisão de redes multi-municipais.
 *   **Visibilidade de Município**: Exibição clara do município vinculado a cada escola na tabela administrativa geral.
-*   **Registro de Alunos**: Matrículas RA, upload de laudos médicos e informações de responsáveis.
+*   **Registro de Alunos**: Matrículas RA, upload de laudos médicos, alimentação, restrições alimentares e informações de responsáveis.
 *   **Gestão de Turmas**: Configuração de ano/turno e atribuição de professores/mediadores.
 
 ## 5. Requisitos Não Funcionais
@@ -72,8 +72,8 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 ## 7. Roadmap e Melhorias Futuras
 *   **Assistente Pedagógico IA**: Sugestões automatizadas de adaptações com base no histórico do aluno.
 *   **Modo Offline**: Permitir entrada de registros em locais com baixa conectividade (PWA).
-*   **Portal dos Responsáveis**: Acesso limitado para pais acompanharem frequência e relatórios. 
+    
 
 ---
 **Início do Projeto:** 10 de Janeiro de 2026
-**Última Atualização:** 30 de Abril de 2026
+**Última Atualização:** 30 de Abril de 2026
