@@ -70,7 +70,6 @@ const MediatorStudents: React.FC<MediatorStudentsProps> = ({
         studentId: targetStudentId,
         classId: student?.classId,
         schoolId: student?.schoolId || (student as any)?.school_id,
-        date: new Date().toISOString(),
         behaviorStatus,
         hygiene,
         feeding,
