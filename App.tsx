@@ -2883,6 +2883,7 @@ export default function App() {
             regentTeacher={usersList.find(u => u.id === student.regentTeacherId)}
             onBack={() => setSelectedStudentIdForView(null)}
             currentUser={user}
+            studentRecords={studentRecords}
           />
         );
       }

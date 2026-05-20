@@ -12,9 +12,10 @@ interface StudentDetailsViewProps {
   regentTeacher?: User;
   onBack: () => void;
   currentUser?: User;
+  studentRecords?: any[];
 }
 
-const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studentClass, mediator, regentTeacher, onBack, currentUser }) => {
+const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studentClass, mediator, regentTeacher, onBack, currentUser, studentRecords }) => {
   const [notas, setNotas] = useState<Record<string, any>>(student.notas || {});
   const [isEditingNotas, setIsEditingNotas] = useState(false);
   const [selectedBimestre, setSelectedBimestre] = useState('1º_bimestre');
@@ -99,19 +100,36 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
       if (!student.id) return;
       setLoadingPaee(true);
       try {
-        const { data, error } = await supabase
-          .from('student_records')
-          .select('*')
-          .eq('student_id', student.id)
-          .eq('record_type', 'PAEE')
-          .maybeSingle();
+        let record = null;
+        try {
+          const { data, error } = await supabase
+            .from('student_records')
+            .select('*')
+            .eq('student_id', student.id)
+            .eq('record_type', 'PAEE')
+            .maybeSingle();
 
-        if (error) throw error;
+          if (error) throw error;
+          record = data;
+        } catch (supabaseErr) {
+          console.warn('Erro ao consultar Supabase diretamente para PAEE, tentando ler do estado local:', supabaseErr);
+        }
 
-        if (data) {
-          setPaeeRecord(data);
+        // Fallback resiliente usando as props studentRecords se a query do Supabase não retornou nada
+        if (!record && studentRecords) {
+          const localRecord = studentRecords.find(
+            r => r.student_id === student.id && r.record_type === 'PAEE'
+          );
+          if (localRecord) {
+            console.log('PAEE recuperado via fallback local (studentRecords):', localRecord);
+            record = localRecord;
+          }
+        }
+
+        if (record) {
+          setPaeeRecord(record);
           try {
-            const parsed = JSON.parse(data.observation);
+            const parsed = JSON.parse(record.observation);
             setPaeeForm(prev => ({
               ...prev,
               ...parsed,
@@ -132,15 +150,17 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
           } catch (e) {
             console.error('Erro ao processar JSON do PAEE:', e);
           }
+        } else {
+          setPaeeRecord(null);
         }
       } catch (err) {
-        console.error('Erro ao carregar PAEE do Supabase:', err);
+        console.error('Erro ao carregar PAEE:', err);
       } finally {
         setLoadingPaee(false);
       }
     };
     fetchPaeeRecord();
-  }, [student.id, student.diagnosis]);
+  }, [student.id, student.diagnosis, studentRecords]);
 
   useEffect(() => {
     const fetchHistorico = async () => {
