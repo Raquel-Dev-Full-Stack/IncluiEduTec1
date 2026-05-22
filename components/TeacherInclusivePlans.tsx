@@ -544,21 +544,49 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
     setFeedback(`Salvando Plano ${type}...`);
     
     try {
-      const dataToSave = type === 'PEI' ? peiData : type === 'PDI' ? pdiData : paeeData;
+      let dataToSave = type === 'PEI' ? peiData : type === 'PDI' ? pdiData : paeeData;
       
-      const { error } = await supabase
+      // Proteção de robustez caso o estado de dados ainda não esteja inicializado
+      if (!dataToSave) {
+        const targetStud = students.find(s => s.id === selectedStudentId);
+        if (type === 'PEI') {
+          dataToSave = getDefaultPeiData(selectedStudentId, targetStud);
+        } else if (type === 'PDI') {
+          dataToSave = { student_id: selectedStudentId, content: '', desenvolvimento: '', social: '', autonomia: '' };
+        } else {
+          dataToSave = { student_id: selectedStudentId, content: '', recursos: '', barreiras: '', estrategias: '' };
+        }
+      }
+      
+      const recordPayload: any = {
+        student_id: selectedStudentId,
+        record_type: type,
+        observation: JSON.stringify(dataToSave),
+        value: 'finalizado',
+        date: new Date().toISOString().split('T')[0],
+        created_by: user.id
+      };
+
+      // Apenas envia o ID se ele de fato já existir e for uma atualização de registro existente
+      if (dataToSave && dataToSave.id) {
+        recordPayload.id = dataToSave.id;
+      }
+      
+      const { data, error } = await supabase
         .from('student_records')
-        .upsert({
-          id: dataToSave.id, 
-          student_id: selectedStudentId,
-          record_type: type,
-          observation: JSON.stringify(dataToSave),
-          value: 'finalizado',
-          date: new Date().toISOString().split('T')[0],
-          created_by: user.id
-        });
+        .upsert(recordPayload)
+        .select('*');
 
       if (error) throw error;
+
+      // Se for um novo registro criado, atualiza o estado local com o ID retornado pelo banco
+      const savedRecord = data?.[0];
+      if (savedRecord && savedRecord.id) {
+        const updatedWithId = { ...dataToSave, id: savedRecord.id };
+        if (type === 'PEI') setPeiData(updatedWithId);
+        else if (type === 'PDI') setPdiData(updatedWithId);
+        else if (type === 'PAEE') setPaeeData(updatedWithId);
+      }
 
       setFeedback(`Plano ${type} atualizado com sucesso!`);
       
