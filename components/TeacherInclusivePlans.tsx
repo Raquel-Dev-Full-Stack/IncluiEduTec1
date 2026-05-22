@@ -140,14 +140,23 @@ const getDefaultPeiData = (studentId: string, student: any) => ({
 interface TeacherInclusivePlansProps {
   students: Student[];
   classes: Class[];
-  user: User;
+  user?: User;
+  currentUser?: User;
   logActivity?: (log: any) => void;
   onBack?: () => void;
 }
 
 type PlanType = 'PEI' | 'PDI' | 'PAEE';
 
-const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students, classes, user, logActivity, onBack }) => {
+const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ 
+  students, 
+  classes, 
+  user: userProp, 
+  currentUser: currentUserProp, 
+  logActivity, 
+  onBack 
+}) => {
+  const user = (userProp || currentUserProp) as User;
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [activePlan, setActivePlan] = useState<PlanType>('PEI');
   const [feedback, setFeedback] = useState<string | null>(null);

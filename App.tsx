@@ -3717,7 +3717,7 @@ export default function App() {
                 <TeacherInclusivePlans 
                   students={teacherStudents} 
                   classes={teacherClasses} 
-                  currentUser={user} 
+                  user={user} 
                 />
               }
               pedagogicalPlanningComponent={
