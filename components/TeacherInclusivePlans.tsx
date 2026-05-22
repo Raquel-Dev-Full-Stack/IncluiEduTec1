@@ -558,13 +558,26 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
         }
       }
       
+      let finalTeacherId = user.id;
+
+      // Busca o ID interno na tabela pública 'users' usando o auth_user_id ou o email
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .or(`auth_user_id.eq.${user.id},email.eq.${user.email}`)
+        .maybeSingle();
+
+      if (dbUser && dbUser.id) {
+        finalTeacherId = dbUser.id;
+      }
+
       const recordPayload: any = {
         student_id: selectedStudentId,
         record_type: type,
         observation: JSON.stringify(dataToSave),
         value: 'finalizado',
         date: new Date().toISOString().split('T')[0],
-        created_by: user.id
+        created_by: finalTeacherId
       };
 
       // Apenas envia o ID se ele de fato já existir e for uma atualização de registro existente
@@ -798,6 +811,19 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
         ? mergeDeep(getDefaultPeiData(creationData.studentId, targetStud), { content: creationData.content }) 
         : { content: creationData.content };
         
+      let finalTeacherId = user.id;
+
+      // Busca o ID interno na tabela pública 'users' usando o auth_user_id ou o email
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('id')
+        .or(`auth_user_id.eq.${user.id},email.eq.${user.email}`)
+        .maybeSingle();
+
+      if (dbUser && dbUser.id) {
+        finalTeacherId = dbUser.id;
+      }
+
       const { error } = await supabase
         .from('student_records')
         .upsert({
@@ -806,7 +832,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
           observation: JSON.stringify(obsValue),
           value: 'finalizado',
           date: new Date().toISOString().split('T')[0],
-          created_by: user.id
+          created_by: finalTeacherId
         });
 
       if (error) {
