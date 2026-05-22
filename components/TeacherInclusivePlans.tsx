@@ -289,7 +289,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
   const handleExportPEIPDF = async () => {
     if (!selectedStudentId || !selectedStudent || !peiData) return;
 
-    setFeedback('Gerando PEI Oficial (Prefeitura do Rio)...');
+    setFeedback('Gerando PEI Oficial...');
 
     try {
       const doc = new jsPDF();
@@ -318,7 +318,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(30, 58, 138);
-        doc.text("PREFEITURA DA CIDADE DO RIO DE JANEIRO", pageWidth / 2, 22, { align: "center" });
+        doc.text("SISTEMA DE ENSINO INTEGRADO", pageWidth / 2, 22, { align: "center" });
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(100);
@@ -909,7 +909,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                 onChange={(e) => setCreationData({ ...creationData, type: e.target.value as PlanType })}
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
               >
-                <option value="PEI">PEI - Plano Educacional Individualizado (Prefeitura do Rio)</option>
+                <option value="PEI">PEI - Plano Educacional Individualizado</option>
                 <option value="PDI">PDI - Plano de Desenvolvimento Individual</option>
                 <option value="PAEE">PAEE - Plano de AEE</option>
               </select>
@@ -1024,8 +1024,8 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({ students,
                 <div className="space-y-8 animate-in fade-in duration-500">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-black text-gray-800 tracking-tight mb-2">PEI – Plano Educacional Individualizado (Prefeitura do Rio)</h2>
-                      <p className="text-gray-500 text-xs font-medium">Modelo Oficial Digitalizado — <span className="font-bold text-indigo-600">Educação Especial SME/RJ</span></p>
+                      <h2 className="text-2xl font-black text-gray-800 tracking-tight mb-2">PEI – Plano Educacional Individualizado</h2>
+                      <p className="text-gray-500 text-xs font-medium">Modelo Oficial Digitalizado — <span className="font-bold text-indigo-600">Educação Especial e Inclusiva</span></p>
                     </div>
                     {peiData && (
                       <button
