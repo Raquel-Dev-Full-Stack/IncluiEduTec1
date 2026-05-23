@@ -918,7 +918,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
                 }`}
             >
               <i className={`fa-solid ${isCreatingNew ? 'fa-xmark' : 'fa-file-signature'}`}></i>
-              {isCreatingNew ? 'Cancelar Criação' : 'Fazer Plano Inclusivo'}
+              {isCreatingNew 
+                ? (selectedStudentId ? 'Voltar ao Plano' : 'Cancelar') 
+                : (selectedStudentId ? 'Trocar Aluno' : 'Fazer Plano Inclusivo')}
             </button>
 
             {selectedStudentId && !isCreatingNew && (
@@ -934,14 +936,14 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
       </header>
 
       {isCreatingNew ? (
-        <div className="bg-white p-10 rounded-[3.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 animate-in zoom-in-95 duration-500 space-y-10">
+        <div className="bg-white p-10 rounded-[3.5rem] border border-indigo-100 shadow-xl shadow-indigo-900/5 animate-in zoom-in-95 duration-500 space-y-10">
           <div className="flex items-center gap-4 border-b border-gray-50 pb-6">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-              <i className="fa-solid fa-plus-circle"></i>
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-inner">
+              <i className="fa-solid fa-graduation-cap"></i>
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-black text-gray-800">Elaborar Novo Plano Inclusivo</h2>
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Preencha os dados iniciais para o registro</p>
+              <h2 className="text-2xl font-black text-gray-800 tracking-tight">Elaborar Plano Inclusivo Oficial</h2>
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Escolha um dos seus alunos abaixo para abrir o modelo oficial digitalizado do PEI / PDI / PAEE</p>
             </div>
             {feedback && (
               <div className="px-6 py-3 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse border border-blue-100">
@@ -950,63 +952,74 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aluno Alvo *</label>
-              <select
-                value={creationData.studentId}
-                onChange={(e) => {
-                  setCreationData({ ...creationData, studentId: e.target.value });
-                  if (e.target.value) setSelectedStudentId(e.target.value);
-                }}
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">Selecione o Aluno...</option>
-                {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+          {students.length === 0 ? (
+            <div className="p-16 text-center bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-100">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-300">
+                <i className="fa-solid fa-users text-2xl"></i>
+              </div>
+              <p className="text-gray-500 font-bold">Nenhum aluno vinculado a você foi encontrado.</p>
+              <p className="text-gray-400 text-xs mt-1">Certifique-se de que os alunos estão devidamente matriculados em suas turmas.</p>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tipo de Documento *</label>
-              <select
-                value={creationData.type}
-                onChange={(e) => setCreationData({ ...creationData, type: e.target.value as PlanType })}
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
-              >
-                <option value="PEI">PEI - Plano Educacional Individualizado</option>
-                <option value="PDI">PDI - Plano de Desenvolvimento Individual</option>
-                <option value="PAEE">PAEE - Plano de AEE</option>
-              </select>
-            </div>
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Conteúdo do Plano *</label>
-              <textarea
-                value={creationData.content}
-                onChange={(e) => setCreationData({ ...creationData, content: e.target.value })}
-                placeholder="Descreva aqui os objetivos, metas e estratégias pedagógicas..."
-                rows={6}
-                className="w-full p-6 bg-gray-50 border border-gray-200 rounded-[2rem] text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-inner"
-              ></textarea>
-            </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {students.map((student) => {
+                const className = classes.find(c => c.id === student.classId)?.name || 'Sem turma';
+                
+                // Pegar iniciais para o avatar
+                const initials = student.name
+                  .split(' ')
+                  .filter(Boolean)
+                  .map((n: string) => n[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase() || '?';
 
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-50">
+                return (
+                  <div 
+                    key={student.id}
+                    onClick={() => {
+                      setSelectedStudentId(student.id);
+                      setIsCreatingNew(false);
+                    }}
+                    className="p-6 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-300 group cursor-pointer flex flex-col items-center text-center space-y-4 relative overflow-hidden"
+                  >
+                    {/* Efeito de hover decorativo */}
+                    <div className="absolute inset-0 bg-indigo-50/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    
+                    {/* Avatar do Aluno */}
+                    <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 font-black text-lg flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-inner">
+                      {initials}
+                    </div>
+
+                    <div className="space-y-1 w-full">
+                      <h3 className="font-black text-gray-800 group-hover:text-indigo-600 transition-colors text-sm truncate px-2">{student.name}</h3>
+                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">{className}</p>
+                    </div>
+
+                    {student.deficiency && (
+                      <span className="px-3 py-1 bg-amber-50 text-amber-700 text-[9px] font-black rounded-lg uppercase tracking-wider border border-amber-100 max-w-full truncate" title={student.deficiency}>
+                        {student.deficiency}
+                      </span>
+                    )}
+
+                    <button 
+                      type="button"
+                      className="mt-2 w-full py-3 bg-indigo-50 text-indigo-600 font-black text-[9px] uppercase tracking-widest rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300"
+                    >
+                      Elaborar Plano Oficial
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-6 border-t border-gray-50">
             <button
               onClick={() => setIsCreatingNew(false)}
-              className="px-8 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-rose-500 transition-colors"
+              className="px-8 py-4 bg-gray-50 hover:bg-gray-100 text-gray-400 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all cursor-pointer"
             >
-              Descartar
-            </button>
-            <button
-              onClick={handleFinalizeCreation}
-              disabled={loading}
-              className={`px-12 py-4 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center gap-3 shadow-xl ${
-                loading 
-                  ? 'bg-gray-400 cursor-wait shadow-gray-100' 
-                  : 'bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700'
-              }`}
-            >
-              <i className={`fa-solid ${loading ? 'fa-circle-notch fa-spin' : 'fa-cloud-arrow-up'}`}></i>
-              {loading ? 'Salvando...' : 'Finalizar e Salvar Plano'}
+              Cancelar
             </button>
           </div>
         </div>
