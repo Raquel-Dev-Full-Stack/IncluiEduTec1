@@ -38,6 +38,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
   const [isViewOnlyPaee, setIsViewOnlyPaee] = useState(false);
   const [activePaeeTab, setActivePaeeTab] = useState<'dados_escolares' | 'resumo_caso' | 'medicacao' | 'planejamento' | 'avaliacao'>('dados_escolares');
   const [schoolAddress, setSchoolAddress] = useState<string>('');
+  const isPaeeDisabled = (currentUser?.profile !== UserProfile.DIRETOR && currentUser?.profile !== UserProfile.PROFESSOR) || isViewOnlyPaee;
 
   const [paeeForm, setPaeeForm] = useState({
     anoEscolar: '',
@@ -1195,7 +1196,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
             PAEE — Plano de Atendimento Educacional Especializado
           </h3>
           <div className="flex items-center gap-3">
-            {currentUser?.profile === UserProfile.DIRETOR ? (
+            {currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR ? (
               <>
                 <button
                   onClick={() => {
@@ -1216,7 +1217,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                     className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
                   >
                     <i className="fa-solid fa-eye"></i>
-                    Ver PAEE
+                    Visualizar PAEE
                   </button>
                 )}
               </>
@@ -1741,7 +1742,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 </div>
                 <div>
                   <h3 className="text-xl font-black tracking-tight">
-                    {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) ? (paeeRecord ? 'Editar Formulário PAEE' : 'Elaborar Novo PAEE') : 'Visualizar PAEE Completo'}
+                    {((currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee) ? (paeeRecord ? 'Editar Formulário PAEE' : 'Elaborar Novo PAEE') : 'Visualizar PAEE Completo'}
                   </h3>
                   <p className="text-xs font-semibold text-emerald-100 uppercase tracking-widest mt-0.5">
                     {student.name} — RA: {student.ra || 'N/A'}
@@ -1749,7 +1750,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee && (
+                {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
                   <button
                     onClick={handleSavePaee}
                     disabled={isSavingPaee}
@@ -1867,7 +1868,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Ex: 5º Ano do Ensino Fundamental"
                           value={paeeForm.anoEscolar}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, anoEscolar: e.target.value })}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold"
                         />
@@ -1878,7 +1879,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Nome do professor regente"
                           value={paeeForm.professorClasseComum}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, professorClasseComum: e.target.value })}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold"
                         />
@@ -1889,7 +1890,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Nome do professor do AEE"
                           value={paeeForm.professorAEE}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, professorAEE: e.target.value })}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold"
                         />
@@ -1898,7 +1899,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Período de Atendimento no AEE</label>
                         <select
                           value={paeeForm.periodoAtendimento}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, periodoAtendimento: e.target.value })}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold"
                         >
@@ -1924,7 +1925,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Digite ou edite o CID e detalhes clínicos..."
                           value={paeeForm.diagnosticoClinico}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, diagnosticoClinico: e.target.value })}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold"
                         />
@@ -1944,7 +1945,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                             <input
                               type="checkbox"
                               checked={paeeForm.frequentaSalaRecursos}
-                              disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                              disabled={isPaeeDisabled}
                               onChange={e => setPaeeForm({ ...paeeForm, frequentaSalaRecursos: e.target.checked })}
                               className="sr-only peer"
                             />
@@ -1978,7 +1979,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                 <input
                                   type="checkbox"
                                   checked={paeeForm.outrosAtendimentosCheck[k]}
-                                  disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                                  disabled={isPaeeDisabled}
                                   onChange={e => setPaeeForm({
                                     ...paeeForm,
                                     outrosAtendimentosCheck: {
@@ -2000,7 +2001,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <textarea
                           placeholder="Informe horários, clínicas e a frequência destes atendimentos se conhecidos..."
                           value={paeeForm.outrosAtendimentosDetalhamento}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, outrosAtendimentosDetalhamento: e.target.value })}
                           rows={3}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold resize-none"
@@ -2035,7 +2036,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                               <span className="text-xs font-black text-gray-700 dark:text-slate-200 uppercase tracking-widest">{labelMap[aspect]}</span>
                               <select
                                 value={paeeForm.resumoCaso[aspect].status}
-                                disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                                disabled={isPaeeDisabled}
                                 onChange={e => handleAspectChange(aspect, 'status', e.target.value)}
                                 className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
                               >
@@ -2047,7 +2048,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                             <textarea
                               placeholder={`Descreva as evidências observadas e especificidades no aspecto ${aspect}...`}
                               value={paeeForm.resumoCaso[aspect].obs}
-                              disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                              disabled={isPaeeDisabled}
                               onChange={e => handleAspectChange(aspect, 'obs', e.target.value)}
                               rows={2.5}
                               className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none font-medium"
@@ -2069,7 +2070,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Medicamentos de Uso Contínuo</h4>
                         <p className="text-xs text-gray-400 mt-1">Registre todas as medicações administradas ou acompanhadas em período escolar/residencial.</p>
                       </div>
-                      {currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee && (
+                      {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
                         <button
                           onClick={handleAddMedicacaoRow}
                           className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-sm"
@@ -2096,7 +2097,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                 <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Dosagem</th>
                                 <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Frequência</th>
                                 <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Horário</th>
-                                {currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee && <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800 text-center">Ações</th>}
+                                {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800 text-center">Ações</th>}
                               </tr>
                             </thead>
                             <tbody>
@@ -2107,7 +2108,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                       type="text"
                                       placeholder="Ex: Ritalina"
                                       value={med.nome}
-                                      disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                                      disabled={isPaeeDisabled}
                                       onChange={e => handleMedicacaoChange(index, 'nome', e.target.value)}
                                       className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold outline-none"
                                     />
@@ -2117,7 +2118,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                       type="text"
                                       placeholder="Ex: 10mg"
                                       value={med.dosagem}
-                                      disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                                      disabled={isPaeeDisabled}
                                       onChange={e => handleMedicacaoChange(index, 'dosagem', e.target.value)}
                                       className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold outline-none"
                                     />
@@ -2127,7 +2128,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                       type="text"
                                       placeholder="Ex: Diário"
                                       value={med.frequencia}
-                                      disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                                      disabled={isPaeeDisabled}
                                       onChange={e => handleMedicacaoChange(index, 'frequencia', e.target.value)}
                                       className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold outline-none"
                                     />
@@ -2137,12 +2138,12 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                       type="text"
                                       placeholder="Ex: 08:00h"
                                       value={med.horario}
-                                      disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                                      disabled={isPaeeDisabled}
                                       onChange={e => handleMedicacaoChange(index, 'horario', e.target.value)}
                                       className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold outline-none"
                                     />
                                   </td>
-                                  {currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee && (
+                                  {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
                                     <td className="p-3 text-center">
                                       <button
                                         onClick={() => handleRemoveMedicacaoRow(index)}
@@ -2178,7 +2179,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <textarea
                           placeholder="Liste os principais desafios, barreiras físicas, atitudinais ou de aprendizagem que o aluno apresenta..."
                           value={paeeForm.barreirasDificuldades}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, barreirasDificuldades: e.target.value })}
                           rows={4}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold resize-none"
@@ -2190,7 +2191,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <textarea
                           placeholder="Defina as metas e competências a serem estimuladas ou reforçadas no plano de atendimento..."
                           value={paeeForm.objetivosAEE}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, objetivosAEE: e.target.value })}
                           rows={4}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold resize-none"
@@ -2202,7 +2203,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <textarea
                           placeholder="Descreva as técnicas, organizações diferenciadas de aula e adaptações necessárias..."
                           value={paeeForm.metodologia}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, metodologia: e.target.value })}
                           rows={4}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold resize-none"
@@ -2214,7 +2215,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <textarea
                           placeholder="Especifique pranchas de comunicação, tecnologias assistivas, jogos adaptados ou materiais manipuláveis..."
                           value={paeeForm.recursosNecessarios}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, recursosNecessarios: e.target.value })}
                           rows={4}
                           className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold resize-none"
@@ -2226,7 +2227,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <input
                           type="date"
                           value={paeeForm.dataReavaliacao}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({ ...paeeForm, dataReavaliacao: e.target.value })}
                           className="w-full md:w-64 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold"
                         />
@@ -2250,7 +2251,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                       <textarea
                         placeholder="Descreva a evolução do estudante, aspectos superados e reajustes nas metas do AEE..."
                         value={paeeForm.avaliacaoPeriodica}
-                        disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                        disabled={isPaeeDisabled}
                         onChange={e => setPaeeForm({ ...paeeForm, avaliacaoPeriodica: e.target.value })}
                         rows={5}
                         className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-gray-50 dark:disabled:bg-slate-800 font-bold resize-none"
@@ -2272,7 +2273,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Nome do Diretor(a)"
                           value={paeeForm.assinaturas.diretor}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({
                             ...paeeForm,
                             assinaturas: { ...paeeForm.assinaturas, diretor: e.target.value }
@@ -2287,7 +2288,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Nome do Professor(a) do AEE"
                           value={paeeForm.assinaturas.professorAEE}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({
                             ...paeeForm,
                             assinaturas: { ...paeeForm.assinaturas, professorAEE: e.target.value }
@@ -2302,7 +2303,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Nome do Professor(a) Regente"
                           value={paeeForm.assinaturas.professorRegente}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({
                             ...paeeForm,
                             assinaturas: { ...paeeForm.assinaturas, professorRegente: e.target.value }
@@ -2317,7 +2318,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                           type="text"
                           placeholder="Nome do Responsável Legal"
                           value={paeeForm.assinaturas.responsavel}
-                          disabled={currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee}
+                          disabled={isPaeeDisabled}
                           onChange={e => setPaeeForm({
                             ...paeeForm,
                             assinaturas: { ...paeeForm.assinaturas, responsavel: e.target.value }
@@ -2345,7 +2346,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 >
                   Fechar
                 </button>
-                {currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee && (
+                {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
                   <button
                     onClick={handleSavePaee}
                     disabled={isSavingPaee}
