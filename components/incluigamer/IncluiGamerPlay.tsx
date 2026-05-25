@@ -703,6 +703,12 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
                 </div>
               )}
 
+              {gameState.tipo === 'frase' && (
+                <div className="text-2xl font-black text-indigo-350 max-w-lg mx-auto leading-relaxed bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-inner">
+                  "{gameState.frase}"
+                </div>
+              )}
+
               {gameState.tipo === 'sons' && (
                 <div className="text-5xl font-black text-emerald-400 bg-slate-900 border border-slate-800 p-6 rounded-3xl w-28 h-28 mx-auto shadow-inner flex items-center justify-center">
                   {gameState.molde.slice(-2)}
