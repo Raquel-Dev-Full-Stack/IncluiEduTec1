@@ -142,6 +142,7 @@ interface TeacherInclusivePlansProps {
   classes: Class[];
   user?: User;
   currentUser?: User;
+  studentRecords?: any[];
   logActivity?: (log: any) => void;
   onBack?: () => void;
 }
@@ -153,6 +154,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
   classes, 
   user: userProp, 
   currentUser: currentUserProp, 
+  studentRecords,
   logActivity, 
   onBack 
 }) => {
@@ -188,13 +190,30 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
 
       setLoading(true);
       try {
-        const { data: allRecords, error } = await supabase
-          .from('student_records')
-          .select('*')
-          .eq('student_id', selectedStudentId)
-          .in('record_type', ['PEI', 'PDI', 'PAEE']);
+        let allRecords = [];
+        try {
+          const { data, error } = await supabase
+            .from('student_records')
+            .select('*')
+            .eq('student_id', selectedStudentId)
+            .in('record_type', ['PEI', 'PDI', 'PAEE']);
 
-        if (error) throw error;
+          if (error) throw error;
+          allRecords = data || [];
+        } catch (supabaseErr) {
+          console.warn("[PAEE Resilient] Erro ao buscar do Supabase directly, tentando local state:", supabaseErr);
+        }
+
+        // Fallback resiliente usando as props studentRecords se a query do Supabase não retornou nada ou falhou
+        if (allRecords.length === 0 && studentRecords) {
+          const filtered = studentRecords.filter(
+            r => r.student_id === selectedStudentId && ['PEI', 'PDI', 'PAEE'].includes(r.record_type)
+          );
+          if (filtered.length > 0) {
+            console.log("[PAEE Resilient] Planos recuperados via fallback local (studentRecords):", filtered);
+            allRecords = filtered;
+          }
+        }
 
         const peiRec = allRecords?.find(r => r.record_type === 'PEI');
         const pdiRec = allRecords?.find(r => r.record_type === 'PDI');
@@ -210,10 +229,28 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
           }
         };
 
+        const parsePaeeData = (record: any, defaultData: any) => {
+          if (!record) return defaultData;
+          try {
+            const parsed = JSON.parse(record.observation);
+            return {
+              ...defaultData,
+              ...parsed,
+              id: record.id,
+              barreiras: parsed.barreiras || parsed.barreirasDificuldades || '',
+              recursos: parsed.recursos || parsed.recursosNecessarios || '',
+              estrategias: parsed.estrategias || parsed.metodologia || '',
+              content: parsed.content || parsed.objetivosAEE || ''
+            };
+          } catch {
+            return { ...defaultData, content: record.observation, id: record.id };
+          }
+        };
+
         const currentStudent = students.find(s => s.id === selectedStudentId);
         setPeiData(parseData(peiRec, getDefaultPeiData(selectedStudentId, currentStudent)));
         setPdiData(parseData(pdiRec, { student_id: selectedStudentId, content: '', desenvolvimento: '', social: '', autonomia: '' }));
-        setPaeeData(parseData(paeeRec, { student_id: selectedStudentId, content: '', recursos: '', barreiras: '', estrategias: '' }));
+        setPaeeData(parsePaeeData(paeeRec, { student_id: selectedStudentId, content: '', recursos: '', barreiras: '', estrategias: '' }));
       } catch (error) {
         console.error("Erro ao carregar planos de student_records:", error);
       } finally {
@@ -222,7 +259,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
     };
 
     fetchPlans();
-  }, [selectedStudentId]);
+  }, [selectedStudentId, studentRecords]);
 
   const selectedStudent = useMemo(() =>
     students.find(s => s.id === selectedStudentId),
@@ -566,6 +603,17 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
         } else {
           dataToSave = { student_id: selectedStudentId, content: '', recursos: '', barreiras: '', estrategias: '' };
         }
+      }
+
+      // Bidirectional mapping for PAEE keys to stay fully in sync with official multi-tab PAEE form
+      if (type === 'PAEE' && dataToSave) {
+        dataToSave = {
+          ...dataToSave,
+          barreirasDificuldades: dataToSave.barreiras || dataToSave.barreirasDificuldades || '',
+          recursosNecessarios: dataToSave.recursos || dataToSave.recursosNecessarios || '',
+          metodologia: dataToSave.estrategias || dataToSave.metodologia || '',
+          objetivosAEE: dataToSave.content || dataToSave.objetivosAEE || ''
+        };
       }
       
       let finalTeacherId = user.id;
