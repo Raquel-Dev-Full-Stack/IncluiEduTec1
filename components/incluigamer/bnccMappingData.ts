@@ -1,7 +1,7 @@
 export interface BnccMapping {
   id: string; // Habilidade principal BNCC
   gameId: string;
-  faixaEtaria: string;
+  faixaEtaria: '0-3' | '4-5' | '6-8' | '9-12' | '13+';
   etapaEnsino: 'Educação Infantil' | 'Ensino Fundamental I' | 'Ensino Fundamental II';
   habilidadeBncc: string;
   descricaoBncc: string;
@@ -13,11 +13,11 @@ export interface BnccMapping {
 }
 
 export const BNCC_MAPPING_DATA: BnccMapping[] = [
-  // --- Bebês (0 a 1 ano e 6 meses) ---
+  // --- Bebês e Bem pequenas (0 a 3 anos) ---
   {
     id: 'EI01TS01',
     gameId: 'orquestra_sons',
-    faixaEtaria: '0-1.5',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI01TS01',
     descricaoBncc: 'Explorar sons produzidos com o próprio corpo e com objetos do ambiente.',
@@ -29,7 +29,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EI01TS03',
     gameId: 'orquestra_sons',
-    faixaEtaria: '0-1.5',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI01TS03',
     descricaoBncc: 'Explorar diferentes fontes sonoras e materiais para acompanhar ritmos musicais.',
@@ -41,7 +41,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EI01CG05',
     gameId: 'toque_cores',
-    faixaEtaria: '0-1.5',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI01CG05',
     descricaoBncc: 'Utilizar os movimentos de preensão, encaixe e lançamento, ampliando suas possibilidades de manuseio de diferentes materiais.',
@@ -53,21 +53,19 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EI01TS02',
     gameId: 'toque_cores',
-    faixaEtaria: '0-1.5',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI01TS02',
-    descricaoBncc: 'Traçar marcas gráficas sobre diferentes superfícies, utilizando elementos visuais (ponto, linha, forma e cor).',
+    descricaoBncc: 'Traçar marcas gráficas sobre diferentes superfícies, utilizando elements visuais (ponto, linha, forma e cor).',
     campoExperiencia: 'Traços, sons, cores e formas',
     eixoCognitivo: 'Percepção Sensorial',
     nivelDificuldade: 'Fácil',
     tagsPedagogicas: ['Rastreamento Visual', 'Cromoterapia', 'Regulação Sensorial']
   },
-
-  // --- Crianças bem pequenas (1 ano e 7 meses a 3 anos e 11 meses) ---
   {
     id: 'EI02ET05',
     gameId: 'balao_formas',
-    faixaEtaria: '1.5-3',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI02ET05',
     descricaoBncc: 'Classificar objetos, considerando determinado atributo (tamanho, peso, cor, forma etc.).',
@@ -79,7 +77,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EI02ET01',
     gameId: 'balao_formas',
-    faixaEtaria: '1.5-3',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI02ET01',
     descricaoBncc: 'Compartilhar com outras crianças a exploração de espaços e de objetos com diferentes características.',
@@ -91,7 +89,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EI02EO01',
     gameId: 'termometro_sentimentos_infantil',
-    faixaEtaria: '1.5-3',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI02EO01',
     descricaoBncc: 'Demonstrar atitudes de cuidado e solidariedade na interação com crianças e adultos.',
@@ -103,7 +101,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EI02EO04',
     gameId: 'termometro_sentimentos_infantil',
-    faixaEtaria: '1.5-3',
+    faixaEtaria: '0-3',
     etapaEnsino: 'Educação Infantil',
     habilidadeBncc: 'EI02EO04',
     descricaoBncc: 'Comunicar-se com colegas e adultos, buscando ajuda e expressando sentimentos, necessidades e opiniões.',
@@ -113,7 +111,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     tagsPedagogicas: ['Reconhecimento Facial', 'Comunicação Afetiva', 'Autoexpressão']
   },
 
-  // --- Crianças pequenas (4 a 5 anos e 11 meses) ---
+  // --- Crianças pequenas - Pré-Escola (4 a 5 anos) ---
   {
     id: 'EI03EO01',
     gameId: 'termometro_sentimentos',
@@ -163,11 +161,11 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     tagsPedagogicas: ['Consciência Fonológica', 'Vocabulário', 'Foco Atento']
   },
 
-  // --- Ensino Fundamental I (Anos Iniciais) ---
+  // --- Ensino Fundamental I - Alfabetização (6 a 8 anos) ---
   {
     id: 'EF15LP18',
     gameId: 'cacadores_letras',
-    faixaEtaria: 'fundamental_iniciais',
+    faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF15LP18',
     descricaoBncc: 'Relacionar elementos sonoros (sílabas, fonemas, partes de palavras) com sua representação escrita.',
@@ -179,7 +177,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EF01LP08',
     gameId: 'cacadores_letras',
-    faixaEtaria: 'fundamental_iniciais',
+    faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF01LP08',
     descricaoBncc: 'Relacionar elementos sonoros de palavras com sua representação escrita.',
@@ -191,7 +189,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EF15AR02',
     gameId: 'quebra_cabeca_formas',
-    faixaEtaria: 'fundamental_iniciais',
+    faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF15AR02',
     descricaoBncc: 'Explorar e reconhecer elementos constitutivos das artes visuais (ponto, linha, forma, cor, espaço, movimento etc.).',
@@ -203,7 +201,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EF01MA14',
     gameId: 'quebra_cabeca_formas',
-    faixaEtaria: 'fundamental_iniciais',
+    faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF01MA14',
     descricaoBncc: 'Identificar e nomear figuras geométricas planas (círculo, quadrado, retângulo e triângulo) em desenhos e objetos.',
@@ -215,7 +213,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EF01MA01',
     gameId: 'reino_numeros',
-    faixaEtaria: 'fundamental_iniciais',
+    faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF01MA01',
     descricaoBncc: 'Utilizar números naturais como indicadores de quantidade ou de ordem em diferentes situações cotidianas.',
@@ -227,7 +225,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EF01MA04',
     gameId: 'reino_numeros',
-    faixaEtaria: 'fundamental_iniciais',
+    faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF01MA04',
     descricaoBncc: 'Contar a quantidade de objetos de coleções de até 20 elementos e apresentar o resultado por registros verbais e simbólicos.',
@@ -237,35 +235,11 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     tagsPedagogicas: ['Adição Básica', 'Associação de Grupos', 'Subtração Ilustrada']
   },
 
-  // --- Ensino Fundamental II (Anos Finais) ---
-  {
-    id: 'EF06ER07',
-    gameId: 'detetive_social',
-    faixaEtaria: 'fundamental_finais',
-    etapaEnsino: 'Ensino Fundamental II',
-    habilidadeBncc: 'EF06ER07',
-    descricaoBncc: 'Avaliar e exercitar caminhos éticos para a convivência social em comunidades pluralistas e inclusivas.',
-    subject: 'Ensino Religioso / Socioemocional',
-    eixoCognitivo: 'Socioemocional',
-    nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Ética', 'Cidadania', 'Inclusão Social']
-  },
-  {
-    id: 'EF08ER04',
-    gameId: 'detetive_social',
-    faixaEtaria: 'fundamental_finais',
-    etapaEnsino: 'Ensino Fundamental II',
-    habilidadeBncc: 'EF08ER04',
-    descricaoBncc: 'Debater sobre a diversidade cultural e o respeito às diferenças individuais como base democrática.',
-    subject: 'Ensino Religioso / Socioemocional',
-    eixoCognitivo: 'Socioemocional',
-    nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Respeito à Diversidade', 'Pensamento Crítico', 'Cooperação']
-  },
+  // --- Ensino Fundamental I - Intermediários (9 a 12 anos) ---
   {
     id: 'EF06MA09',
     gameId: 'desafio_sequencias',
-    faixaEtaria: 'fundamental_finais',
+    faixaEtaria: '9-12',
     etapaEnsino: 'Ensino Fundamental II',
     habilidadeBncc: 'EF06MA09',
     descricaoBncc: 'Resolver e elaborar problemas que envolvam números fracionários ou sequências recursivas estruturadas.',
@@ -277,7 +251,7 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
   {
     id: 'EF08MA11',
     gameId: 'desafio_sequencias',
-    faixaEtaria: 'fundamental_finais',
+    faixaEtaria: '9-12',
     etapaEnsino: 'Ensino Fundamental II',
     habilidadeBncc: 'EF08MA11',
     descricaoBncc: 'Identificar e criar expressões que descrevam regularidades em sequências de figuras ou padrões numéricos.',
@@ -285,5 +259,31 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Difícil',
     tagsPedagogicas: ['Reconhecimento de Padrões', 'Estruturas de Decisão', 'Tangível']
+  },
+
+  // --- Ensino Fundamental II - Anos Finais (13+ anos) ---
+  {
+    id: 'EF06ER07',
+    gameId: 'detetive_social',
+    faixaEtaria: '13+',
+    etapaEnsino: 'Ensino Fundamental II',
+    habilidadeBncc: 'EF06ER07',
+    descricaoBncc: 'Avaliar e exercitar caminhos éticos para a convivência social em comunidades pluralistas e inclusivas.',
+    subject: 'Ensino Religioso / Socioemocional',
+    eixoCognitivo: 'Socioemocional',
+    nivelDificuldade: 'Adaptativo',
+    tagsPedagogicas: ['Ética', 'Cidadania', 'Inclusão Social']
+  },
+  {
+    id: 'EF08ER04',
+    gameId: 'detetive_social',
+    faixaEtaria: '13+',
+    etapaEnsino: 'Ensino Fundamental II',
+    habilidadeBncc: 'EF08ER04',
+    descricaoBncc: 'Debater sobre a diversidade cultural e o respeito às diferenças individuais como base democrática.',
+    subject: 'Ensino Religioso / Socioemocional',
+    eixoCognitivo: 'Socioemocional',
+    nivelDificuldade: 'Adaptativo',
+    tagsPedagogicas: ['Respeito à Diversidade', 'Pensamento Crítico', 'Cooperação']
   }
 ];

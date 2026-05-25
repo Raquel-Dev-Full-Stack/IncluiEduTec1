@@ -3,7 +3,7 @@ export interface GameDefinition {
   name: string;
   description: string;
   bioma: 'alfabetizacao' | 'cognitivo' | 'emocoes' | 'sensorial' | 'matematico';
-  ageGroup: '0-1.5' | '1.5-3' | '4-5' | 'fundamental_iniciais' | 'fundamental_finais';
+  ageGroup: '0-3' | '4-5' | '6-8' | '9-12' | '13+';
   ageLabel: string;
   fieldOfExperience?: string; // Educação Infantil
   subject?: string; // Ensino Fundamental
@@ -16,14 +16,14 @@ export interface GameDefinition {
 }
 
 export const GAMES_CATALOG: GameDefinition[] = [
-  // --- 0 a 1 ano e 6 meses (Bebês) ---
+  // --- 0 a 3 anos (Bebês e Crianças bem pequenas) ---
   {
     id: 'orquestra_sons',
     name: 'Orquestra dos Sons Sensoriais',
     description: 'Estímulo auditivo e causa-efeito associando toques suaves na tela com sons calmos de animais e instrumentos.',
     bioma: 'sensorial',
-    ageGroup: '0-1.5',
-    ageLabel: '0 a 1 ano e 6 meses',
+    ageGroup: '0-3',
+    ageLabel: '0 a 3 anos',
     fieldOfExperience: 'Traços, sons, cores e formas',
     bnccSkills: ['EI01TS01', 'EI01TS03'],
     pedagogicalObjectives: [
@@ -41,8 +41,8 @@ export const GAMES_CATALOG: GameDefinition[] = [
     name: 'Floresta de Toques Luminosos',
     description: 'Atividade sensorial onde o toque na tela gera explosões suaves de cores pastéis sem ruídos agressivos, ideal para estimulação visomotora.',
     bioma: 'sensorial',
-    ageGroup: '0-1.5',
-    ageLabel: '0 a 1 ano e 6 meses',
+    ageGroup: '0-3',
+    ageLabel: '0 a 3 anos',
     fieldOfExperience: 'Corpo, gestos e movimentos',
     bnccSkills: ['EI01CG05', 'EI01TS02'],
     pedagogicalObjectives: [
@@ -55,15 +55,13 @@ export const GAMES_CATALOG: GameDefinition[] = [
     stimuli: ['Visual', 'Tátil', 'Calmante'],
     skillsWorked: ['Foco Visual', 'Coordenação Visomotora', 'Regulação Sensorial']
   },
-
-  // --- 1 ano e 7 meses a 3 anos e 11 meses ---
   {
     id: 'balao_formas',
     name: 'Estourador de Formas Geométricas',
     description: 'Balões flutuam na tela carregando formas simples. O mediador auxilia o aluno a identificar e estourar os balões correspondentes.',
     bioma: 'cognitivo',
-    ageGroup: '1.5-3',
-    ageLabel: '1 ano e 7 meses a 3 anos e 11 meses',
+    ageGroup: '0-3',
+    ageLabel: '0 a 3 anos',
     fieldOfExperience: 'Espaços, tempos, quantidades, relações e transformações',
     bnccSkills: ['EI02ET05', 'EI02ET01'],
     pedagogicalObjectives: [
@@ -81,8 +79,8 @@ export const GAMES_CATALOG: GameDefinition[] = [
     name: 'Cidade das Emoções: Carinhas Felizes',
     description: 'Exercício lúdico para associar rostos desenhados com sentimentos básicos como alegria, tristeza e surpresa.',
     bioma: 'emocoes',
-    ageGroup: '1.5-3',
-    ageLabel: '1 ano e 7 meses a 3 anos e 11 meses',
+    ageGroup: '0-3',
+    ageLabel: '0 a 3 anos',
     fieldOfExperience: 'O eu, o outro e o nós',
     bnccSkills: ['EI02EO01', 'EI02EO04'],
     pedagogicalObjectives: [
@@ -96,14 +94,14 @@ export const GAMES_CATALOG: GameDefinition[] = [
     skillsWorked: ['Reconhecimento Facial', 'Empatia', 'Vocabulário Emocional']
   },
 
-  // --- 4 a 5 anos e 11 meses ---
+  // --- 4 a 5 anos (Crianças pequenas - Pré-Escola) ---
   {
     id: 'termometro_sentimentos',
     name: 'Termômetro das Emoções Adaptativo',
     description: 'Desafio interativo que apresenta situações cotidianas de conflito ou alegria e pede que o aluno selecione a reação emocional correta.',
     bioma: 'emocoes',
     ageGroup: '4-5',
-    ageLabel: '4 a 5 anos e 11 meses',
+    ageLabel: '4 a 5 anos',
     fieldOfExperience: 'O eu, o outro e o nós',
     bnccSkills: ['EI03EO01', 'EI03EO02', 'EI03EO04'],
     pedagogicalObjectives: [
@@ -122,7 +120,7 @@ export const GAMES_CATALOG: GameDefinition[] = [
     description: 'Encontre e selecione objetos no cenário virtual que começam com a letra indicada, estimulando fonética e vocabulário.',
     bioma: 'alfabetizacao',
     ageGroup: '4-5',
-    ageLabel: '4 a 5 anos e 11 meses',
+    ageLabel: '4 a 5 anos',
     fieldOfExperience: 'Escuta, fala, pensamento e imaginação',
     bnccSkills: ['EI03EF09', 'EI03EF03'],
     pedagogicalObjectives: [
@@ -136,14 +134,14 @@ export const GAMES_CATALOG: GameDefinition[] = [
     skillsWorked: ['Consciência Fonológica', 'Percepção Visual', 'Vocabulário']
   },
 
-  // --- Ensino Fundamental Anos Iniciais (1º ao 5º ano) ---
+  // --- 6 a 8 anos (Ensino Fundamental Anos Iniciais - Ciclo de Alfabetização) ---
   {
     id: 'cacadores_letras',
     name: 'Caçadores de Letras e Grafemas',
     description: 'Complete as lacunas das palavras de maneira dinâmica e interativa escolhendo as combinações de letras corretas sob pressão de tempo adaptada.',
     bioma: 'alfabetizacao',
-    ageGroup: 'fundamental_iniciais',
-    ageLabel: 'Ensino Fundamental Anos Iniciais',
+    ageGroup: '6-8',
+    ageLabel: '6 a 8 anos',
     subject: 'Língua Portuguesa',
     bnccSkills: ['EF15LP18', 'EF01LP08', 'EF01LP09'],
     pedagogicalObjectives: [
@@ -161,8 +159,8 @@ export const GAMES_CATALOG: GameDefinition[] = [
     name: 'Laboratório Cognitivo: Quebra-Cabeça de Formas',
     description: 'Ordene e monte formas geométricas complexas e tangram para desvendar imagens abstratas na tela, trabalhando espaço e simetria.',
     bioma: 'cognitivo',
-    ageGroup: 'fundamental_iniciais',
-    ageLabel: 'Ensino Fundamental Anos Iniciais',
+    ageGroup: '6-8',
+    ageLabel: '6 a 8 anos',
     subject: 'Matemática',
     bnccSkills: ['EF15AR02', 'EF01MA14', 'EF02MA15'],
     pedagogicalObjectives: [
@@ -180,8 +178,8 @@ export const GAMES_CATALOG: GameDefinition[] = [
     name: 'Reino dos Números e Quantidades',
     description: 'Ajude os personagens a alimentar os animais da fazenda dando a quantidade exata de alimentos, trabalhando operações lógicas e contagem.',
     bioma: 'matematico',
-    ageGroup: 'fundamental_iniciais',
-    ageLabel: 'Ensino Fundamental Anos Iniciais',
+    ageGroup: '6-8',
+    ageLabel: '6 a 8 anos',
     subject: 'Matemática',
     bnccSkills: ['EF01MA01', 'EF01MA04', 'EF02MA01'],
     pedagogicalObjectives: [
@@ -195,33 +193,14 @@ export const GAMES_CATALOG: GameDefinition[] = [
     skillsWorked: ['Conceito Numérico', 'Adição e Subtração Básicas', 'Correspondência de Grupos']
   },
 
-  // --- Ensino Fundamental Anos Finais (6º ao 9º ano) ---
-  {
-    id: 'detetive_social',
-    name: 'Detetive Social e Cidadania',
-    description: 'O aluno assume o papel de um mediador escolar resolvendo dilemas éticos, situações de cooperação e inclusão na sua comunidade escolar.',
-    bioma: 'emocoes',
-    ageGroup: 'fundamental_finais',
-    ageLabel: 'Ensino Fundamental Anos Finais',
-    subject: 'Desenvolvimento Cognitivo e Social',
-    bnccSkills: ['EF06ER07', 'EF08ER04', 'EF09ER01'],
-    pedagogicalObjectives: [
-      'Analisar relações interpessoais e formular resoluções pacíficas de conflitos.',
-      'Debater sobre diversidade, respeito e inclusão na sociedade.',
-      'Fortalecer a tomada de decisão ética sob múltiplos pontos de vista.'
-    ],
-    cognitiveLevel: 'Avaliar',
-    difficulty: 'Adaptativo',
-    stimuli: ['Visual', 'Foco', 'Calmante'],
-    skillsWorked: ['Pensamento Crítico', 'Raciocínio Ético', 'Mediação e Socialização']
-  },
+  // --- 9 a 12 anos (Ensino Fundamental - Anos Intermediários) ---
   {
     id: 'desafio_sequencias',
     name: 'Desafio das Sequências e Lógica Computacional',
     description: 'Ordene blocos lógicos e crie fluxogramas visuais simples para guiar um robozinho até o seu objetivo, estimulando lógica computacional.',
     bioma: 'cognitivo',
-    ageGroup: 'fundamental_finais',
-    ageLabel: 'Ensino Fundamental Anos Finais',
+    ageGroup: '9-12',
+    ageLabel: '9 a 12 anos',
     subject: 'Matemática',
     bnccSkills: ['EF06MA09', 'EF08MA11'],
     pedagogicalObjectives: [
@@ -233,5 +212,26 @@ export const GAMES_CATALOG: GameDefinition[] = [
     difficulty: 'Difícil',
     stimuli: ['Visual', 'Foco'],
     skillsWorked: ['Lógica Algorítmica', 'Pensamento Estruturado', 'Decomposição de Problemas']
+  },
+
+  // --- 13+ anos (Ensino Fundamental II - Anos Finais) ---
+  {
+    id: 'detetive_social',
+    name: 'Detetive Social e Cidadania',
+    description: 'O aluno assume o papel de um mediador escolar resolvendo dilemas éticos, situações de cooperação e inclusão na sua comunidade escolar.',
+    bioma: 'emocoes',
+    ageGroup: '13+',
+    ageLabel: '13 anos ou mais',
+    subject: 'Desenvolvimento Cognitivo e Social',
+    bnccSkills: ['EF06ER07', 'EF08ER04', 'EF09ER01'],
+    pedagogicalObjectives: [
+      'Analisar relações interpessoais e formular resoluções pacíficas de conflitos.',
+      'Debater sobre diversidade, respeito e inclusão na sociedade.',
+      'Fortalecer a tomada de decisão ética sob múltiplos pontos de vista.'
+    ],
+    cognitiveLevel: 'Avaliar',
+    difficulty: 'Adaptativo',
+    stimuli: ['Visual', 'Foco', 'Calmante'],
+    skillsWorked: ['Pensamento Crítico', 'Raciocínio Ético', 'Mediação e Socialização']
   }
 ];

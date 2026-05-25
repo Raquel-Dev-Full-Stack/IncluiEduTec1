@@ -16,9 +16,10 @@ interface IncluiGamerPlayProps {
   };
   preProfile?: PreGamerProfile | null;
   onClose: () => void;
+  ageGroup?: string;
 }
 
-export default function IncluiGamerPlay({ game, student, user, accessibility, preProfile, onClose }: IncluiGamerPlayProps) {
+export default function IncluiGamerPlay({ game, student, user, accessibility, preProfile, onClose, ageGroup }: IncluiGamerPlayProps) {
   // Estados do Jogo
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [totalRounds, setTotalRounds] = useState<number>(5);
@@ -29,6 +30,9 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
 
   // Questão/Cenário atual do Jogo
   const [gameState, setGameState] = useState<any>(null);
+
+  // Motor Etário Pedagógico (Fase 4): Timer Competitivo
+  const [timeLeft, setTimeLeft] = useState<number>(12);
 
   // Métricas do Adaptive Cognitive Engine (ACE)
   const metrics = useRef({
@@ -165,6 +169,30 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     let tamanho = 'normal';
     let ajusteVisual = false;
     let tempoLimite = accessibility.tempoEstendido ? 20 : 12;
+    let rodadasCalculadas = 5;
+
+    // 1. Modulação por Faixa Etária (Motor Etário Pedagógico)
+    const activeAgeGroup = ageGroup || game.ageGroup;
+    
+    if (activeAgeGroup === '0-3') {
+      rodadasCalculadas = 3;
+      opcoesIniciais = 2; // Mínimo de 2 opções fixas para bebês
+      tamanho = 'grande'; // Botões gigantes
+    } else if (activeAgeGroup === '4-5') {
+      rodadasCalculadas = 3;
+      opcoesIniciais = 3;
+    } else if (activeAgeGroup === '6-8') {
+      rodadasCalculadas = 5;
+      opcoesIniciais = 3;
+    } else if (activeAgeGroup === '9-12') {
+      rodadasCalculadas = 7;
+      opcoesIniciais = 4;
+    } else if (activeAgeGroup === '13+') {
+      rodadasCalculadas = 7;
+      opcoesIniciais = 4;
+    }
+
+    setTotalRounds(rodadasCalculadas);
 
     if (preProfile) {
       console.log("[ACE] Calibrando motor de decisão local baseado no Perfil Cognitivo Pré-Jogo:", preProfile);
@@ -179,7 +207,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       const motoraFina = preProfile.coordenacao.motoraFina;
       const touchscreen = preProfile.coordenacao.touchscreen;
       const mouse = preProfile.coordenacao.mouse;
-      tamanho = (motoraFina < 3 || (!touchscreen && mouse)) ? 'grande' : 'normal';
+      tamanho = (motoraFina < 3 || (!touchscreen && mouse)) ? 'grande' : (activeAgeGroup === '0-3' ? 'grande' : 'normal');
 
       // 3. Modulação Cognitiva
       const gameSlug = game.id.toLowerCase();
@@ -202,11 +230,15 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       if (tempoFoco < 5) {
         setTotalRounds(3);
       } else {
-        setTotalRounds(5);
+        setTotalRounds(rodadasCalculadas);
       }
 
-      tempoLimite = (accessibility.tempoEstendido || tempoFoco < 5 || frustracaoAlta) ? 25 : 12;
+      tempoLimite = (accessibility.tempoEstendido || tempoFoco < 5 || frustracaoAlta) ? 25 : (activeAgeGroup === '9-12' || activeAgeGroup === '13+' ? 15 : 12);
       ajusteVisual = ajusteVisual || frustracaoAlta;
+    } else {
+      if (activeAgeGroup === '9-12' || activeAgeGroup === '13+') {
+        tempoLimite = 15;
+      }
     }
 
     setDifficultyModulation({
@@ -218,7 +250,51 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
 
     // Inicia a primeira rodada
     generateNewRound(1, 1, opcoesIniciais);
-  }, [preProfile, accessibility.tempoEstendido]);
+  }, [preProfile, accessibility.tempoEstendido, ageGroup, game.ageGroup]);
+
+  // Efeito para contagem do Timer Competitivo (Fase 4)
+  const activeAgeGroup = ageGroup || game.ageGroup;
+  const hideTimer = activeAgeGroup === '0-3' || activeAgeGroup === '4-5' || accessibility.modoCalmante;
+
+  useEffect(() => {
+    if (gameFinished || hideTimer) return;
+
+    setTimeLeft(difficultyModulation.tempoLimiteS);
+    
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentRound, difficultyModulation.tempoLimiteS, gameFinished, hideTimer]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && !gameFinished && !hideTimer) {
+      // Tempo esgotado
+      metrics.current.erros++;
+      metrics.current.errosSeguidos++;
+      metrics.current.acertosSeguidos = 0;
+      errorsInCurrentRound.current++;
+
+      setFeedbackMsg({ text: 'Tempo esgotado! Vamos tentar outra questão.', type: 'info' });
+      speakCommand("O tempo acabou. Vamos tentar mais uma vez.");
+
+      setTimeout(() => {
+        setFeedbackMsg({ text: '', type: null });
+        if (currentRound < totalRounds) {
+          setCurrentRound(prev => prev + 1);
+          generateNewRound(currentRound + 1, level, difficultyModulation.numeroOpcoes);
+        } else {
+          finishGame();
+        }
+      }, 2000);
+    }
+  }, [timeLeft, gameFinished, hideTimer]);
 
   // Tratar resposta do Aluno
   const handleSelectOption = (opcao: string) => {
@@ -507,10 +583,20 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     <div className={`p-10 rounded-[3rem] border shadow-2xl relative overflow-hidden transition-colors duration-500 ${
       accessibility.modoCalmante 
         ? 'bg-slate-950/90 border-slate-900 text-slate-300' 
-        : 'bg-slate-900 border-slate-800 text-white'
+        : activeAgeGroup === '0-3'
+          ? 'bg-[#0f1b29] border-sky-950/30 text-sky-200'
+          : activeAgeGroup === '9-12' || activeAgeGroup === '13+'
+            ? 'bg-slate-950 border-purple-500/25 shadow-purple-500/5 text-purple-100'
+            : 'bg-slate-900 border-slate-800 text-white'
     }`}>
       {/* Background Glow */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className={`absolute top-0 right-0 w-80 h-80 rounded-full blur-3xl pointer-events-none ${
+        activeAgeGroup === '0-3'
+          ? 'bg-sky-500/5'
+          : activeAgeGroup === '9-12' || activeAgeGroup === '13+'
+            ? 'bg-purple-600/10'
+            : 'bg-gradient-to-tr from-indigo-500/10 to-purple-500/10'
+      }`}></div>
 
       {/* Header do Jogo */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-6 mb-8 z-10 relative">
@@ -551,6 +637,16 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               Pontuação: <span className="text-amber-400">{score} XP</span>
             </div>
           </div>
+
+          {/* Barra Dinâmica do Timer Competitivo (Fase 4) */}
+          {!hideTimer && (
+            <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-850">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-1000"
+                style={{ width: `${(timeLeft / difficultyModulation.tempoLimiteS) * 100}%` }}
+              ></div>
+            </div>
+          )}
 
           {/* Feedback reativo visual */}
           {feedbackMsg.text && (
@@ -613,14 +709,18 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
                   <button
                     key={i}
                     onClick={() => handleSelectOption(opcao)}
-                    className={`py-4 px-6 bg-slate-850/60 hover:bg-slate-800 border rounded-2xl font-black text-sm text-center transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-2 ${
+                    className={`py-4 px-6 rounded-2xl font-black text-sm text-center transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-2 ${
                       accessibility.altoContraste 
-                        ? 'border-yellow-400 text-yellow-300 bg-black hover:bg-yellow-400 hover:text-black font-extrabold text-base' 
-                        : ehOpcaoCorreta(opcao) && hasAjuste 
-                          ? 'border-indigo-500/70 text-indigo-300 bg-indigo-950/20' 
-                          : 'border-slate-800 text-white hover:border-indigo-500/40 hover:text-indigo-400'
+                        ? 'border-yellow-400 text-yellow-300 bg-black hover:bg-yellow-400 hover:text-black font-extrabold text-base border-2' 
+                        : activeAgeGroup === '0-3'
+                          ? 'bg-sky-950/40 hover:bg-sky-900/60 border-sky-900/50 text-sky-200 hover:border-sky-400/40 border'
+                          : activeAgeGroup === '9-12' || activeAgeGroup === '13+'
+                            ? 'bg-slate-950/60 hover:bg-purple-950/20 border-slate-800 hover:border-purple-500/50 hover:shadow-purple-500/10 text-purple-200/90 border'
+                            : ehOpcaoCorreta(opcao) && hasAjuste 
+                              ? 'border-indigo-500/70 text-indigo-300 bg-indigo-950/20 border' 
+                              : 'bg-slate-850/60 hover:bg-slate-800 border border-slate-800 text-white hover:border-indigo-500/40 hover:text-indigo-400'
                     } ${
-                      isGrande ? 'py-6 text-base md:text-lg border-2' : ''
+                      isGrande ? 'py-6 px-8 text-base md:text-lg border-2' : ''
                     }`}
                   >
                     {opcao}

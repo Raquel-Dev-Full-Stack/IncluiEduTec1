@@ -34,6 +34,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
 
   // Expansão Pedagógica BNCC (Fase 3)
   const [ageWarningGame, setAgeWarningGame] = useState<GameDefinition | null>(null);
+  const [ageBlockGame, setAgeBlockGame] = useState<GameDefinition | null>(null);
   const [cognitiveScore, setCognitiveScore] = useState<any>(null);
 
   // Carregamento de Scores Cognitivos Históricos
@@ -78,23 +79,34 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
   }, [selectedStudentId]);
 
   const handleLaunchGame = (game: GameDefinition) => {
-    // Verificar compatibilidade de faixa etária BNCC
-    const isGameInfantil = ['0-1.5', '1.5-3', '4-5'].includes(game.ageGroup);
-    const isStudentInfantil = ['0-1.5', '1.5-3', '4-5'].includes(ageGroupKey || '');
-
-    const isGameFundamentalFinais = game.ageGroup === 'fundamental_finais';
-    const isStudentFundamentalFinais = ageGroupKey === 'fundamental_finais';
-
-    // Incompatibilidade grave
-    const isGraveIncompatible = 
-      (isStudentInfantil && isGameFundamentalFinais) || 
-      (isStudentFundamentalFinais && game.ageGroup === '0-1.5');
-
-    if (isGraveIncompatible) {
-      setAgeWarningGame(game);
-    } else {
+    if (!ageGroupKey) {
       setPendingGame(game);
+      return;
     }
+
+    const AGE_GROUPS_ORDER = ['0-3', '4-5', '6-8', '9-12', '13+'];
+    const studentIdx = AGE_GROUPS_ORDER.indexOf(ageGroupKey);
+    const gameIdx = AGE_GROUPS_ORDER.indexOf(game.ageGroup);
+
+    if (studentIdx === -1 || gameIdx === -1) {
+      setPendingGame(game);
+      return;
+    }
+
+    // Regra 1: Bloqueio Pedagógico Absoluto (diferença de 2 faixas etárias ou mais para cima)
+    if (gameIdx - studentIdx >= 2) {
+      setAgeBlockGame(game);
+      return;
+    }
+
+    // Regra 2: Alerta de Mediação / Subestimulação (studentIdx > gameIdx) ou Pequeno Desvio Superior (gameIdx - studentIdx === 1)
+    if (studentIdx > gameIdx || gameIdx - studentIdx === 1) {
+      setAgeWarningGame(game);
+      return;
+    }
+
+    // Regra 3: Faixa etária correspondente exata
+    setPendingGame(game);
   };
 
   const handleForceLaunchGame = (game: GameDefinition) => {
@@ -141,15 +153,11 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     if (!selectedStudent) return null;
     const age = studentAge;
     
-    if (age <= 1.5) return '0-1.5';
-    if (age <= 3.9) return '1.5-3';
+    if (age <= 3.9) return '0-3';
     if (age <= 5.9) return '4-5';
-    // Se o ano de escolaridade tiver "ano" ou "Fundamental"
-    const grade = (selectedStudent.grade || '').toLowerCase();
-    if (grade.includes('6') || grade.includes('7') || grade.includes('8') || grade.includes('9') || age >= 11) {
-      return 'fundamental_finais';
-    }
-    return 'fundamental_iniciais';
+    if (age <= 8.9) return '6-8';
+    if (age <= 12.9) return '9-12';
+    return '13+';
   }, [selectedStudent, studentAge]);
 
   // Sistema de Recomendação Pedagógica Inteligente Local (Expansão Fase 3)
@@ -319,6 +327,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           user={user}
           accessibility={accessibility}
           preProfile={preProfile}
+          ageGroup={ageGroupKey || undefined}
           onClose={() => {
             setActiveGame(null);
             setPreProfile(null);
@@ -508,10 +517,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-black text-white tracking-tight">Desvio de Diretriz BNCC</h3>
+              <h3 className="text-xl font-black text-white tracking-tight">Adequação Pedagógica</h3>
               <p className="text-slate-400 text-xs font-semibold leading-relaxed">
                 Esta atividade é classificada para a faixa de <span className="text-amber-400 font-bold">{ageWarningGame.ageLabel}</span>. 
-                O aluno selecionado, <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span>, possui faixa etária correspondente de <span className="text-indigo-400 font-bold">{selectedStudent ? studentAge + ' anos' : ''}</span>.
+                O aluno selecionado, <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos), possui perfil correspondente à faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
               </p>
             </div>
 
@@ -538,6 +547,50 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 className="w-full py-3.5 bg-gradient-to-tr from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-950/20"
               >
                 Forçar Inicialização (Mediação)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Bloqueio Pedagógico Absoluto por Faixa Etária BNCC */}
+      {ageBlockGame && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-rose-500/30 p-8 rounded-[3rem] shadow-2xl max-w-md w-full text-center space-y-6 relative overflow-hidden">
+            {/* Glow Decorativo Vermelho */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-2xl flex items-center justify-center mx-auto text-2xl animate-bounce">
+              <i className="fa-solid fa-ban"></i>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white tracking-tight">Atividade Restrita</h3>
+              <p className="text-slate-400 text-xs font-semibold leading-relaxed">
+                Complexidade cognitiva incompatível com a etapa de desenvolvimento do aluno.
+              </p>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                O aluno <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos) está na faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
+                O jogo <span className="text-rose-400 font-bold">{ageBlockGame.name}</span> é exclusivo para a faixa de <span className="text-rose-400 font-bold">{ageBlockGame.ageLabel}</span>.
+              </p>
+            </div>
+
+            <div className="bg-slate-950/50 p-4 border border-slate-850 rounded-2xl text-left space-y-2">
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Habilidade BNCC Requerida</p>
+              {BNCC_MAPPING_DATA.filter(m => m.gameId === ageBlockGame.id).slice(0, 1).map(item => (
+                <div key={item.id} className="text-xs space-y-1">
+                  <span className="inline-block px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-black rounded-md uppercase tracking-wider">{item.habilidadeBncc}</span>
+                  <p className="text-slate-300 font-semibold leading-relaxed text-[11px]">{item.descricaoBncc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <button
+                onClick={() => setAgeBlockGame(null)}
+                className="w-full py-3.5 bg-gradient-to-tr from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-950/20"
+              >
+                Voltar ao Mapa (Recomendado)
               </button>
             </div>
           </div>
