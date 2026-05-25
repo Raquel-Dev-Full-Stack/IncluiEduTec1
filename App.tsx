@@ -1124,7 +1124,7 @@ export default function App() {
         record_type: recordData.recordType,
         value: recordData.value,
         observation: recordData.observation,
-        created_by: user.auth_user_id || user.id,
+        created_by: user.id || user.auth_user_id,
         shift: recordData.shift || null
       };
 
@@ -2794,7 +2794,7 @@ export default function App() {
       if (!plan.id && plan.classId) {
         const classStudents = students.filter(s => s.classId === plan.classId);
         const today = new Date().toISOString().split('T')[0];
-        const authorId = user.auth_user_id || user.id;
+        const authorId = user.id || user.auth_user_id;
 
         const recordsToSave = classStudents.map(student => ({
           student_id: student.id,
