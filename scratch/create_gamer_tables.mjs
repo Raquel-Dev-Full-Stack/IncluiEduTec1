@@ -13,18 +13,18 @@ const SQL_MIGRATION = `
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS public.game_bncc_mapping (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    game_id VARCHAR(100) UNIQUE NOT NULL,
-    game_name VARCHAR(255) NOT NULL,
-    age_group VARCHAR(50) NOT NULL, -- '0-1.5', '1.5-3', '4-5', 'fundamental_iniciais', 'fundamental_finais'
-    field_of_experience VARCHAR(255),
-    subject VARCHAR(255),
-    bncc_skills JSONB DEFAULT '[]'::jsonb, -- Array de códigos da BNCC
-    pedagogical_objectives TEXT[] DEFAULT '{}'::text[],
-    cognitive_level VARCHAR(50),
-    difficulty VARCHAR(50),
-    stimuli TEXT[] DEFAULT '{}'::text[],
-    skills_worked TEXT[] DEFAULT '{}'::text[],
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    game_id VARCHAR(100) NOT NULL,
+    faixa_etaria VARCHAR(50) NOT NULL, -- '0-1.5', '1.5-3', '4-5', 'fundamental_iniciais', 'fundamental_finais'
+    etapa_ensino VARCHAR(100) NOT NULL, -- 'Educação Infantil', 'Ensino Fundamental I', 'Ensino Fundamental II'
+    habilidade_bncc VARCHAR(50) NOT NULL,
+    descricao_bncc TEXT NOT NULL,
+    campo_experiencia VARCHAR(255), -- Educação Infantil (opcional)
+    subject VARCHAR(255), -- Ensino Fundamental (opcional)
+    eixo_cognitivo VARCHAR(100) NOT NULL, -- 'Alfabetização', 'Raciocínio Lógico', 'Socioemocional', etc.
+    nivel_dificuldade VARCHAR(50) NOT NULL, -- 'Fácil', 'Médio', 'Difícil', 'Adaptativo'
+    tags_pedagogicas TEXT[] DEFAULT '{}'::text[],
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(game_id, habilidade_bncc)
 );
 
 -- =====================================================================

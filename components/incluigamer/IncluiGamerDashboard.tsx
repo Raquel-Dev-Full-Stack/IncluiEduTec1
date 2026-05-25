@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Student } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
+import { BNCC_MAPPING_DATA } from './bnccMappingData';
 import {
   Radar,
   RadarChart,
@@ -13,7 +14,10 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid
+  CartesianGrid,
+  BarChart,
+  Bar,
+  Cell
 } from 'recharts';
 
 interface IncluiGamerDashboardProps {
@@ -130,6 +134,88 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
     ];
   }, [scoresData]);
 
+  // Heatmap de Eixos Pedagógicos da BNCC (Fase 3)
+  const eixosPerformanceData = useMemo(() => {
+    if (!scoresData) return [];
+    
+    const eixosDefault = {
+      'Percepção Sensorial': scoresData.coordenacao * 0.9 + 5,
+      'Coordenação Visomotora': scoresData.coordenacao,
+      'Socioemocional': scoresData.emocional,
+      'Raciocínio Lógico': Math.round((scoresData.foco + scoresData.desenvolvimento_pedagogico) / 2),
+      'Alfabetização': scoresData.desenvolvimento_pedagogico
+    };
+
+    const eixosCount: any = {};
+    const eixosSum: any = {};
+
+    if (Array.isArray(scoresData.skills_developed)) {
+      scoresData.skills_developed.forEach((s: any) => {
+        const mapping = BNCC_MAPPING_DATA.find(m => m.habilidadeBncc === s.code);
+        if (mapping) {
+          const eixo = mapping.eixoCognitivo;
+          eixosCount[eixo] = (eixosCount[eixo] || 0) + 1;
+          eixosSum[eixo] = (eixosSum[eixo] || 0) + s.proficiency;
+        }
+      });
+    }
+
+    return [
+      { name: 'Alfabetização', val: eixosCount['Alfabetização'] ? Math.round(eixosSum['Alfabetização'] / eixosCount['Alfabetização']) : eixosDefault['Alfabetização'], icon: 'fa-book-open', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-950/15' },
+      { name: 'Raciocínio Lógico', val: eixosCount['Raciocínio Lógico'] ? Math.round(eixosSum['Raciocínio Lógico'] / eixosCount['Raciocínio Lógico']) : eixosDefault['Raciocínio Lógico'], icon: 'fa-brain', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-indigo-950/15' },
+      { name: 'Socioemocional', val: eixosCount['Socioemocional'] ? Math.round(eixosSum['Socioemocional'] / eixosCount['Socioemocional']) : eixosDefault['Socioemocional'], icon: 'fa-heart', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-950/15' },
+      { name: 'Percepção Sensorial', val: eixosCount['Percepção Sensorial'] ? Math.round(eixosSum['Percepção Sensorial'] / eixosCount['Percepção Sensorial']) : eixosDefault['Percepção Sensorial'], icon: 'fa-eye', color: 'bg-sky-500/10 text-sky-400 border-sky-500/20 shadow-sky-950/15' },
+      { name: 'Coordenação Visomotora', val: eixosCount['Coordenação Visomotora'] ? Math.round(eixosSum['Coordenação Visomotora'] / eixosCount['Coordenação Visomotora']) : eixosDefault['Coordenação Visomotora'], icon: 'fa-hand', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-950/15' }
+    ];
+  }, [scoresData]);
+
+  // Estante de Selos e Badges de Desenvolvimento (Fase 3)
+  const studentBadges = useMemo(() => {
+    if (!scoresData) return [];
+    
+    const badges = [];
+    const performances: any = {};
+    eixosPerformanceData.forEach((e: any) => {
+      performances[e.name] = e.val;
+    });
+
+    if (performances['Alfabetização'] >= 70) {
+      badges.push({ name: 'Mestre da Alfabetização', desc: 'Proficiência em reconhecimento de fonemas e grafemas.', icon: 'fa-award', color: 'from-emerald-600 to-teal-600' });
+    }
+    if (performances['Raciocínio Lógico'] >= 70) {
+      badges.push({ name: 'Detetive da Lógica', desc: 'Excelente discernimento geométrico e de quantidades.', icon: 'fa-brain', color: 'from-indigo-600 to-indigo-700' });
+    }
+    if (performances['Socioemocional'] >= 70) {
+      badges.push({ name: 'Guardião das Emoções', desc: 'Reconhecimento de reações sociais e regulação emocional.', icon: 'fa-heart', color: 'from-rose-600 to-pink-600' });
+    }
+    if (performances['Percepção Sensorial'] >= 70) {
+      badges.push({ name: 'Explorador Sensorial', desc: 'Excepcional tolerância e resposta a estímulos.', icon: 'fa-eye', color: 'from-sky-600 to-cyan-600' });
+    }
+    if (performances['Coordenação Visomotora'] >= 70) {
+      badges.push({ name: 'Campeão Visomotor', desc: 'Toque preciso e rápida reação olho-mão.', icon: 'fa-hand-pointer', color: 'from-amber-600 to-yellow-600' });
+    }
+    if (scoresData.foco >= 75) {
+      badges.push({ name: 'Foco de Ouro', desc: 'Mais de 10 rodadas consecutivas de atenção ativa.', icon: 'fa-star', color: 'from-purple-600 to-purple-700' });
+    }
+    if (scoresData.desenvolvimento_pedagogico >= 60 || badges.length === 0) {
+      badges.push({ name: 'Gamer Inclusivo', desc: 'Ingresso nas atividades gamificadas adaptativas.', icon: 'fa-gamepad', color: 'from-slate-600 to-slate-700' });
+    }
+
+    return badges;
+  }, [scoresData, eixosPerformanceData]);
+
+  // Gráfico de Proficiência BNCC (Fase 3)
+  const skillsChartData = useMemo(() => {
+    if (!scoresData || !Array.isArray(scoresData.skills_developed)) return [];
+    
+    return scoresData.skills_developed.map((s: any) => {
+      return {
+        code: s.code,
+        proficiencia: s.proficiency,
+      };
+    });
+  }, [scoresData]);
+
   // Gerar parecer comportamental automatizado do Adaptive Cognitive Engine (ACE)
   const aceBehavioralReport = useMemo(() => {
     if (!scoresData) return '';
@@ -203,19 +289,134 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
         </div>
       ) : (
         /* Visualização do Dashboard Cognitivo */
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
-          {/* Grid de Gráficos e Teia */}
+          {/* BARRA DE METRICAS PREMIUM E DESEMPENHO ESTRATÉGICO */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-5 bg-slate-950/40 border border-slate-850 rounded-3xl space-y-1">
+              <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Tempo de Estimulação</span>
+              <div className="text-xl font-black text-white tracking-tight flex items-baseline gap-1">
+                {Math.round((scoresData.total_play_time || 0) / 60)} <span className="text-[10px] text-slate-400 font-bold">minutos</span>
+              </div>
+            </div>
+            
+            <div className="p-5 bg-slate-950/40 border border-slate-850 rounded-3xl space-y-1">
+              <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Habilidades BNCC Trabalhadas</span>
+              <div className="text-xl font-black text-indigo-400 tracking-tight">
+                {Array.isArray(scoresData.skills_developed) ? scoresData.skills_developed.length : 0} <span className="text-[10px] text-slate-500 font-bold">habilidades</span>
+              </div>
+            </div>
+
+            <div className="p-5 bg-slate-950/40 border border-slate-850 rounded-3xl space-y-1">
+              <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Pontuação Média Pedagógica</span>
+              <div className="text-xl font-black text-emerald-400 tracking-tight">
+                {scoresData.desenvolvimento_pedagogico || 0} <span className="text-[10px] text-slate-500 font-bold">XP</span>
+              </div>
+            </div>
+
+            <div className="p-5 bg-slate-950/40 border border-slate-850 rounded-3xl space-y-1">
+              <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Selos de Categoria</span>
+              <div className="text-xl font-black text-amber-400 tracking-tight flex items-center gap-1.5">
+                <i className="fa-solid fa-medal"></i>
+                {studentBadges.length} <span className="text-[10px] text-slate-500 font-bold">conquistas</span>
+              </div>
+            </div>
+          </div>
+
+          {/* GRID CENTRAL DE HEATMAP PEDAGÓGICO E BADGES */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Heatmap Pedagógico por Eixo da BNCC */}
+            <div className="lg:col-span-2 p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm flex flex-col justify-between">
+              <div>
+                <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <i className="fa-solid fa-cubes text-emerald-400"></i> Heatmap de Desempenho por Eixo Pedagógico
+                </h4>
+                <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
+                  Cruzamento em tempo real do aproveitamento do estudante nos eixos norteadores curriculares da BNCC.
+                </p>
+              </div>
+
+              <div className="space-y-4 mt-2">
+                {eixosPerformanceData.map((eixo: any, idx: number) => (
+                  <div key={idx} className="p-4 bg-slate-900/60 border border-slate-850/60 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-inner">
+                    <div className="flex items-center gap-3 w-full sm:w-1/3">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${eixo.color}`}>
+                        <i className={`fa-solid ${eixo.icon} text-xs`}></i>
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-200">{eixo.name}</p>
+                        <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Mapeado BNCC</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 w-full flex items-center gap-3">
+                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-850/80">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-1000 ${
+                            eixo.val >= 75 
+                              ? 'bg-gradient-to-r from-emerald-600 to-teal-500' 
+                              : eixo.val >= 50 
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-500' 
+                                : 'bg-gradient-to-r from-amber-600 to-rose-600'
+                          }`}
+                          style={{ width: `${eixo.val}%` }}
+                        ></div>
+                      </div>
+                      <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg border ${
+                        eixo.val >= 75 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                          : eixo.val >= 50 
+                            ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' 
+                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      }`}>
+                        {eixo.val}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Estante de Selos de Desenvolvimento Pedagógico (Badges) */}
+            <div className="lg:col-span-1 p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm flex flex-col justify-between">
+              <div>
+                <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <i className="fa-solid fa-shield-halved text-amber-400"></i> Selos de Desenvolvimento Cognitivo
+                </h4>
+                <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
+                  Medalhas e insígnias conquistadas pelo aluno com base em acertos e constância.
+                </p>
+              </div>
+
+              <div className="space-y-3 overflow-y-auto max-h-[300px] mt-2 pr-1 font-sans">
+                {studentBadges.map((badge: any, idx: number) => (
+                  <div key={idx} className="p-3 bg-slate-900 border border-slate-850 rounded-xl flex items-center gap-3 shadow-inner">
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${badge.color} flex items-center justify-center text-white text-sm shadow-md`}>
+                      <i className={`fa-solid ${badge.icon}`}></i>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-200 leading-tight">{badge.name}</p>
+                      <p className="text-[9px] text-slate-500 font-semibold leading-relaxed mt-0.5">{badge.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+          
+          {/* GRID DE ANALYTICS E GRÁFICOS RECHARTS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            {/* Gráfico 1: Teia de Aptidão Cognitiva */}
+            {/* Gráfico 1: Radar Multidimensional */}
             <div className="p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm flex flex-col justify-between">
               <div>
                 <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <i className="fa-solid fa-bullseye text-indigo-500"></i> Perfil Cognitivo Multidimensional
+                  <i className="fa-solid fa-circle-dot text-indigo-500"></i> Perfil Cognitivo Multidimensional
                 </h4>
                 <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
-                  Dimensões de aptidão e desenvolvimento monitorados pelo ACE.
+                  Dimensões de aptidão e desenvolvimento monitorados em tempo real pelo ACE.
                 </p>
               </div>
 
@@ -237,11 +438,11 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
               </div>
             </div>
 
-            {/* Gráfico 2: Evolução Temporal */}
+            {/* Gráfico 2: Evolução Temporal das Habilidades */}
             <div className="p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm flex flex-col justify-between">
               <div>
                 <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <i className="fa-solid fa-chart-line text-purple-500"></i> Curva de Aprendizado e Foco
+                  <i className="fa-solid fa-chart-line text-purple-500"></i> Curva de Evolução Temporal
                 </h4>
                 <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
                   Histórico de evolução de foco, autonomia e habilidades ao longo das últimas sessões.
@@ -267,14 +468,14 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
 
           </div>
 
-          {/* Grid de Parecer ACE e Timeline BNCC */}
+          {/* GRID DE HISTÓRICO BNCC E PARECER DO MEDIADOR */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             {/* Col 1 & 2: Parecer Comportamental ACE */}
             <div className="lg:col-span-2 p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm flex flex-col justify-between">
               <div>
                 <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <i className="fa-solid fa-microchip text-indigo-500"></i> Parecer Comportamental e Orientações (ACE)
+                  <i className="fa-solid fa-microchip text-indigo-500"></i> Parecer Comportamental e Diagnóstico (ACE)
                 </h4>
                 <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
                   Avaliação automatizada com base nos padrões cognitivos mapeados no motor adaptativo.
@@ -288,42 +489,87 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
               </div>
             </div>
 
-            {/* Col 3: Habilidades BNCC Trabalhadas */}
+            {/* Col 3: Timeline Pedagógica BNCC Evolutiva */}
             <div className="lg:col-span-1 p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm flex flex-col justify-between">
               <div>
                 <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <i className="fa-solid fa-graduation-cap text-indigo-500"></i> Competências BNCC Desenvolvidas
+                  <i className="fa-solid fa-graduation-cap text-indigo-400"></i> Linha do Tempo BNCC
                 </h4>
                 <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
-                  Habilidades trabalhadas e aproveitamento do aluno.
+                  Timeline de proficiência nas habilidades desenvolvidas ao longo das atividades.
                 </p>
               </div>
 
-              <div className="space-y-3 overflow-y-auto max-h-56 mt-2 pr-1 font-sans">
+              <div className="space-y-4 overflow-y-auto max-h-56 mt-2 pr-1 font-sans relative">
+                {/* Linha vertical decorativa da timeline */}
+                <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-slate-850"></div>
+
                 {Array.isArray(scoresData.skills_developed) && scoresData.skills_developed.length > 0 ? (
-                  scoresData.skills_developed.map((skill: any, idx: number) => (
-                    <div key={idx} className="p-3 bg-slate-900 border border-slate-850 rounded-xl flex items-center justify-between gap-3 shadow-inner">
-                      <div>
-                        <span className="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[8px] font-black uppercase px-2 py-0.5 rounded tracking-wider">
-                          {skill.code}
-                        </span>
-                        <p className="text-[8px] text-slate-500 font-bold uppercase mt-1">Praticada em: {skill.date}</p>
+                  scoresData.skills_developed.map((skill: any, idx: number) => {
+                    const matchedSkill = BNCC_MAPPING_DATA.find(m => m.habilidadeBncc === skill.code);
+                    return (
+                      <div key={idx} className="flex gap-4 relative pl-3">
+                        {/* Círculo do marcador de timeline */}
+                        <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 border border-slate-900 z-10 mt-1 flex-shrink-0"></div>
+                        
+                        <div className="p-3 bg-slate-900 border border-slate-850 rounded-xl flex-1 flex flex-col gap-1 shadow-sm">
+                          <div className="flex justify-between items-start">
+                            <span className="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[8px] font-black uppercase px-2 py-0.5 rounded tracking-wider">
+                              {skill.code}
+                            </span>
+                            <span className="text-[10px] font-black text-slate-300">{skill.proficiency}%</span>
+                          </div>
+                          <p className="text-[9px] text-slate-400 font-bold leading-normal">
+                            {matchedSkill ? matchedSkill.descricaoBncc : 'Proficiência curricular desenvolvida.'}
+                          </p>
+                          <p className="text-[7px] text-slate-600 font-black uppercase tracking-wider mt-1">
+                            {matchedSkill ? `${matchedSkill.eixoCognitivo} • ${matchedSkill.nivelDificuldade}` : ''}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-xs font-black text-slate-200">{skill.proficiency}%</span>
-                        <span className="text-[8px] text-slate-400 font-bold block">Proficiência</span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
-                  <div className="p-8 text-center text-slate-600 text-xs font-bold uppercase tracking-wider">
-                    Nenhuma habilidade mapeada ainda.
+                  <div className="p-8 text-center text-slate-600 text-xs font-bold uppercase tracking-wider pl-4">
+                    Nenhuma competência registrada ainda.
                   </div>
                 )}
               </div>
             </div>
 
           </div>
+
+          {/* GRAFICO SECUNDÁRIO: GRÁFICO DE BARRAS DE HABILIDADES TRABALHADAS */}
+          {skillsChartData.length > 0 && (
+            <div className="p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm">
+              <div>
+                <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <i className="fa-solid fa-chart-simple text-emerald-400"></i> Distribuição de Proficiência Curricular
+                </h4>
+                <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
+                  Proficiência do estudante classificada por código pedagógico BNCC.
+                </p>
+              </div>
+
+              <div className="h-56 w-full flex items-center justify-center font-sans text-[9px] mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={skillsChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="code" stroke="#64748b" />
+                    <YAxis domain={[0, 100]} stroke="#64748b" />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '1rem', color: '#f8fafc' }}
+                    />
+                    <Bar dataKey="proficiencia" fill="#10b981" radius={[8, 8, 0, 0]}>
+                      {skillsChartData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.proficiencia >= 75 ? '#10b981' : entry.proficiencia >= 50 ? '#6366f1' : '#f43f5e'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
         </div>
       )}
