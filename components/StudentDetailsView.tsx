@@ -132,7 +132,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
   const [isViewOnlyPaee, setIsViewOnlyPaee] = useState(false);
   const [activePaeeTab, setActivePaeeTab] = useState<'dados_escolares' | 'resumo_caso' | 'medicacao' | 'planejamento' | 'avaliacao'>('dados_escolares');
   const [schoolAddress, setSchoolAddress] = useState<string>('');
-  const isPaeeDisabled = (currentUser?.profile !== UserProfile.DIRETOR && currentUser?.profile !== UserProfile.PROFESSOR) || isViewOnlyPaee;
+  const isPaeeDisabled = currentUser?.profile !== UserProfile.DIRETOR || isViewOnlyPaee;
 
   const [paeeForm, setPaeeForm] = useState({
     anoEscolar: '',
@@ -1290,7 +1290,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
             PAEE — Plano de Atendimento Educacional Especializado
           </h3>
           <div className="flex items-center gap-3">
-            {currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR ? (
+            {currentUser?.profile === UserProfile.DIRETOR ? (
               <>
                 <button
                   onClick={() => {
@@ -1971,7 +1971,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 </div>
                 <div>
                   <h3 className="text-xl font-black tracking-tight">
-                    {((currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee) ? (paeeRecord ? 'Editar Formulário PAEE' : 'Elaborar Novo PAEE') : 'Visualizar PAEE Completo'}
+                    {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) ? (paeeRecord ? 'Editar Formulário PAEE' : 'Elaborar Novo PAEE') : 'Visualizar PAEE Completo'}
                   </h3>
                   <p className="text-xs font-semibold text-emerald-100 uppercase tracking-widest mt-0.5">
                     {student.name} — RA: {student.ra || 'N/A'}
@@ -1979,7 +1979,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
+                {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) && (
                   <button
                     onClick={handleSavePaee}
                     disabled={isSavingPaee}
@@ -2299,7 +2299,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                         <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Medicamentos de Uso Contínuo</h4>
                         <p className="text-xs text-gray-400 mt-1">Registre todas as medicações administradas ou acompanhadas em período escolar/residencial.</p>
                       </div>
-                      {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
+                      {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) && (
                         <button
                           onClick={handleAddMedicacaoRow}
                           className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-sm"
@@ -2326,7 +2326,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                 <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Dosagem</th>
                                 <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Frequência</th>
                                 <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">Horário</th>
-                                {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800 text-center">Ações</th>}
+                                {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) && <th className="p-4 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800 text-center">Ações</th>}
                               </tr>
                             </thead>
                             <tbody>
@@ -2372,7 +2372,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                                       className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold outline-none"
                                     />
                                   </td>
-                                  {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
+                                  {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) && (
                                     <td className="p-3 text-center">
                                       <button
                                         onClick={() => handleRemoveMedicacaoRow(index)}
@@ -2575,7 +2575,7 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                 >
                   Fechar
                 </button>
-                {(currentUser?.profile === UserProfile.DIRETOR || currentUser?.profile === UserProfile.PROFESSOR) && !isViewOnlyPaee && (
+                {(currentUser?.profile === UserProfile.DIRETOR && !isViewOnlyPaee) && (
                   <button
                     onClick={handleSavePaee}
                     disabled={isSavingPaee}
