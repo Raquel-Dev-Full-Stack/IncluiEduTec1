@@ -2884,6 +2884,8 @@ export default function App() {
             onBack={() => setSelectedStudentIdForView(null)}
             currentUser={user}
             studentRecords={studentRecords}
+            onSaveStudentRecord={handleSaveStudentRecord}
+            onSaveAttendance={handleSaveAttendance}
           />
         );
       }

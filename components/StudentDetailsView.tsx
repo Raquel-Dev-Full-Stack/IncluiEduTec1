@@ -13,15 +13,109 @@ interface StudentDetailsViewProps {
   onBack: () => void;
   currentUser?: User;
   studentRecords?: any[];
+  onSaveStudentRecord?: (record: any) => void;
+  onSaveAttendance?: (attendance: any) => void;
 }
 
-const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studentClass, mediator, regentTeacher, onBack, currentUser, studentRecords }) => {
+const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studentClass, mediator, regentTeacher, onBack, currentUser, studentRecords, onSaveStudentRecord, onSaveAttendance }) => {
   const [notas, setNotas] = useState<Record<string, any>>(student.notas || {});
   const [isEditingNotas, setIsEditingNotas] = useState(false);
   const [selectedBimestre, setSelectedBimestre] = useState('1º_bimestre');
   const [editForm, setEditForm] = useState({ subject: '', grade: '', obs: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewingReport, setIsPreviewingReport] = useState(false);
+
+  // Estados para Frequência e Chamada Diária
+  const [localAttendances, setLocalAttendances] = useState<any[]>([]);
+  const [loadingAttendances, setLoadingAttendances] = useState(false);
+  const [newAttendanceDate, setNewAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newAttendanceShift, setNewAttendanceShift] = useState(student.attendancePeriod || student.turno || 'Manhã');
+  const [isSavingAttendance, setIsSavingAttendance] = useState(false);
+
+  const fetchAttendances = async () => {
+    if (!student.id) return;
+    setLoadingAttendances(true);
+    try {
+      const { data, error } = await supabase
+        .from('student_records')
+        .select('*')
+        .eq('student_id', student.id)
+        .eq('record_type', 'presenca');
+      
+      if (error) throw error;
+      if (data) {
+        setLocalAttendances(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      }
+    } catch (err) {
+      console.error('Erro ao buscar presenças:', err);
+    } finally {
+      setLoadingAttendances(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAttendances();
+  }, [student.id]);
+
+  const handleRegisterAttendance = async (status: 'presente' | 'falta') => {
+    if (!currentUser) return;
+    setIsSavingAttendance(true);
+    try {
+      const recordToSave = {
+        student_id: student.id,
+        date: newAttendanceDate,
+        record_type: 'presenca',
+        value: status,
+        observation: `Chamada registrada via Perfil do Aluno (${status})`,
+        created_by: currentUser.id || currentUser.auth_user_id,
+        shift: newAttendanceShift || null
+      };
+
+      const { error } = await supabase
+        .from('student_records')
+        .upsert([recordToSave], {
+          onConflict: 'student_id,date,record_type,shift'
+        });
+
+      if (error) throw error;
+      
+      alert('Presença registrada com sucesso!');
+      fetchAttendances();
+      
+      if (onSaveAttendance) {
+        onSaveAttendance({
+          studentId: student.id,
+          classId: student.classId,
+          teacherId: currentUser.id,
+          date: new Date(newAttendanceDate + 'T12:00:00').toISOString(),
+          status: status,
+          shift: newAttendanceShift
+        });
+      }
+    } catch (err: any) {
+      console.error('Erro ao salvar chamada:', err);
+      alert(`Erro ao registrar chamada: ${err.message}`);
+    } finally {
+      setIsSavingAttendance(false);
+    }
+  };
+
+  const handleDeleteAttendance = async (recordId: string) => {
+    if (!confirm('Deseja realmente remover este registro de frequência?')) return;
+    try {
+      const { error } = await supabase
+        .from('student_records')
+        .delete()
+        .eq('id', recordId);
+
+      if (error) throw error;
+      alert('Registro de frequência removido!');
+      fetchAttendances();
+    } catch (err: any) {
+      console.error('Erro ao remover frequência:', err);
+      alert(`Erro ao remover: ${err.message}`);
+    }
+  };
 
   // Estados para o Histórico do Mediador
   const [historico, setHistorico] = useState<any[]>([]);
@@ -1646,6 +1740,141 @@ const StudentDetailsView: React.FC<StudentDetailsViewProps> = ({ student, studen
                     </tr>
                   );
                 })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* SEÇÃO FREQUÊNCIA E CHAMADA */}
+      <div className="bg-[#111222] p-8 rounded-[2.5rem] border border-emerald-500/20 shadow-2xl shadow-emerald-950/20 mt-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 border-b border-emerald-500/20 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/30">
+              <i className="fa-solid fa-calendar-check"></i>
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white tracking-tight">Histórico de Frequência e Chamada</h3>
+              <p className="text-emerald-300 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Lançamento e controle de frequência</p>
+            </div>
+          </div>
+
+          {/* Form para Registrar Chamada */}
+          <div className="flex flex-wrap items-center gap-4 bg-emerald-950/30 p-4 rounded-3xl border border-emerald-500/10">
+            <div className="flex items-center gap-2">
+              <label className="text-[9px] font-black text-emerald-300 uppercase tracking-widest">Data:</label>
+              <input
+                type="date"
+                value={newAttendanceDate}
+                onChange={(e) => setNewAttendanceDate(e.target.value)}
+                className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[9px] font-black text-emerald-300 uppercase tracking-widest">Turno:</label>
+              <select
+                value={newAttendanceShift}
+                onChange={(e) => setNewAttendanceShift(e.target.value)}
+                className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="Manhã">Manhã</option>
+                <option value="Tarde">Tarde</option>
+                <option value="Integral">Integral</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleRegisterAttendance('presente')}
+                disabled={isSavingAttendance}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-1 shadow-md shadow-emerald-900/50 disabled:opacity-50"
+              >
+                <i className="fa-solid fa-check"></i> Presente
+              </button>
+              <button
+                onClick={() => handleRegisterAttendance('falta')}
+                disabled={isSavingAttendance}
+                className="px-4 py-2 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all active:scale-95 flex items-center gap-1 shadow-md shadow-rose-900/50 disabled:opacity-50"
+              >
+                <i className="fa-solid fa-xmark"></i> Ausente
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabela de Chamadas */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-emerald-950/50 border-b border-emerald-500/20">
+                <th className="px-6 py-4 text-[10px] font-black text-emerald-300 uppercase tracking-widest">Data</th>
+                <th className="px-4 py-4 text-[10px] font-black text-emerald-300 uppercase tracking-widest text-center">Turno / Período</th>
+                <th className="px-4 py-4 text-[10px] font-black text-emerald-300 uppercase tracking-widest text-center">Status</th>
+                <th className="px-4 py-4 text-[10px] font-black text-emerald-300 uppercase tracking-widest text-center">Observações</th>
+                <th className="px-6 py-4 text-[10px] font-black text-emerald-300 uppercase tracking-widest text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-emerald-500/10">
+              {loadingAttendances ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-emerald-400 font-bold uppercase text-xs tracking-widest">
+                    Carregando frequência...
+                  </td>
+                </tr>
+              ) : localAttendances.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-emerald-400 font-bold uppercase text-xs tracking-widest">
+                    Nenhum registro de chamada encontrado para este aluno.
+                  </td>
+                </tr>
+              ) : (
+                localAttendances.map((rec) => (
+                  <tr key={rec.id} className="hover:bg-emerald-950/10 transition-colors">
+                    <td className="px-6 py-4 text-sm font-bold text-slate-200">
+                      {rec.date ? new Date(rec.date + 'T12:00:00').toLocaleDateString('pt-BR') : '--/--/----'}
+                    </td>
+                    <td className="px-4 py-4 text-xs font-bold text-slate-300 text-center">
+                      <span className="px-3 py-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-lg text-[9px] uppercase font-black">
+                        {rec.shift || 'Manhã'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {rec.value === 'presente' ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase border border-emerald-500/30">
+                          <i className="fa-solid fa-circle-check"></i> Presente
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-black uppercase border border-rose-500/30">
+                          <i className="fa-solid fa-circle-xmark"></i> Ausente
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-xs text-slate-400 text-center italic text-ellipsis overflow-hidden max-w-xs">
+                      {rec.observation || '--'}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => {
+                            setNewAttendanceDate(rec.date);
+                            setNewAttendanceShift(rec.shift || 'Manhã');
+                            alert(`Frequência de ${new Date(rec.date + 'T12:00:00').toLocaleDateString('pt-BR')} carregada no formulário de edição acima.`);
+                          }}
+                          className="px-2.5 py-1.5 bg-blue-500/20 text-blue-300 hover:bg-blue-50 hover:text-white rounded-lg text-[9px] font-black uppercase border border-blue-500/30 transition-all active:scale-95"
+                          title="Editar"
+                        >
+                          <i className="fa-solid fa-edit"></i>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAttendance(rec.id)}
+                          className="px-2.5 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase border border-rose-500/30 transition-all active:scale-95"
+                          title="Excluir"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
