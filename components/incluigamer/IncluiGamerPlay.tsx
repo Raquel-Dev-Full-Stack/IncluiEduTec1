@@ -537,39 +537,32 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     const proxNivelLiberado = aproveitamento >= 60 ? Math.min(3, levelInterno + 1) : levelInterno;
     const progressPayload = { student_id: student.id, game_id: game.id, current_level: proxNivelLiberado, stars_earned: estrelas, completed: proxNivelLiberado === 3 && aproveitamento >= 60, last_played_at: new Date().toISOString(), municipio_id: user.municipio_id, school_id: user.schoolId };
 
+    // =========================================================================
+    // SALVAMENTO LOCAL INCONDICIONAL (GARANTIA ABSOLUTA DE DADOS DO ALUNO)
+    // =========================================================================
     try {
-      const { data: existingProgress } = await supabase.from('game_progress').select('id, current_level, stars_earned').eq('student_id', student.id).eq('game_id', game.id).maybeSingle();
-      if (existingProgress) await supabase.from('game_progress').update({ current_level: Math.max(existingProgress.current_level, progressPayload.current_level), stars_earned: Math.max(existingProgress.stars_earned, progressPayload.stars_earned), completed: progressPayload.completed || existingProgress.current_level >= 3, last_played_at: progressPayload.last_played_at }).eq('id', existingProgress.id);
-      else await supabase.from('game_progress').insert([progressPayload]);
-      await supabase.from('player_behavior_logs').insert([behaviorLogPayload]);
-      const { data: existingScore } = await supabase.from('cognitive_scores').select('id, skills_developed').eq('student_id', student.id).maybeSingle();
-      if (existingScore) {
-        const oldSkills = Array.isArray(existingScore.skills_developed) ? existingScore.skills_developed : [];
-        const mergedSkills = [...oldSkills];
-        developedSkills.forEach(newSkill => {
-          const idx = mergedSkills.findIndex(s => s.code === newSkill.code);
-          if (idx >= 0) mergedSkills[idx] = { ...mergedSkills[idx], proficiency: Math.round((mergedSkills[idx].proficiency + newSkill.proficiency) / 2), date: newSkill.date };
-          else mergedSkills.push(newSkill);
-        });
-        await supabase.from('cognitive_scores').update({ ...scoresPayload, skills_developed: mergedSkills }).eq('id', existingScore.id);
-      } else await supabase.from('cognitive_scores').insert([scoresPayload]);
-    } catch (err) {
-      console.warn("[ACE Play] Falha na sincronizacao em nuvem. Salvando progresso localmente.", err);
+      console.log("[ACE Play] Salvando progresso e pontuacao localmente...");
       
+      // 1. Salvar progresso de nível dos jogos
       const localProgressKey = `incluigamer_progress_map_${student.id}`;
       const localProgress = localStorage.getItem(localProgressKey);
       let progressMap: Record<string, any> = {};
       if (localProgress) progressMap = JSON.parse(localProgress);
       const currentLocal = progressMap[game.id] || { current_level: 1, stars_earned: 0, completed: false };
-      progressMap[game.id] = { current_level: Math.max(currentLocal.current_level, progressPayload.current_level), stars_earned: Math.max(currentLocal.stars_earned, progressPayload.stars_earned), completed: progressPayload.completed || currentLocal.current_level >= 3 };
+      progressMap[game.id] = { 
+        current_level: Math.max(currentLocal.current_level, progressPayload.current_level), 
+        stars_earned: Math.max(currentLocal.stars_earned, progressPayload.stars_earned), 
+        completed: progressPayload.completed || currentLocal.current_level >= 3 
+      };
       localStorage.setItem(localProgressKey, JSON.stringify(progressMap));
       
+      // 2. Salvar logs de comportamento localmente
       const localLogsKey = `incluigamer_progress_${student.id}`;
       const oldProgress = JSON.parse(localStorage.getItem(localLogsKey) || '[]');
       oldProgress.push(behaviorLogPayload);
       localStorage.setItem(localLogsKey, JSON.stringify(oldProgress));
 
-      // Salvar scoresPayload localmente para alimentar o Dashboard Cognitivo de forma imediata (Resiliencia Local)
+      // 3. Salvar pontuação cognitiva (scoresPayload) no LocalStorage (Garante exibição imediata no Dashboard)
       const localScoresKey = `incluigamer_scores_${student.id}`;
       const existingLocalScore = JSON.parse(localStorage.getItem(localScoresKey) || 'null');
       
@@ -603,6 +596,81 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         };
       }
       localStorage.setItem(localScoresKey, JSON.stringify(mergedScoresPayload));
+      console.log("[ACE Play] Salvamento local concluido com sucesso.");
+    } catch (e) {
+      console.error("[ACE Play] Falha critica ao salvar dados localmente no LocalStorage:", e);
+    }
+
+    // =========================================================================
+    // TENTATIVA DE SINCRONIZAÇÃO EM NUVEM (SUPABASE)
+    // =========================================================================
+    try {
+      console.log("[ACE Play] Tentando sincronizar progresso com a nuvem (Supabase)...");
+      const { data: existingProgress, error: selectProgError } = await supabase
+        .from('game_progress')
+        .select('id, current_level, stars_earned')
+        .eq('student_id', student.id)
+        .eq('game_id', game.id)
+        .maybeSingle();
+        
+      if (selectProgError) throw selectProgError;
+
+      if (existingProgress) {
+        const { error: updateProgError } = await supabase
+          .from('game_progress')
+          .update({ 
+            current_level: Math.max(existingProgress.current_level, progressPayload.current_level), 
+            stars_earned: Math.max(existingProgress.stars_earned, progressPayload.stars_earned), 
+            completed: progressPayload.completed || existingProgress.current_level >= 3, 
+            last_played_at: progressPayload.last_played_at 
+          })
+          .eq('id', existingProgress.id);
+        if (updateProgError) throw updateProgError;
+      } else {
+        const { error: insertProgError } = await supabase.from('game_progress').insert([progressPayload]);
+        if (insertProgError) throw insertProgError;
+      }
+      
+      const { error: insertLogError } = await supabase.from('player_behavior_logs').insert([behaviorLogPayload]);
+      if (insertLogError) throw insertLogError;
+
+      const { data: existingScore, error: selectScoreError } = await supabase
+        .from('cognitive_scores')
+        .select('id, skills_developed')
+        .eq('student_id', student.id)
+        .maybeSingle();
+
+      if (selectScoreError) throw selectScoreError;
+
+      if (existingScore) {
+        const oldSkills = Array.isArray(existingScore.skills_developed) ? existingScore.skills_developed : [];
+        const mergedSkills = [...oldSkills];
+        developedSkills.forEach(newSkill => {
+          const idx = mergedSkills.findIndex(s => s.code === newSkill.code);
+          if (idx >= 0) {
+            mergedSkills[idx] = { 
+              ...mergedSkills[idx], 
+              proficiency: Math.round((mergedSkills[idx].proficiency + newSkill.proficiency) / 2), 
+              date: newSkill.date 
+            };
+          } else {
+            mergedSkills.push(newSkill);
+          }
+        });
+        
+        const { error: updateScoreError } = await supabase
+          .from('cognitive_scores')
+          .update({ ...scoresPayload, skills_developed: mergedSkills })
+          .eq('id', existingScore.id);
+        if (updateScoreError) throw updateScoreError;
+      } else {
+        const { error: insertScoreError } = await supabase.from('cognitive_scores').insert([scoresPayload]);
+        if (insertScoreError) throw insertScoreError;
+      }
+      
+      console.log("[ACE Play] Sincronizacao em nuvem concluida.");
+    } catch (err) {
+      console.warn("[ACE Play] Erro ou tabela nao criada no Supabase (Modulo Premium). A sincronizacao em nuvem foi omitida com sucesso, mantendo o funcionamento autonomo local.", err);
     }
   };
 
