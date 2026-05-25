@@ -379,15 +379,22 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                         <p className="text-[9px] text-slate-500 font-medium leading-relaxed">{item.desc}</p>
                       </div>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer mt-0.5 select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={(accessibility as any)[item.key]} 
-                        onChange={(e) => setAccessibility(prev => ({ ...prev, [item.key]: e.target.checked }))}
-                        className="sr-only peer" 
-                      />
-                      <div className="w-8 h-4.5 bg-slate-800 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-400 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
+                        (accessibility as any)[item.key] ? 'text-emerald-400' : 'text-rose-500'
+                      }`}>
+                        {(accessibility as any)[item.key] ? 'Ativo' : 'Não ativo'}
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer mt-0.5 select-none">
+                        <input 
+                          type="checkbox" 
+                          checked={(accessibility as any)[item.key]} 
+                          onChange={(e) => setAccessibility(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                          className="sr-only peer" 
+                        />
+                        <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
+                      </label>
+                    </div>
                   </div>
                 ))}
               </div>
