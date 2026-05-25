@@ -31,6 +31,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
   const [activeGame, setActiveGame] = useState<GameDefinition | null>(null);
   const [pendingGame, setPendingGame] = useState<GameDefinition | null>(null);
   const [preProfile, setPreProfile] = useState<PreGamerProfile | null>(null);
+  const [latestPreProfile, setLatestPreProfile] = useState<PreGamerProfile | null>(null);
 
   // Expansão Pedagógica BNCC (Fase 3)
   const [ageWarningGame, setAgeWarningGame] = useState<GameDefinition | null>(null);
@@ -81,6 +82,73 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     };
     
     loadScores();
+  }, [selectedStudentId]);
+
+  // Carregar perfil cognitivo pré-jogo mais recente (reutilização rápida)
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setLatestPreProfile(null);
+      return;
+    }
+    
+    const loadLatestProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('gamer_pre_profiles')
+          .select('*')
+          .eq('student_id', selectedStudentId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+          
+        if (data) {
+          const mappedProfile = {
+            comunicacao: {
+              verbal: data.is_verbal,
+              alternativa: data.uses_aac,
+              compreensao: data.understands_commands_level,
+              ecolalia: data.echolalia
+            },
+            sensorial: {
+              hipersensibilidadeSonora: data.sound_sensitivity,
+              hipersensibilidadeVisual: data.visual_sensitivity,
+              toleranciaEstimulos: data.stimulus_tolerance
+            },
+            coordenacao: {
+              mouse: data.input_preference === 'mouse',
+              touchscreen: data.input_preference === 'touchscreen' || data.input_preference === 'ambos',
+              fine_motor_level: data.fine_motor_level
+            },
+            cognitivo: {
+              letras: data.knows_letters,
+              numeros: data.knows_numbers,
+              formas: data.knows_shapes,
+              cores: data.knows_colors,
+              associacaoLogica: data.logical_association
+            },
+            comportamental: {
+              tempoFocoMinutos: data.focus_minutes,
+              frustracaoAlta: data.frustration_level === 'alta',
+              reforcoPositivo: data.needs_positive_reinforcement,
+              autonomia: data.autonomy_level
+            }
+          } as any;
+          setLatestPreProfile(mappedProfile);
+          return;
+        }
+      } catch (e) {
+        console.warn("[ACE Hub] Falha ao ler perfil Supabase, buscando local.");
+      }
+      
+      const local = localStorage.getItem(`incluigamer_latest_preprofile_${selectedStudentId}`);
+      if (local) {
+        setLatestPreProfile(JSON.parse(local));
+      } else {
+        setLatestPreProfile(null);
+      }
+    };
+    
+    loadLatestProfile();
   }, [selectedStudentId]);
 
   // Carregamento reativo de Progresso de Jogos / Níveis (Fase 5)
@@ -176,6 +244,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
 
   const handleConfirmPreProfile = (profile: PreGamerProfile) => {
     setPreProfile(profile);
+    setLatestPreProfile(profile);
+    if (selectedStudentId) {
+      localStorage.setItem(`incluigamer_latest_preprofile_${selectedStudentId}`, JSON.stringify(profile));
+    }
     setActiveGame(pendingGame);
     setPendingGame(null);
   };
@@ -403,6 +475,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           game={pendingGame}
           onConfirm={handleConfirmPreProfile}
           onCancel={() => setPendingGame(null)}
+          latestProfile={latestPreProfile}
         />
       ) : selectedStudent ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

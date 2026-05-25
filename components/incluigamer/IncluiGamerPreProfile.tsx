@@ -39,14 +39,15 @@ interface IncluiGamerPreProfileProps {
   game: GameDefinition;
   onConfirm: (profile: PreGamerProfile) => void;
   onCancel: () => void;
+  latestProfile?: PreGamerProfile | null;
 }
 
-export default function IncluiGamerPreProfile({ student, game, onConfirm, onCancel }: IncluiGamerPreProfileProps) {
+export default function IncluiGamerPreProfile({ student, game, onConfirm, onCancel, latestProfile }: IncluiGamerPreProfileProps) {
   const [step, setStep] = useState<number>(1);
   const totalSteps = 5;
 
-  // Estado inicial calibrado baseado em defaults seguros e no diagnóstico básico do aluno
-  const [profile, setProfile] = useState<PreGamerProfile>({
+  // Estado inicial calibrado baseado no perfil recente do aluno ou nos defaults do diagnóstico
+  const [profile, setProfile] = useState<PreGamerProfile>(latestProfile || {
     comunicacao: {
       verbal: true,
       alternativa: false,
@@ -152,7 +153,27 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
         {/* PASSO 1: COMUNICAÇÃO */}
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider mb-4">🗣️ Perfil de Comunicação</h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider">🗣️ Perfil de Comunicação</h3>
+            </div>
+            
+            {latestProfile && (
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between gap-3 text-left animate-in slide-in-from-top-2 duration-300">
+                <div className="flex gap-2">
+                  <i className="fa-solid fa-lightbulb text-indigo-400 mt-0.5 text-xs"></i>
+                  <div>
+                    <p className="text-xs font-bold text-slate-200">Calibração Rápida</p>
+                    <p className="text-[9px] text-slate-400 font-medium">Você já possui um perfil recente salvo. Deseja reutilizá-lo para iniciar o jogo?</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleConfirm}
+                  className="px-4 py-2.5 bg-gradient-to-tr from-indigo-650 to-purple-650 hover:from-indigo-600 hover:to-purple-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 flex items-center gap-1.5 shadow-md shadow-indigo-950/20"
+                >
+                  <i className="fa-solid fa-play"></i> Reutilizar
+                </button>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-slate-850/50 border border-slate-850 rounded-2xl flex items-center justify-between">
                 <div>

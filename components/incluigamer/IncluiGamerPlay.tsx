@@ -21,6 +21,129 @@ interface IncluiGamerPlayProps {
 }
 
 export default function IncluiGamerPlay({ game, student, user, accessibility, preProfile, onClose, ageGroup, level }: IncluiGamerPlayProps) {
+  const [gameVolume, setGameVolume] = useState<number>(0.6); // Inicia em 60%
+
+  // Síntese Dinâmica de Efeitos Sonoros lúdicos (Web Audio API)
+  const playSynthesizedSound = (soundType: 'chuva' | 'passaro' | 'mar' | 'acerto' | 'erro') => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const temHipersensibilidadeSonora = preProfile?.sensorial.hipersensibilidadeSonora;
+      // Hipersensibilidade sonora omite efeitos sonoros da natureza para conforto sensorial
+      if (temHipersensibilidadeSonora && soundType !== 'acerto' && soundType !== 'erro') {
+        console.log("[ACE Audio] Hipersensibilidade sonora ativa. Omitindo som lúdico.");
+        return;
+      }
+
+      const volumeNode = ctx.createGain();
+      // Calibração de volume para evitar sobrecarga auditiva, controlado pelo slider do usuário
+      const calibraçãoAcessibilidade = temHipersensibilidadeSonora ? 0.25 : (accessibility.modoCalmante ? 0.5 : 1.0);
+      const volumeFinal = gameVolume * calibraçãoAcessibilidade * 0.75; 
+      volumeNode.gain.setValueAtTime(volumeFinal, ctx.currentTime);
+      volumeNode.connect(ctx.destination);
+      
+      if (soundType === 'acerto') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+        gain.connect(volumeNode);
+        osc.connect(gain);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } 
+      else if (soundType === 'erro') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(160, ctx.currentTime);
+        osc.frequency.setValueAtTime(110, ctx.currentTime + 0.08);
+        gain.connect(volumeNode);
+        osc.connect(gain);
+        gain.gain.setValueAtTime(0.07, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      }
+      else if (soundType === 'chuva') {
+        const bufferSize = ctx.sampleRate * 2.0; 
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = buffer;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(800, ctx.currentTime);
+        filter.Q.setValueAtTime(0.6, ctx.currentTime);
+        
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.1, ctx.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
+        
+        noiseSource.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(volumeNode);
+        noiseSource.start();
+      } 
+      else if (soundType === 'passaro') {
+        const now = ctx.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          const startTime = now + i * 0.18;
+          
+          osc.frequency.setValueAtTime(1400 + Math.random() * 300, startTime);
+          osc.frequency.exponentialRampToValueAtTime(2800 + Math.random() * 400, startTime + 0.1);
+          
+          gain.connect(volumeNode);
+          osc.connect(gain);
+          gain.gain.setValueAtTime(0.06, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+          
+          osc.start(startTime);
+          osc.stop(startTime + 0.12);
+        }
+      } 
+      else if (soundType === 'mar') {
+        const bufferSize = ctx.sampleRate * 3.0;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = buffer;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(350, ctx.currentTime);
+        
+        const waveGain = ctx.createGain();
+        waveGain.gain.setValueAtTime(0.001, ctx.currentTime);
+        waveGain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 1.0);
+        waveGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.8);
+        
+        noiseSource.connect(filter);
+        filter.connect(waveGain);
+        waveGain.connect(volumeNode);
+        
+        noiseSource.start();
+      }
+    } catch (err) {
+      console.warn("[ACE Audio] Falha silenciosa ao sintetizar áudio nativo:", err);
+    }
+  };
+
   // Estados do Jogo
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [totalRounds, setTotalRounds] = useState<number>(5);
@@ -256,15 +379,20 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       if (lvl === 1) {
         // Mecânica: causa_efeito_sonora
         const sonsDB = [
-          { som: 'Chuva caindo de mansinho 🌧️', correta: '🌧️ Som de Chuva', incorretas: ['🐦 Canto de Pássaro', '🌊 Ondas do Mar'] },
-          { som: 'Canto alegre de um passarinho 🐦', correta: '🐦 Canto de Pássaro', incorretas: ['🌧️ Som de Chuva', '🌊 Ondas do Mar'] },
-          { som: 'Ondas do mar que vêm e vão 🌊', correta: '🌊 Ondas do Mar', incorretas: ['🌧️ Som de Chuva', '🐦 Canto de Pássaro'] },
+          { som: 'Chuva caindo de mansinho 🌧️', correta: '🌧️ Som de Chuva', incorretas: ['🐦 Canto de Pássaro', '🌊 Ondas do Mar'], audioKey: 'chuva' as const },
+          { som: 'Canto alegre de um passarinho 🐦', correta: '🐦 Canto de Pássaro', incorretas: ['🌧️ Som de Chuva', '🌊 Ondas do Mar'], audioKey: 'passaro' as const },
+          { som: 'Ondas do mar que vêm e vão 🌊', correta: '🌊 Ondas do Mar', incorretas: ['🌧️ Som de Chuva', '🐦 Canto de Pássaro'], audioKey: 'mar' as const },
         ];
         const item = sonsDB[(roundNum - 1) % sonsDB.length];
         const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
         const prompt = `Toque no botão correspondente para orquestrar o som de: ${item.som}`;
         speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons' });
+        setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+        
+        // Tocar o som correspondente automaticamente após 1.4 segundos para fins de estimulação e calibração
+        setTimeout(() => {
+          playSynthesizedSound(item.audioKey);
+        }, 1400);
       } 
       else if (lvl === 2) {
         // Mecânica: cores_sensoriais
@@ -441,6 +569,9 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     const tempoReacao = Date.now() - startTime.current;
     const ehCorreta = opcao === gameState.respostaCorreta;
     if (ehCorreta) {
+      // Tocar som sintetizado de acerto
+      playSynthesizedSound('acerto');
+      
       metrics.current.acertos++;
       metrics.current.acertosSeguidos++;
       metrics.current.errosSeguidos = 0;
@@ -467,6 +598,9 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         }
       }, 1500);
     } else {
+      // Tocar som sintetizado de erro
+      playSynthesizedSound('erro');
+      
       metrics.current.erros++;
       metrics.current.errosSeguidos++;
       metrics.current.acertosSeguidos = 0;
@@ -495,6 +629,48 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         });
       }, 1500);
     }
+  };
+
+  const handlePreviousRound = () => {
+    if (currentRound <= 1) return;
+    
+    const targetRound = currentRound - 1;
+    
+    // Tenta reverter os impactos da rodada anterior nas métricas
+    const lastResponseIndex = metrics.current.respostas.findIndex(r => r.rodada === targetRound);
+    if (lastResponseIndex >= 0) {
+      const resp = metrics.current.respostas[lastResponseIndex];
+      // Descontar das métricas
+      if (resp.correta) {
+        metrics.current.acertos = Math.max(0, metrics.current.acertos - 1);
+        metrics.current.acertosSeguidos = Math.max(0, metrics.current.acertosSeguidos - 1);
+      } else {
+        metrics.current.erros = Math.max(0, metrics.current.erros - 1);
+        metrics.current.errosSeguidos = Math.max(0, metrics.current.errosSeguidos - 1);
+      }
+      metrics.current.tempoTotalMs = Math.max(0, metrics.current.tempoTotalMs - resp.tempoReacaoMs);
+      
+      // Remover das respostas
+      metrics.current.respostas.splice(lastResponseIndex, 1);
+    }
+    
+    // Recalcular pontuação com base nas respostas que restaram
+    let newScore = 0;
+    metrics.current.respostas.forEach(r => {
+      if (r.correta) {
+        newScore += Math.max(10, 50 - Math.floor(r.tempoReacaoMs / 1000) * 2);
+      }
+    });
+    setScore(newScore);
+    
+    // Resetar o feedback
+    setFeedbackMsg({ text: '', type: null });
+    
+    // Atualizar a rodada atual
+    setCurrentRound(targetRound);
+    
+    // Gerar novamente a rodada anterior
+    generateNewRound(targetRound, levelInterno, difficultyModulation.numeroOpcoes);
   };
 
   const finishGame = async () => {
@@ -602,10 +778,134 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     }
 
     // =========================================================================
-    // TENTATIVA DE SINCRONIZAÇÃO EM NUVEM (SUPABASE)
+    // TENTATIVA DE SINCRONIZAÇÃO EM NUVEM (SUPABASE - ESTRUTURA EXPANDIDA E INTEGRADA)
     // =========================================================================
     try {
-      console.log("[ACE Play] Tentando sincronizar progresso com a nuvem (Supabase)...");
+      console.log("[ACE Play] Tentando sincronizar dados expandidos com a nuvem (Supabase)...");
+      
+      // 1. Persistir no novo histórico de sessões (game_sessions)
+      const gameSessionsPayload = {
+        student_id: student.id,
+        teacher_id: user.id,
+        school_id: user.schoolId || null,
+        game_id: game.id,
+        game_name: game.name,
+        game_category: game.bioma,
+        started_at: new Date(startTime.current).toISOString(),
+        finished_at: new Date().toISOString(),
+        duration_seconds: Math.round(metrics.current.tempoTotalMs / 1000),
+        score: score,
+        xp_earned: score,
+        level_reached: levelInterno,
+        cognitive_score: Math.round(desenvolvimento),
+        emotional_score: Math.round(emocional),
+        engagement_score: Math.round(engajamento),
+        focus_score: Math.round(foco),
+        frustration_score: Math.round(100 - emocional),
+        completed: aproveitamento >= 60,
+        municipio_id: user.municipio_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { error: sessErr } = await supabase.from('game_sessions').insert([gameSessionsPayload]);
+      if (sessErr) {
+        console.warn("[ACE Play] Omitindo gravacao direta em game_sessions:", sessErr.message);
+      }
+
+      // 2. Persistir no Perfil Cognitivo Pré-Jogo (gamer_pre_profiles)
+      if (preProfile) {
+        const gamerPreProfilesPayload = {
+          student_id: student.id,
+          teacher_id: user.id,
+          session_id: null,
+          is_verbal: preProfile.comunicacao.verbal,
+          uses_aac: preProfile.comunicacao.alternativa,
+          understands_commands_level: preProfile.comunicacao.compreensao,
+          echolalia: preProfile.comunicacao.ecolalia,
+          sound_sensitivity: preProfile.sensorial.hipersensibilidadeSonora,
+          visual_sensitivity: preProfile.sensorial.hipersensibilidadeVisual,
+          stimulus_tolerance: preProfile.sensorial.toleranciaEstimulos,
+          fine_motor_level: preProfile.coordenacao.motoraFina,
+          input_preference: preProfile.coordenacao.touchscreen ? 'touchscreen' : 'mouse',
+          knows_letters: preProfile.cognitivo.letras,
+          knows_numbers: preProfile.cognitivo.numeros,
+          knows_shapes: preProfile.cognitivo.formas,
+          knows_colors: preProfile.cognitivo.cores,
+          logical_association: preProfile.cognitivo.associacaoLogica,
+          focus_minutes: preProfile.comportamental.tempoFocoMinutos,
+          frustration_level: preProfile.comportamental.frustracaoAlta ? 'alta' : 'baixa',
+          needs_positive_reinforcement: preProfile.comportamental.reforcoPositivo,
+          autonomy_level: preProfile.comportamental.autonomia,
+          municipio_id: user.municipio_id,
+          school_id: user.schoolId || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        const { error: profErr } = await supabase.from('gamer_pre_profiles').insert([gamerPreProfilesPayload]);
+        if (profErr) {
+          console.warn("[ACE Play] Omitindo gravacao direta em gamer_pre_profiles:", profErr.message);
+        }
+      }
+
+      // 3. Persistir no Sistema de Progressão de Níveis (game_progression)
+      const gameProgressionPayload = {
+        student_id: student.id,
+        game_id: game.id,
+        current_level: proxNivelLiberado,
+        max_level: 3,
+        xp_total: score,
+        stars: estrelas,
+        unlocked_worlds: [game.bioma],
+        last_played_at: new Date().toISOString(),
+        municipio_id: user.municipio_id,
+        school_id: user.schoolId || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data: existingProgression, error: selectProgressionError } = await supabase
+        .from('game_progression')
+        .select('id, current_level, stars')
+        .eq('student_id', student.id)
+        .eq('game_id', game.id)
+        .maybeSingle();
+
+      if (!selectProgressionError) {
+        if (existingProgression) {
+          await supabase
+            .from('game_progression')
+            .update({ 
+              current_level: Math.max(existingProgression.current_level, gameProgressionPayload.current_level), 
+              stars: Math.max(existingProgression.stars, gameProgressionPayload.stars), 
+              xp_total: score,
+              last_played_at: gameProgressionPayload.last_played_at,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingProgression.id);
+        } else {
+          await supabase.from('game_progression').insert([gameProgressionPayload]);
+        }
+      }
+
+      // 4. Persistir logs de decisões do motor adaptativo (adaptive_engine_logs)
+      const adaptiveEngineLogsPayload = {
+        student_id: student.id,
+        session_id: crypto.randomUUID(),
+        decision_type: difficultyModulation.tamanhoAlvo === 'grande' ? 'facilitação_motora_alvo_grande' : 'modulação_cognitiva_opções',
+        previous_state: { numeroOpcoes: 3, tamanhoAlvo: 'normal' },
+        new_state: { numeroOpcoes: difficultyModulation.numeroOpcoes, tamanhoAlvo: difficultyModulation.tamanhoAlvo },
+        reason: `ACE calibrou a jogabilidade de ${student.name} baseado no perfil comportamental (tempo de foco ${preProfile?.comportamental.tempoFocoMinutos}m, frustração ${preProfile?.comportamental.frustracaoAlta ? 'alta' : 'baixa'}).`,
+        created_at: new Date().toISOString()
+      };
+      const { error: logErr } = await supabase.from('adaptive_engine_logs').insert([adaptiveEngineLogsPayload]);
+      if (logErr) {
+        console.warn("[ACE Play] Omitindo gravacao direta em adaptive_engine_logs:", logErr.message);
+      }
+
+      // =========================================================================
+      // RETROCOMPATIBILIDADE (Para manter os dashboards e recursos legados funcionando perfeitamente)
+      // =========================================================================
       const { data: existingProgress, error: selectProgError } = await supabase
         .from('game_progress')
         .select('id, current_level, stars_earned')
@@ -705,12 +1005,39 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="px-4 py-2 bg-rose-500/10 border border-rose-500/25 text-rose-400 hover:bg-rose-500/20 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1.5"
-        >
-          <i className="fa-solid fa-xmark text-[10px]"></i> Cancelar Atividade
-        </button>
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Slider de Volume Premium */}
+          <div className="flex items-center gap-2 bg-slate-950/40 border border-slate-850/60 px-3 py-1.5 rounded-xl shadow-inner">
+            <i className="fa-solid fa-volume-high text-xs text-indigo-400"></i>
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 hidden sm:inline">Volume</span>
+            <input 
+              type="range" 
+              min="0" 
+              max="1" 
+              step="0.05"
+              value={gameVolume}
+              onChange={(e) => setGameVolume(parseFloat(e.target.value))}
+              className="w-16 sm:w-24 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 outline-none"
+              title="Ajustar Volume do Exercício"
+            />
+            <span className="text-[9px] font-black text-indigo-300 w-8 text-right">{Math.round(gameVolume * 100)}%</span>
+          </div>
+
+          {currentRound > 1 && (
+            <button
+              onClick={handlePreviousRound}
+              className="px-4 py-2 bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 hover:bg-indigo-500/20 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+            >
+              <i className="fa-solid fa-arrow-left text-[10px]"></i> Voltar Atividade
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-rose-500/10 border border-rose-500/25 text-rose-400 hover:bg-rose-500/20 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1.5"
+          >
+            <i className="fa-solid fa-xmark text-[10px]"></i> Cancelar Atividade
+          </button>
+        </div>
       </div>
 
       {!gameFinished ? (
@@ -816,8 +1143,19 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               )}
 
               {gameState.tipo === 'sons' && (
-                <div className="text-5xl font-black text-emerald-400 bg-slate-900 border border-slate-800 p-6 rounded-3xl w-28 h-28 mx-auto shadow-inner flex items-center justify-center">
-                  {gameState.molde.slice(-2)}
+                <div className="space-y-4">
+                  <button
+                    onClick={() => playSynthesizedSound(gameState.audioKey)}
+                    className="group relative text-5xl font-black text-emerald-400 bg-slate-900 border border-emerald-500/20 hover:border-emerald-400/50 p-6 rounded-3xl w-28 h-28 mx-auto shadow-inner flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    title="Clique para ouvir o som novamente"
+                  >
+                    <div className="absolute inset-0 bg-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span className="group-hover:animate-pulse">
+                      {gameState.molde.slice(-2)}
+                    </span>
+                    <i className="fa-solid fa-volume-high text-xs text-emerald-500 absolute bottom-2 right-2 opacity-50 group-hover:opacity-100"></i>
+                  </button>
+                  <p className="text-[10px] text-emerald-500/80 font-black uppercase tracking-widest">Toque para escutar 🔊</p>
                 </div>
               )}
 
