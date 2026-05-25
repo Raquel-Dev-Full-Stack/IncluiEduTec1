@@ -1,3 +1,16 @@
+export interface GameLevelDefinition {
+  level: number; // 1, 2, 3
+  name: string; // Ex: "Nível 1 - Caça Vogais"
+  objective: string; // Objetivo cognitivo específico
+  mechanic: 'caca_letras' | 'montar_silabas' | 'completar_frases' |
+            'atencao_seletiva' | 'sequencia_logica' | 'memoria_visual' |
+            'reconhecimento_facial' | 'interpretacao_emocional' | 'empatia_guiada' |
+            'causa_efeito_sonora' | 'cores_sensoriais' | 'coordenacao_motora' |
+            'contar_objetos' | 'sequencia_numerica' | 'mini_desafios';
+  bnccSkills: string[];
+  difficulty: 'Fácil' | 'Médio' | 'Difícil';
+}
+
 export interface GameDefinition {
   id: string; // Slug identificador
   name: string;
@@ -13,6 +26,7 @@ export interface GameDefinition {
   difficulty: 'Fácil' | 'Médio' | 'Difícil' | 'Adaptativo';
   stimuli: string[]; // ['Visual', 'Auditivo', 'Tátil', 'Foco', 'Calmante']
   skillsWorked: string[]; // Habilidades estimuladas
+  levels: GameLevelDefinition[]; // Níveis pedagógicos de progressão
 }
 
 export const GAMES_CATALOG: GameDefinition[] = [
@@ -34,7 +48,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Lembrar',
     difficulty: 'Fácil',
     stimuli: ['Auditivo', 'Visual', 'Calmante'],
-    skillsWorked: ['Percepção Auditiva', 'Coordenação Motora Fina', 'Relação Causa-Efeito']
+    skillsWorked: ['Percepção Auditiva', 'Coordenação Motora Fina', 'Relação Causa-Efeito'],
+    levels: [
+      { level: 1, name: 'Toques Musicais Suaves', objective: 'Perceber relação de causa-efeito sonora primária', mechanic: 'causa_efeito_sonora', bnccSkills: ['EI01TS01'], difficulty: 'Fácil' },
+      { level: 2, name: 'Tons de Calmaria e Instrumentos', objective: 'Discriminação de tons calmos de instrumentos', mechanic: 'cores_sensoriais', bnccSkills: ['EI01TS03'], difficulty: 'Médio' },
+      { level: 3, name: 'Estrelas Sonoras no Espaço', objective: 'Rastrear e tocar alvos sonoros em movimento rápido', mechanic: 'coordenacao_motora', bnccSkills: ['EI01CG05'], difficulty: 'Difícil' }
+    ]
   },
   {
     id: 'toque_cores',
@@ -53,7 +72,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Lembrar',
     difficulty: 'Fácil',
     stimuli: ['Visual', 'Tátil', 'Calmante'],
-    skillsWorked: ['Foco Visual', 'Coordenação Visomotora', 'Regulação Sensorial']
+    skillsWorked: ['Foco Visual', 'Coordenação Visomotora', 'Regulação Sensorial'],
+    levels: [
+      { level: 1, name: 'Ecos de Causa e Efeito', objective: 'Interação táctil e resposta luminosa suave', mechanic: 'causa_efeito_sonora', bnccSkills: ['EI01TS02'], difficulty: 'Fácil' },
+      { level: 2, name: 'Pareamento de Cores Pastéis', objective: 'Diferenciação cromática visual calma', mechanic: 'cores_sensoriais', bnccSkills: ['EI01CG05'], difficulty: 'Médio' },
+      { level: 3, name: 'Capturador de Pirilampos', objective: 'Foco táctil e coordenação de alvos móveis', mechanic: 'coordenacao_motora', bnccSkills: ['EI01CG05'], difficulty: 'Difícil' }
+    ]
   },
   {
     id: 'balao_formas',
@@ -72,7 +96,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Entender',
     difficulty: 'Adaptativo',
     stimuli: ['Visual', 'Auditivo', 'Foco'],
-    skillsWorked: ['Classificação de Formas', 'Atenção Sustentada', 'Coordenação Fina']
+    skillsWorked: ['Classificação de Formas', 'Atenção Sustentada', 'Coordenação Fina'],
+    levels: [
+      { level: 1, name: 'Pareamento de Formas Planas', objective: 'Identificar formas idênticas ao molde', mechanic: 'atencao_seletiva', bnccSkills: ['EI02ET05'], difficulty: 'Fácil' },
+      { level: 2, name: 'Padrões de Cores e Formas', objective: 'Identificar padrões simples de repetição lógica', mechanic: 'sequencia_logica', bnccSkills: ['EI02ET01'], difficulty: 'Médio' },
+      { level: 3, name: 'Esconderijo das Formas', objective: 'Memorização rápida de posições que desaparecem', mechanic: 'memoria_visual', bnccSkills: ['EI02ET05'], difficulty: 'Difícil' }
+    ]
   },
   {
     id: 'termometro_sentimentos_infantil',
@@ -91,7 +120,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Entender',
     difficulty: 'Médio',
     stimuli: ['Visual', 'Calmante'],
-    skillsWorked: ['Reconhecimento Facial', 'Empatia', 'Vocabulário Emocional']
+    skillsWorked: ['Reconhecimento Facial', 'Empatia', 'Vocabulário Emocional'],
+    levels: [
+      { level: 1, name: 'Espelho das Expressões', objective: 'Identificar sentimentos básicos por rostos desenhados', mechanic: 'reconhecimento_facial', bnccSkills: ['EI02EO04'], difficulty: 'Fácil' },
+      { level: 2, name: 'Carrossel das Situações', objective: 'Relacionar sentimentos à contextos lúdicos cotidianos', mechanic: 'interpretacao_emocional', bnccSkills: ['EI02EO01'], difficulty: 'Médio' },
+      { level: 3, name: 'Amigo no Parquinho', objective: 'Escolhas primárias de atitude e empatia', mechanic: 'empatia_guiada', bnccSkills: ['EI02EO01'], difficulty: 'Difícil' }
+    ]
   },
 
   // --- 4 a 5 anos (Crianças pequenas - Pré-Escola) ---
@@ -112,7 +146,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Aplicar',
     difficulty: 'Adaptativo',
     stimuli: ['Visual', 'Auditivo', 'Calmante'],
-    skillsWorked: ['Regulação Emocional', 'Tomada de Decisão Social', 'Comunicação Empática']
+    skillsWorked: ['Regulação Emocional', 'Tomada de Decisão Social', 'Comunicação Empática'],
+    levels: [
+      { level: 1, name: 'Reconhecimento de Sentimentos', objective: 'Identificar emoções complexas por imagens expressivas', mechanic: 'reconhecimento_facial', bnccSkills: ['EI03EO04'], difficulty: 'Fácil' },
+      { level: 2, name: 'Empatia e Resoluções', objective: 'Avaliar sentimentos de colegas em situações comuns', mechanic: 'interpretacao_emocional', bnccSkills: ['EI03EO01'], difficulty: 'Médio' },
+      { level: 3, name: 'Dilemas Éticos do Recreio', objective: 'Decisões comportamentais autônomas e generosas', mechanic: 'empatia_guiada', bnccSkills: ['EI03EO02'], difficulty: 'Difícil' }
+    ]
   },
   {
     id: 'cacadores_letras_infantil',
@@ -131,7 +170,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Aplicar',
     difficulty: 'Adaptativo',
     stimuli: ['Visual', 'Auditivo', 'Foco'],
-    skillsWorked: ['Consciência Fonológica', 'Percepção Visual', 'Vocabulário']
+    skillsWorked: ['Consciência Fonológica', 'Percepção Visual', 'Vocabulário'],
+    levels: [
+      { level: 1, name: 'Detetive das Vogais', objective: 'Identificar a vogal inicial correta de objetos', mechanic: 'caca_letras', bnccSkills: ['EI03EF09'], difficulty: 'Fácil' },
+      { level: 2, name: 'Par de Sílabas', objective: 'Identificar a sílaba inicial das figuras', mechanic: 'montar_silabas', bnccSkills: ['EI03EF03'], difficulty: 'Médio' },
+      { level: 3, name: 'Frase Lúdica Lacunada', objective: 'Completar palavras fáceis na frase falada', mechanic: 'completar_frases', bnccSkills: ['EI03EF09'], difficulty: 'Difícil' }
+    ]
   },
 
   // --- 6 a 8 anos (Ensino Fundamental Anos Iniciais - Ciclo de Alfabetização) ---
@@ -152,7 +196,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Aplicar',
     difficulty: 'Adaptativo',
     stimuli: ['Visual', 'Foco'],
-    skillsWorked: ['Ortografia', 'Consciência Silábica', 'Velocidade de Processamento']
+    skillsWorked: ['Ortografia', 'Consciência Silábica', 'Velocidade de Processamento'],
+    levels: [
+      { level: 1, name: 'Completar Vogais e Consoantes', objective: 'Identificar a letra correta que falta na palavra escrita', mechanic: 'caca_letras', bnccSkills: ['EF01LP08'], difficulty: 'Fácil' },
+      { level: 2, name: 'União de Sílabas e Ortografia', objective: 'Encaixar a sílaba correta faltante na palavra', mechanic: 'montar_silabas', bnccSkills: ['EF15LP18'], difficulty: 'Médio' },
+      { level: 3, name: 'Completar Frase e Conexão de Sentido', objective: 'Escolher o substantivo/verbo que faz sentido na frase', mechanic: 'completar_frases', bnccSkills: ['EF01LP09'], difficulty: 'Difícil' }
+    ]
   },
   {
     id: 'quebra_cabeca_formas',
@@ -171,7 +220,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Analisar',
     difficulty: 'Adaptativo',
     stimuli: ['Visual', 'Foco', 'Tátil'],
-    skillsWorked: ['Raciocínio Espacial', 'Resolução de Problemas', 'Simetria e Geometria']
+    skillsWorked: ['Raciocínio Espacial', 'Resolução de Problemas', 'Simetria e Geometria'],
+    levels: [
+      { level: 1, name: 'Pareamento Geométrico Plano', objective: 'Identificar a forma espacial ou tangram plano correto', mechanic: 'atencao_seletiva', bnccSkills: ['EF01MA14'], difficulty: 'Fácil' },
+      { level: 2, name: 'Simetria e Matriz de Formas', objective: 'Completar padrões bidimensionais de formas espaciais', mechanic: 'sequencia_logica', bnccSkills: ['EF02MA15'], difficulty: 'Médio' },
+      { level: 3, name: 'Desafio Mental da Memória de Formas', objective: 'Memorização e cliques na ordem de formas que somem', mechanic: 'memoria_visual', bnccSkills: ['EF15AR02'], difficulty: 'Difícil' }
+    ]
   },
   {
     id: 'reino_numeros',
@@ -190,7 +244,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Aplicar',
     difficulty: 'Médio',
     stimuli: ['Visual', 'Auditivo', 'Foco'],
-    skillsWorked: ['Conceito Numérico', 'Adição e Subtração Básicas', 'Correspondência de Grupos']
+    skillsWorked: ['Conceito Numérico', 'Adição e Subtração Básicas', 'Correspondência de Grupos'],
+    levels: [
+      { level: 1, name: 'Contagem de Animais da Fazenda', objective: 'Associar elementos visuais ilustrados ao numeral exato', mechanic: 'contar_objetos', bnccSkills: ['EF01MA01'], difficulty: 'Fácil' },
+      { level: 2, name: 'Trilha Sequencial Matemática', objective: 'Identificar números faltantes na ordem numérica', mechanic: 'sequencia_numerica', bnccSkills: ['EF02MA01'], difficulty: 'Médio' },
+      { level: 3, name: 'Alimentar Animais: Soma Visual', objective: 'Operação simples ilustrada com apoio e somas', mechanic: 'mini_desafios', bnccSkills: ['EF01MA04'], difficulty: 'Difícil' }
+    ]
   },
 
   // --- 9 a 12 anos (Ensino Fundamental - Anos Intermediários) ---
@@ -211,7 +270,12 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Criar',
     difficulty: 'Difícil',
     stimuli: ['Visual', 'Foco'],
-    skillsWorked: ['Lógica Algorítmica', 'Pensamento Estruturado', 'Decomposição de Problemas']
+    skillsWorked: ['Lógica Algorítmica', 'Pensamento Estruturado', 'Decomposição de Problemas'],
+    levels: [
+      { level: 1, name: 'Atenção e Foco Computacional', objective: 'Filtro e atenção a blocos de comando geométricos', mechanic: 'atencao_seletiva', bnccSkills: ['EF06MA09'], difficulty: 'Fácil' },
+      { level: 2, name: 'Fluxograma Algorítmico e Padrões', objective: 'Montar regras ordenadas sequenciais lógicas', mechanic: 'sequencia_logica', bnccSkills: ['EF08MA11'], difficulty: 'Médio' },
+      { level: 3, name: 'Memória e Raciocínio Sequencial', objective: 'Memorização de pilhas de sequências lógicas rápidas', mechanic: 'memoria_visual', bnccSkills: ['EF06MA09'], difficulty: 'Difícil' }
+    ]
   },
 
   // --- 13+ anos (Ensino Fundamental II - Anos Finais) ---
@@ -232,6 +296,11 @@ export const GAMES_CATALOG: GameDefinition[] = [
     cognitiveLevel: 'Avaliar',
     difficulty: 'Adaptativo',
     stimuli: ['Visual', 'Foco', 'Calmante'],
-    skillsWorked: ['Pensamento Crítico', 'Raciocínio Ético', 'Mediação e Socialização']
+    skillsWorked: ['Pensamento Crítico', 'Raciocínio Ético', 'Mediação e Socialização'],
+    levels: [
+      { level: 1, name: 'Reconhecimento Social e Expressões', objective: 'Identificar a intenção/sentimento alheio em discussões', mechanic: 'reconhecimento_facial', bnccSkills: ['EF06ER07'], difficulty: 'Fácil' },
+      { level: 2, name: 'Análise de Conflitos e Empatia', objective: 'Interpretar sentimentos em contextos de conflito', mechanic: 'interpretacao_emocional', bnccSkills: ['EF08ER04'], difficulty: 'Médio' },
+      { level: 3, name: 'Cidadania Ativa e Escolhas Éticas', objective: 'Dilemas éticos complexos com escolhas inclusivas', mechanic: 'empatia_guiada', bnccSkills: ['EF09ER01'], difficulty: 'Difícil' }
+    ]
   }
 ];

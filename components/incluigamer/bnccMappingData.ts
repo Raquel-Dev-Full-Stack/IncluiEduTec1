@@ -10,6 +10,13 @@ export interface BnccMapping {
   eixoCognitivo: 'Alfabetização' | 'Raciocínio Lógico' | 'Socioemocional' | 'Percepção Sensorial' | 'Coordenação Visomotora';
   nivelDificuldade: 'Fácil' | 'Médio' | 'Difícil' | 'Adaptativo';
   tagsPedagogicas: string[];
+  
+  // Propriedades estendidas (Fase 5 - Matriz Pedagógica BNCC)
+  level: number; // Nível associado (1, 2 ou 3)
+  fase: string; // Fase lúdica
+  objetivoCognitivo: string; // Objetivo cognitivo específico
+  mecanica: string; // Nome legível da mecânica
+  competenciasTrabalhadas: string[]; // Competências secundárias desenvolvidas
 }
 
 export const BNCC_MAPPING_DATA: BnccMapping[] = [
@@ -24,7 +31,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Traços, sons, cores e formas',
     eixoCognitivo: 'Percepção Sensorial',
     nivelDificuldade: 'Fácil',
-    tagsPedagogicas: ['Estímulo Sonoro', 'Estímulo Tátil', 'Causa e Efeito']
+    tagsPedagogicas: ['Estímulo Sonoro', 'Estímulo Tátil', 'Causa e Efeito'],
+    level: 1,
+    fase: 'Fase 1 - Sons da Natureza',
+    objetivoCognitivo: 'Causa e efeito tátil-auditiva',
+    mecanica: 'Toques Musicais Suaves',
+    competenciasTrabalhadas: ['Atenção primária', 'Exploração sonora']
   },
   {
     id: 'EI01TS03',
@@ -36,7 +48,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Traços, sons, cores e formas',
     eixoCognitivo: 'Percepção Sensorial',
     nivelDificuldade: 'Fácil',
-    tagsPedagogicas: ['Musicalização', 'Atenção Auditiva', 'Calmante']
+    tagsPedagogicas: ['Musicalização', 'Atenção Auditiva', 'Calmante'],
+    level: 2,
+    fase: 'Fase 2 - Instrumentos Musicais',
+    objetivoCognitivo: 'Diferenciação e escuta ativa de fontes sonoras',
+    mecanica: 'Tons de Calmaria',
+    competenciasTrabalhadas: ['Foco auditivo', 'Regulação emocional']
   },
   {
     id: 'EI01CG05',
@@ -48,7 +65,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Corpo, gestos e movimentos',
     eixoCognitivo: 'Coordenação Visomotora',
     nivelDificuldade: 'Fácil',
-    tagsPedagogicas: ['Precisão de Toque', 'Visomotor', 'Calmante']
+    tagsPedagogicas: ['Precisão de Toque', 'Visomotor', 'Calmante'],
+    level: 2,
+    fase: 'Fase 2 - Harmonia Cromática',
+    objetivoCognitivo: 'Reforçar coordenação óculo-manual de toque',
+    mecanica: 'Pareamento de Cores Pastéis',
+    competenciasTrabalhadas: ['Coordenação motora fina', 'Precisão espacial']
   },
   {
     id: 'EI01TS02',
@@ -60,7 +82,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Traços, sons, cores e formas',
     eixoCognitivo: 'Percepção Sensorial',
     nivelDificuldade: 'Fácil',
-    tagsPedagogicas: ['Rastreamento Visual', 'Cromoterapia', 'Regulação Sensorial']
+    tagsPedagogicas: ['Rastreamento Visual', 'Cromoterapia', 'Regulação Sensorial'],
+    level: 1,
+    fase: 'Fase 1 - Toques Mágicos',
+    objetivoCognitivo: 'Interação e rastreamento cromático reativo',
+    mecanica: 'Ecos de Luz e Causa-Efeito',
+    competenciasTrabalhadas: ['Rastreamento ocular', 'Foco visual']
   },
   {
     id: 'EI02ET05',
@@ -72,7 +99,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Espaços, tempos, quantidades, relações e transformações',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Diferenciação de Formas', 'Pareamento Visual', 'Geometria Espacial']
+    tagsPedagogicas: ['Diferenciação de Formas', 'Pareamento Visual', 'Geometria Espacial'],
+    level: 1,
+    fase: 'Fase 1 - Formas e Balões',
+    objetivoCognitivo: 'Diferenciar e parear figuras planas primárias',
+    mecanica: 'Atenção Seletiva e Cliques',
+    competenciasTrabalhadas: ['Reconhecimento geométrico', 'Seleção visual']
   },
   {
     id: 'EI02ET01',
@@ -84,7 +116,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Espaços, tempos, quantidades, relações e transformações',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Atenção Sustentada', 'Exploração Ativa', 'Coordenação Fina']
+    tagsPedagogicas: ['Atenção Sustentada', 'Exploração Ativa', 'Coordenação Fina'],
+    level: 2,
+    fase: 'Fase 2 - Trilha de Padrões',
+    objetivoCognitivo: 'Compreensão de repetição lógica sequencial',
+    mecanica: 'Sequência Lógica',
+    competenciasTrabalhadas: ['Raciocínio indutivo', 'Atenção focalizada']
   },
   {
     id: 'EI02EO01',
@@ -96,7 +133,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'O eu, o outro e o nós',
     eixoCognitivo: 'Socioemocional',
     nivelDificuldade: 'Médio',
-    tagsPedagogicas: ['Empatia', 'Autocuidado', 'Inteligência Emocional']
+    tagsPedagogicas: ['Empatia', 'Autocuidado', 'Inteligência Emocional'],
+    level: 2,
+    fase: 'Fase 2 - Expressando Emoções',
+    objetivoCognitivo: 'Reconhecer sentimentos em situações comuns',
+    mecanica: 'Interpretação Emocional',
+    competenciasTrabalhadas: ['Vocabulário socioafetivo', 'Empatia guiada']
   },
   {
     id: 'EI02EO04',
@@ -108,7 +150,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'O eu, o outro e o nós',
     eixoCognitivo: 'Socioemocional',
     nivelDificuldade: 'Médio',
-    tagsPedagogicas: ['Reconhecimento Facial', 'Comunicação Afetiva', 'Autoexpressão']
+    tagsPedagogicas: ['Reconhecimento Facial', 'Comunicação Afetiva', 'Autoexpressão'],
+    level: 1,
+    fase: 'Fase 1 - Galeria das Carinhas',
+    objetivoCognitivo: 'Identificação visual de rostos e expressões',
+    mecanica: 'Reconhecimento Facial',
+    competenciasTrabalhadas: ['Expressão facial', 'Autoreconhecimento']
   },
 
   // --- Crianças pequenas - Pré-Escola (4 a 5 anos) ---
@@ -122,7 +169,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'O eu, o outro e o nós',
     eixoCognitivo: 'Socioemocional',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Empatia', 'Perspectiva Social', 'Regulação Emocional']
+    tagsPedagogicas: ['Empatia', 'Perspectiva Social', 'Regulação Emocional'],
+    level: 2,
+    fase: 'Fase 2 - Empatia e Reações',
+    objetivoCognitivo: 'Avaliar a reação do colega diante de sentimentos',
+    mecanica: 'Interpretação Emocional',
+    competenciasTrabalhadas: ['Empatia ativa', 'Percepção social']
   },
   {
     id: 'EI03EO02',
@@ -134,7 +186,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'O eu, o outro e o nós',
     eixoCognitivo: 'Socioemocional',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Autoestima', 'Resiliência', 'Tomada de Decisão']
+    tagsPedagogicas: ['Autoestima', 'Resiliência', 'Tomada de Decisão'],
+    level: 3,
+    fase: 'Fase 3 - Convivência Cooperativa',
+    objetivoCognitivo: 'Compreensão ética e cooperação autônoma',
+    mecanica: 'Escolhas de Empatia Guiada',
+    competenciasTrabalhadas: ['Autonomia ética', 'Resolução de conflitos']
   },
   {
     id: 'EI03EF09',
@@ -146,7 +203,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Escuta, fala, pensamento e imaginação',
     eixoCognitivo: 'Alfabetização',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Alfabetização Inicial', 'Escrita Espontânea', 'Fonemas']
+    tagsPedagogicas: ['Alfabetização Inicial', 'Escrita Espontânea', 'Fonemas'],
+    level: 1,
+    fase: 'Fase 1 - Vogal e Som',
+    objetivoCognitivo: 'Associação grafofônica inicial em figuras',
+    mecanica: 'Caça Letras',
+    competenciasTrabalhadas: ['Letramento visual', 'Fonética primária']
   },
   {
     id: 'EI03EF03',
@@ -158,7 +220,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     campoExperiencia: 'Escuta, fala, pensamento e imaginação',
     eixoCognitivo: 'Alfabetização',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Consciência Fonológica', 'Vocabulário', 'Foco Atento']
+    tagsPedagogicas: ['Consciência Fonológica', 'Vocabulário', 'Foco Atento'],
+    level: 2,
+    fase: 'Fase 2 - Pedaços de Palavras',
+    objetivoCognitivo: 'Identificar a sílaba tônica inicial de imagens',
+    mecanica: 'Montar Sílabas',
+    competenciasTrabalhadas: ['Aliteração', 'Atenção auditiva']
   },
 
   // --- Ensino Fundamental I - Alfabetização (6 a 8 anos) ---
@@ -172,7 +239,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Língua Portuguesa',
     eixoCognitivo: 'Alfabetização',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Ortografia', 'Consciência Silábica', 'Grafofônica']
+    tagsPedagogicas: ['Ortografia', 'Consciência Silábica', 'Grafofônica'],
+    level: 2,
+    fase: 'Fase 2 - Sílaba Faltante',
+    objetivoCognitivo: 'Parear a sílaba escrita exata na lacuna',
+    mecanica: 'Montar Sílabas',
+    competenciasTrabalhadas: ['Ortografia silábica', 'Consciência grafofonêmica']
   },
   {
     id: 'EF01LP08',
@@ -184,7 +256,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Língua Portuguesa',
     eixoCognitivo: 'Alfabetização',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Leitura Autônoma', 'Associação Grafema-Fonema', 'Segmentação']
+    tagsPedagogicas: ['Leitura Autônoma', 'Associação Grafema-Fonema', 'Segmentação'],
+    level: 1,
+    fase: 'Fase 1 - Grafema e Letra',
+    objetivoCognitivo: 'Completar letras faltantes na palavra',
+    mecanica: 'Caça Letras',
+    competenciasTrabalhadas: ['Ortografia básica', 'Leitura fonética']
   },
   {
     id: 'EF15AR02',
@@ -196,7 +273,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Artes',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Tangram', 'Rotação Mental', 'Simetria']
+    tagsPedagogicas: ['Tangram', 'Rotação Mental', 'Simetria'],
+    level: 3,
+    fase: 'Fase 3 - Memória e Arte das Formas',
+    objetivoCognitivo: 'Memorização e ordenação visual espacial',
+    mecanica: 'Memória Visual',
+    competenciasTrabalhadas: ['Memória de trabalho', 'Visoespacial']
   },
   {
     id: 'EF01MA14',
@@ -208,7 +290,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Matemática',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Geometria Plana', 'Resolução de Problemas', 'Foco']
+    tagsPedagogicas: ['Geometria Plana', 'Resolução de Problemas', 'Foco'],
+    level: 1,
+    fase: 'Fase 1 - Moldes Planos',
+    objetivoCognitivo: 'Identificar figuras planas no tangram abstrato',
+    mecanica: 'Atenção Seletiva',
+    competenciasTrabalhadas: ['Figuras geométricas planas', 'Análise de atributos']
   },
   {
     id: 'EF01MA01',
@@ -220,7 +307,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Matemática',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Médio',
-    tagsPedagogicas: ['Contagem Ativa', 'Conceito Numérico', 'Correspondência']
+    tagsPedagogicas: ['Contagem Ativa', 'Conceito Numérico', 'Correspondência'],
+    level: 1,
+    fase: 'Fase 1 - Contando Elementos',
+    objetivoCognitivo: 'Parear quantidade de figuras ao numeral escrito',
+    mecanica: 'Contar Objetos',
+    competenciasTrabalhadas: ['Princípio da contagem', 'Cardinalidade']
   },
   {
     id: 'EF01MA04',
@@ -228,11 +320,16 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     faixaEtaria: '6-8',
     etapaEnsino: 'Ensino Fundamental I',
     habilidadeBncc: 'EF01MA04',
-    descricaoBncc: 'Contar a quantidade de objetos de coleções de até 20 elementos e apresentar o resultado por registros verbais e simbólicos.',
+    descricaoBncc: 'Contar a quantidade de objetos de coleções de até 20 elements e apresentar o resultado por registros verbais e simbólicos.',
     subject: 'Matemática',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Médio',
-    tagsPedagogicas: ['Adição Básica', 'Associação de Grupos', 'Subtração Ilustrada']
+    tagsPedagogicas: ['Adição Básica', 'Associação de Grupos', 'Subtração Ilustrada'],
+    level: 3,
+    fase: 'Fase 3 - Somas da Fazenda',
+    objetivoCognitivo: 'Adição básica simplificada com apoio pictórico',
+    mecanica: 'Mini Desafios Matemáticos',
+    competenciasTrabalhadas: ['Operações aritméticas básicas', 'Soma visual']
   },
 
   // --- Ensino Fundamental I - Intermediários (9 a 12 anos) ---
@@ -246,7 +343,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Matemática',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Difícil',
-    tagsPedagogicas: ['Lógica Algorítmica', 'Pensamento Sequencial', 'Decomposição']
+    tagsPedagogicas: ['Lógica Algorítmica', 'Pensamento Sequencial', 'Decomposição'],
+    level: 1,
+    fase: 'Fase 1 - Atenção a Comandos',
+    objetivoCognitivo: 'Atenção seletiva a fluxos lógicos computacionais',
+    mecanica: 'Atenção Seletiva',
+    competenciasTrabalhadas: ['Pensamento computacional', 'Sequenciação']
   },
   {
     id: 'EF08MA11',
@@ -258,7 +360,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Matemática',
     eixoCognitivo: 'Raciocínio Lógico',
     nivelDificuldade: 'Difícil',
-    tagsPedagogicas: ['Reconhecimento de Padrões', 'Estruturas de Decisão', 'Tangível']
+    tagsPedagogicas: ['Reconhecimento de Padrões', 'Estruturas de Decisão', 'Tangível'],
+    level: 2,
+    fase: 'Fase 2 - Trilha de Algoritmos',
+    objetivoCognitivo: 'Completar padrões estruturados e laços',
+    mecanica: 'Sequência Lógica',
+    competenciasTrabalhadas: ['Reconhecimento de padrões', 'Abstração lógica']
   },
 
   // --- Ensino Fundamental II - Anos Finais (13+ anos) ---
@@ -272,7 +379,12 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Ensino Religioso / Socioemocional',
     eixoCognitivo: 'Socioemocional',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Ética', 'Cidadania', 'Inclusão Social']
+    tagsPedagogicas: ['Ética', 'Cidadania', 'Inclusão Social'],
+    level: 1,
+    fase: 'Fase 1 - Expressão Social',
+    objetivoCognitivo: 'Percepção facial de sentimentos em situações sociais',
+    mecanica: 'Reconhecimento Facial',
+    competenciasTrabalhadas: ['Percepção de sentimentos', 'Socialização']
   },
   {
     id: 'EF08ER04',
@@ -284,6 +396,11 @@ export const BNCC_MAPPING_DATA: BnccMapping[] = [
     subject: 'Ensino Religioso / Socioemocional',
     eixoCognitivo: 'Socioemocional',
     nivelDificuldade: 'Adaptativo',
-    tagsPedagogicas: ['Respeito à Diversidade', 'Pensamento Crítico', 'Cooperação']
+    tagsPedagogicas: ['Respeito à Diversidade', 'Pensamento Crítico', 'Cooperação'],
+    level: 2,
+    fase: 'Fase 2 - Mediação e Empatia',
+    objetivoCognitivo: 'Avaliação de sentimentos de outrem em discussões escolares',
+    mecanica: 'Interpretação Emocional',
+    competenciasTrabalhadas: ['Pensamento crítico', 'Mediação de dilemas']
   }
 ];

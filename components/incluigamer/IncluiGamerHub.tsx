@@ -37,6 +37,11 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
   const [ageBlockGame, setAgeBlockGame] = useState<GameDefinition | null>(null);
   const [cognitiveScore, setCognitiveScore] = useState<any>(null);
 
+  // Progressão e Níveis (Fase 5)
+  const [gameProgress, setGameProgress] = useState<Record<string, { current_level: number; stars_earned: number; completed: boolean }>>({});
+  const [levelSelectorGame, setLevelSelectorGame] = useState<GameDefinition | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<number>(1);
+
   // Carregamento de Scores Cognitivos Históricos
   useEffect(() => {
     if (!selectedStudentId) {
@@ -78,9 +83,58 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     loadScores();
   }, [selectedStudentId]);
 
+  // Carregamento reativo de Progresso de Jogos / Níveis (Fase 5)
+  const loadProgress = async () => {
+    if (!selectedStudentId) {
+      setGameProgress({});
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('game_progress')
+        .select('game_id, current_level, stars_earned, completed')
+        .eq('student_id', selectedStudentId);
+
+      if (data && data.length > 0) {
+        const progressMap: Record<string, any> = {};
+        data.forEach(item => {
+          progressMap[item.game_id] = {
+            current_level: item.current_level,
+            stars_earned: item.stars_earned,
+            completed: item.completed
+          };
+        });
+        setGameProgress(progressMap);
+        return;
+      }
+    } catch (e) {
+      console.warn("[ACE Hub] Falha ao ler progresso Supabase, buscando local.");
+    }
+
+    const local = localStorage.getItem(`incluigamer_progress_map_${selectedStudentId}`);
+    if (local) {
+      setGameProgress(JSON.parse(local));
+    } else {
+      const initialMap: Record<string, any> = {};
+      GAMES_CATALOG.forEach(g => {
+        initialMap[g.id] = {
+          current_level: 1,
+          stars_earned: 0,
+          completed: false
+        };
+      });
+      setGameProgress(initialMap);
+    }
+  };
+
+  useEffect(() => {
+    loadProgress();
+  }, [selectedStudentId]);
+
   const handleLaunchGame = (game: GameDefinition) => {
     if (!ageGroupKey) {
-      setPendingGame(game);
+      setLevelSelectorGame(game);
       return;
     }
 
@@ -89,7 +143,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     const gameIdx = AGE_GROUPS_ORDER.indexOf(game.ageGroup);
 
     if (studentIdx === -1 || gameIdx === -1) {
-      setPendingGame(game);
+      setLevelSelectorGame(game);
       return;
     }
 
@@ -105,12 +159,18 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       return;
     }
 
-    // Regra 3: Faixa etária correspondente exata
-    setPendingGame(game);
+    // Regra 3: Faixa etária correspondente exata -> Abrir seletor de nível
+    setLevelSelectorGame(game);
   };
 
   const handleForceLaunchGame = (game: GameDefinition) => {
     setAgeWarningGame(null);
+    setLevelSelectorGame(game);
+  };
+
+  const handleSelectLevelAndLaunch = (game: GameDefinition, levelNum: number) => {
+    setSelectedLevel(levelNum);
+    setLevelSelectorGame(null);
     setPendingGame(game);
   };
 
@@ -328,9 +388,11 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           accessibility={accessibility}
           preProfile={preProfile}
           ageGroup={ageGroupKey || undefined}
+          level={selectedLevel}
           onClose={() => {
             setActiveGame(null);
             setPreProfile(null);
+            loadProgress(); // Atualiza os níveis na gaveta reativamente
             setActiveSubTab('dashboard'); // Ir para o dashboard ver os resultados após o jogo
           }} 
         />
@@ -592,6 +654,100 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               >
                 Voltar ao Mapa (Recomendado)
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Seletor de Níveis Pedagógicos Premium (Fase 5) */}
+      {levelSelectorGame && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] shadow-2xl max-w-lg w-full text-center space-y-6 relative overflow-hidden">
+            {/* Glow Decorativo */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/25">
+                  <i className="fa-solid fa-layer-group"></i>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-base font-black text-white uppercase tracking-wider">{levelSelectorGame.name}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{levelSelectorGame.ageLabel} • Bioma: {levelSelectorGame.bioma.toUpperCase()}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setLevelSelectorGame(null)}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {[1, 2, 3].map((lvlNum) => {
+                const lvlDef = levelSelectorGame.levels.find(l => l.level === lvlNum);
+                if (!lvlDef) return null;
+
+                const progress = gameProgress[levelSelectorGame.id] || { current_level: 1, stars_earned: 0, completed: false };
+                const isDesbloqueado = lvlNum <= progress.current_level;
+                
+                // Exibir estrelas se concluído
+                const estrelas = lvlNum < progress.current_level 
+                  ? progress.stars_earned 
+                  : lvlNum === progress.current_level && progress.completed 
+                    ? progress.stars_earned 
+                    : 0;
+
+                return (
+                  <div 
+                    key={lvlNum}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left relative overflow-hidden ${
+                      isDesbloqueado 
+                        ? 'bg-slate-950/40 border-slate-800 hover:border-indigo-500/30 shadow-inner' 
+                        : 'bg-slate-900/20 border-slate-850 opacity-60'
+                    }`}
+                  >
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-black uppercase text-indigo-400">Nível {lvlNum}</span>
+                        <h4 className="text-xs font-black text-white">{lvlDef.name}</h4>
+                        
+                        {/* Estrelas obtidas no nível */}
+                        {isDesbloqueado && estrelas > 0 && (
+                          <div className="flex gap-0.5 text-xs text-amber-400">
+                            {Array.from({ length: estrelas }).map((_, idx) => (
+                              <i key={idx} className="fa-solid fa-star"></i>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-[10px] text-slate-400 font-semibold">{lvlDef.objective}</p>
+                      
+                      <div className="flex gap-1.5 items-center mt-1 flex-wrap">
+                        <span className="text-[8px] bg-indigo-950 text-indigo-300 border border-indigo-900/35 px-1.5 py-0.5 rounded font-extrabold uppercase">{lvlDef.bnccSkills[0]}</span>
+                        <span className="text-[8px] bg-slate-850 text-slate-500 border border-slate-800 px-1.5 py-0.5 rounded font-black uppercase">{lvlDef.difficulty}</span>
+                      </div>
+                    </div>
+
+                    <div className="w-full sm:w-auto self-stretch sm:self-center flex items-center justify-end">
+                      {isDesbloqueado ? (
+                        <button
+                          onClick={() => handleSelectLevelAndLaunch(levelSelectorGame, lvlNum)}
+                          className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1"
+                        >
+                          <i className="fa-solid fa-play"></i> Iniciar
+                        </button>
+                      ) : (
+                        <span className="text-[8px] font-black uppercase bg-slate-950 text-slate-500 border border-slate-850 px-3 py-2 rounded-xl flex items-center gap-1.5 w-full sm:w-auto justify-center">
+                          <i className="fa-solid fa-lock text-[9px]"></i> Bloqueado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
