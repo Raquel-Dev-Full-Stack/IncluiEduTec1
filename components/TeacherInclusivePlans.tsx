@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Student, Class, User } from '../types';
+import { Student, Class, User, UserProfile } from '../types';
 import { jsPDF } from 'jspdf';
 import { supabase } from '../lib/supabaseClient';
 
@@ -157,6 +157,7 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
   onBack 
 }) => {
   const user = (userProp || currentUserProp) as User;
+  const isPaeeReadOnly = user?.profile !== UserProfile.DIRETOR;
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [activePlan, setActivePlan] = useState<PlanType>('PEI');
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -2050,8 +2051,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Barreiras Identificadas</label>
                       <textarea 
                         value={paeeData?.barreiras || ''}
+                        disabled={isPaeeReadOnly}
                         onChange={(e) => setPaeeData({ ...paeeData, barreiras: e.target.value })}
-                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" 
+                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px] disabled:opacity-75 disabled:cursor-not-allowed" 
                         placeholder="Física, Atitudinal, Comunicacional..." 
                       />
                     </div>
@@ -2059,8 +2061,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recursos de Acessibilidade</label>
                       <textarea 
                         value={paeeData?.recursos || ''}
+                        disabled={isPaeeReadOnly}
                         onChange={(e) => setPaeeData({ ...paeeData, recursos: e.target.value })}
-                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" 
+                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px] disabled:opacity-75 disabled:cursor-not-allowed" 
                         placeholder="Soroban, Teclado Adaptado, Prancha de CAA..." 
                       />
                     </div>
@@ -2068,8 +2071,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estratégias de Intervenção</label>
                       <textarea 
                         value={paeeData?.estrategias || ''}
+                        disabled={isPaeeReadOnly}
                         onChange={(e) => setPaeeData({ ...paeeData, estrategias: e.target.value })}
-                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px]" 
+                        className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[120px] disabled:opacity-75 disabled:cursor-not-allowed" 
                         placeholder="Atendimento em contraturno na SRM..." 
                       />
                     </div>
@@ -2079,8 +2083,9 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conteúdo Detalhado PAEE</label>
                     <textarea 
                       value={paeeData?.content || ''}
+                      disabled={isPaeeReadOnly}
                       onChange={(e) => setPaeeData({ ...paeeData, content: e.target.value })}
-                      className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px]" 
+                      className="w-full p-5 bg-emerald-50/20 border border-emerald-100 rounded-[2rem] text-sm focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px] disabled:opacity-75 disabled:cursor-not-allowed" 
                       placeholder="Outros detalhes sobre o atendimento..." 
                     />
                   </div>
@@ -2096,12 +2101,19 @@ const TeacherInclusivePlans: React.FC<TeacherInclusivePlansProps> = ({
               )}
 
               <div className="mt-12 pt-8 border-t border-gray-50 flex justify-end gap-4">
-                <button
-                  onClick={() => handleSave(activePlan)}
-                  className="px-10 py-4 bg-indigo-600 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all active:scale-95 shadow-xl shadow-indigo-100 flex items-center gap-3"
-                >
-                  <i className="fa-solid fa-floppy-disk"></i> Atualizar Registro {activePlan}
-                </button>
+                {!(activePlan === 'PAEE' && isPaeeReadOnly) ? (
+                  <button
+                    onClick={() => handleSave(activePlan)}
+                    className="px-10 py-4 bg-indigo-600 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all active:scale-95 shadow-xl shadow-indigo-100 flex items-center gap-3"
+                  >
+                    <i className="fa-solid fa-floppy-disk"></i> Atualizar Registro {activePlan}
+                  </button>
+                ) : (
+                  <div className="px-6 py-3 bg-amber-50 dark:bg-slate-800 border border-amber-200 dark:border-slate-700 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm">
+                    <i className="fa-solid fa-lock"></i>
+                    Apenas o Diretor Principal pode alterar o registro do PAEE.
+                  </div>
+                )}
               </div>
             </div>
           </div>
