@@ -554,6 +554,8 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         await supabase.from('cognitive_scores').update({ ...scoresPayload, skills_developed: mergedSkills }).eq('id', existingScore.id);
       } else await supabase.from('cognitive_scores').insert([scoresPayload]);
     } catch (err) {
+      console.warn("[ACE Play] Falha na sincronizacao em nuvem. Salvando progresso localmente.", err);
+      
       const localProgressKey = `incluigamer_progress_map_${student.id}`;
       const localProgress = localStorage.getItem(localProgressKey);
       let progressMap: Record<string, any> = {};
@@ -561,10 +563,46 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       const currentLocal = progressMap[game.id] || { current_level: 1, stars_earned: 0, completed: false };
       progressMap[game.id] = { current_level: Math.max(currentLocal.current_level, progressPayload.current_level), stars_earned: Math.max(currentLocal.stars_earned, progressPayload.stars_earned), completed: progressPayload.completed || currentLocal.current_level >= 3 };
       localStorage.setItem(localProgressKey, JSON.stringify(progressMap));
+      
       const localLogsKey = `incluigamer_progress_${student.id}`;
       const oldProgress = JSON.parse(localStorage.getItem(localLogsKey) || '[]');
       oldProgress.push(behaviorLogPayload);
       localStorage.setItem(localLogsKey, JSON.stringify(oldProgress));
+
+      // Salvar scoresPayload localmente para alimentar o Dashboard Cognitivo de forma imediata (Resiliencia Local)
+      const localScoresKey = `incluigamer_scores_${student.id}`;
+      const existingLocalScore = JSON.parse(localStorage.getItem(localScoresKey) || 'null');
+      
+      let mergedScoresPayload = { ...scoresPayload };
+      if (existingLocalScore) {
+        const oldSkills = Array.isArray(existingLocalScore.skills_developed) ? existingLocalScore.skills_developed : [];
+        const mergedSkills = [...oldSkills];
+        developedSkills.forEach(newSkill => {
+          const idx = mergedSkills.findIndex(s => s.code === newSkill.code);
+          if (idx >= 0) {
+            mergedSkills[idx] = { 
+              ...mergedSkills[idx], 
+              proficiency: Math.round((mergedSkills[idx].proficiency + newSkill.proficiency) / 2), 
+              date: newSkill.date 
+            };
+          } else {
+            mergedSkills.push(newSkill);
+          }
+        });
+        
+        mergedScoresPayload = {
+          ...scoresPayload,
+          foco: Math.round((existingLocalScore.foco + scoresPayload.foco) / 2),
+          autonomia: Math.round((existingLocalScore.autonomia + scoresPayload.autonomia) / 2),
+          emocional: Math.round((existingLocalScore.emocional + scoresPayload.emocional) / 2),
+          coordenacao: Math.round((existingLocalScore.coordenacao + scoresPayload.coordenacao) / 2),
+          engajamento: Math.round((existingLocalScore.engajamento + scoresPayload.engajamento) / 2),
+          desenvolvimento_pedagogico: Math.round((existingLocalScore.desenvolvimento_pedagogico + scoresPayload.desenvolvimento_pedagogico) / 2),
+          total_play_time: (existingLocalScore.total_play_time || 0) + scoresPayload.total_play_time,
+          skills_developed: mergedSkills
+        };
+      }
+      localStorage.setItem(localScoresKey, JSON.stringify(mergedScoresPayload));
     }
   };
 
