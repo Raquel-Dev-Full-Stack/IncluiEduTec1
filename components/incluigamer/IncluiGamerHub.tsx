@@ -4,6 +4,7 @@ import { GAMES_CATALOG, GameDefinition } from './gamesData';
 import IncluiGamerMap from './IncluiGamerMap';
 import IncluiGamerDashboard from './IncluiGamerDashboard';
 import IncluiGamerPlay from './IncluiGamerPlay';
+import IncluiGamerPreProfile, { PreGamerProfile } from './IncluiGamerPreProfile';
 
 interface IncluiGamerHubProps {
   students: Student[];
@@ -26,6 +27,18 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
 
   // Jogo ativo
   const [activeGame, setActiveGame] = useState<GameDefinition | null>(null);
+  const [pendingGame, setPendingGame] = useState<GameDefinition | null>(null);
+  const [preProfile, setPreProfile] = useState<PreGamerProfile | null>(null);
+
+  const handleLaunchGame = (game: GameDefinition) => {
+    setPendingGame(game);
+  };
+
+  const handleConfirmPreProfile = (profile: PreGamerProfile) => {
+    setPreProfile(profile);
+    setActiveGame(pendingGame);
+    setPendingGame(null);
+  };
 
   // Selecionar o aluno ativo
   const selectedStudent = useMemo(() => {
@@ -201,10 +214,20 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           student={selectedStudent!} 
           user={user}
           accessibility={accessibility}
+          preProfile={preProfile}
           onClose={() => {
             setActiveGame(null);
+            setPreProfile(null);
             setActiveSubTab('dashboard'); // Ir para o dashboard ver os resultados após o jogo
           }} 
+        />
+      ) : pendingGame ? (
+        /* Stepper de Perfil Cognitivo Pré-Jogo Obrigatório */
+        <IncluiGamerPreProfile
+          student={selectedStudent!}
+          game={pendingGame}
+          onConfirm={handleConfirmPreProfile}
+          onCancel={() => setPendingGame(null)}
         />
       ) : selectedStudent ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -275,7 +298,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 {recommendations.map(({ game, reason }) => (
                   <div 
                     key={game.id} 
-                    onClick={() => setActiveGame(game)}
+                    onClick={() => handleLaunchGame(game)}
                     className="p-3.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-850 hover:border-indigo-500/30 rounded-2xl transition-all cursor-pointer group flex flex-col gap-1.5"
                   >
                     <div className="flex justify-between items-center">
@@ -324,7 +347,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 <IncluiGamerMap 
                   student={selectedStudent} 
                   ageGroup={ageGroupKey}
-                  onSelectGame={setActiveGame} 
+                  onSelectGame={handleLaunchGame} 
                 />
               ) : (
                 <IncluiGamerDashboard 

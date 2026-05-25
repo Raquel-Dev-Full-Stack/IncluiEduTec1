@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Student, User } from '../../types';
 import { GameDefinition } from './gamesData';
 import { supabase } from '../../lib/supabaseClient';
+import { PreGamerProfile } from './IncluiGamerPreProfile';
 
 interface IncluiGamerPlayProps {
   game: GameDefinition;
@@ -13,13 +14,14 @@ interface IncluiGamerPlayProps {
     tempoEstendido: boolean;
     audioDescricao: boolean;
   };
+  preProfile?: PreGamerProfile | null;
   onClose: () => void;
 }
 
-export default function IncluiGamerPlay({ game, student, user, accessibility, onClose }: IncluiGamerPlayProps) {
+export default function IncluiGamerPlay({ game, student, user, accessibility, preProfile, onClose }: IncluiGamerPlayProps) {
   // Estados do Jogo
   const [currentRound, setCurrentRound] = useState<number>(1);
-  const [totalRounds] = useState<number>(5);
+  const [totalRounds, setTotalRounds] = useState<number>(5);
   const [level, setLevel] = useState<number>(1);
   const [score, setScore] = useState<number>(0);
   const [gameFinished, setGameFinished] = useState<boolean>(false);
@@ -56,8 +58,14 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, on
     ajusteVisualExtra: false,
   });
 
-  // Falar comando se áudio descrição estiver ativa
+  // Falar comando se áudio descrição estiver ativa (respeitando hipersensibilidade sonora)
   const speakCommand = (text: string) => {
+    const temHipersensibilidadeSonora = preProfile?.sensorial.hipersensibilidadeSonora;
+    if (temHipersensibilidadeSonora) {
+      console.log("[ACE] Hipersensibilidade sonora detectada. Omitindo comando sonoro.");
+      return;
+    }
+
     if (accessibility.audioDescricao && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -151,10 +159,66 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, on
     }
   };
 
-  // Gerar primeira rodada ao montar
+  // Motor Inteligente: Calibração Inicial baseada no Perfil Cognitivo Pré-Jogo (Decisão Local)
   useEffect(() => {
-    generateNewRound(1, level, difficultyModulation.numeroOpcoes);
-  }, []);
+    let opcoesIniciais = 3;
+    let tamanho = 'normal';
+    let ajusteVisual = false;
+    let tempoLimite = accessibility.tempoEstendido ? 20 : 12;
+
+    if (preProfile) {
+      console.log("[ACE] Calibrando motor de decisão local baseado no Perfil Cognitivo Pré-Jogo:", preProfile);
+      
+      // 1. Modulação Sensorial
+      const sensorSonoro = preProfile.sensorial.hipersensibilidadeSonora;
+      const sensorVisual = preProfile.sensorial.hipersensibilidadeVisual;
+      const toleranciaEstimulos = preProfile.sensorial.toleranciaEstimulos;
+      ajusteVisual = sensorVisual || toleranciaEstimulos <= 2;
+
+      // 2. Modulação de Coordenação
+      const motoraFina = preProfile.coordenacao.motoraFina;
+      const touchscreen = preProfile.coordenacao.touchscreen;
+      const mouse = preProfile.coordenacao.mouse;
+      tamanho = (motoraFina < 3 || (!touchscreen && mouse)) ? 'grande' : 'normal';
+
+      // 3. Modulação Cognitiva
+      const gameSlug = game.id.toLowerCase();
+      if (gameSlug.includes('letras') && !preProfile.cognitivo.letras) {
+        opcoesIniciais = 2;
+      } else if (gameSlug.includes('formas') && !preProfile.cognitivo.formas) {
+        opcoesIniciais = 2;
+      } else if (gameSlug.includes('sentimentos') && !preProfile.cognitivo.associacaoLogica) {
+        opcoesIniciais = 2;
+      }
+
+      if (preProfile.comunicacao.compreensao <= 2) {
+        opcoesIniciais = Math.min(opcoesIniciais, 2);
+      }
+
+      // 4. Modulação Comportamental
+      const tempoFoco = preProfile.comportamental.tempoFocoMinutos;
+      const frustracaoAlta = preProfile.comportamental.frustracaoAlta;
+      
+      if (tempoFoco < 5) {
+        setTotalRounds(3);
+      } else {
+        setTotalRounds(5);
+      }
+
+      tempoLimite = (accessibility.tempoEstendido || tempoFoco < 5 || frustracaoAlta) ? 25 : 12;
+      ajusteVisual = ajusteVisual || frustracaoAlta;
+    }
+
+    setDifficultyModulation({
+      numeroOpcoes: opcoesIniciais,
+      tempoLimiteS: tempoLimite,
+      tamanhoAlvo: tamanho,
+      ajusteVisualExtra: ajusteVisual,
+    });
+
+    // Inicia a primeira rodada
+    generateNewRound(1, 1, opcoesIniciais);
+  }, [preProfile, accessibility.tempoEstendido]);
 
   // Tratar resposta do Aluno
   const handleSelectOption = (opcao: string) => {
@@ -169,9 +233,13 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, on
       metrics.current.errosSeguidos = 0;
       setScore(prev => prev + Math.max(10, 50 - Math.floor(tempoReacao / 1000) * 2));
 
-      // Feedback Auditivo Suave
-      speakCommand("Muito bem! Acertou.");
-      setFeedbackMsg({ text: 'Excelente! Resposta correta! 🎉', type: 'success' });
+      // Feedback Adaptativo de Reforço Positivo
+      const msgReforco = preProfile?.comportamental.reforcoPositivo
+        ? 'Incrível! Você é uma estrela brilhante! ⭐🎉'
+        : 'Excelente! Resposta correta! 🎉';
+      
+      speakCommand(preProfile?.comportamental.reforcoPositivo ? "Incrível! Você acertou e brilhou!" : "Muito bem! Acertou.");
+      setFeedbackMsg({ text: msgReforco, type: 'success' });
 
       // Registrar métrica da rodada
       metrics.current.respostas.push({
@@ -220,8 +288,12 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, on
       metrics.current.acertosSeguidos = 0;
       errorsInCurrentRound.current++;
 
-      speakCommand("Tente mais uma vez.");
-      setFeedbackMsg({ text: 'Ops! Vamos tentar de novo? Você consegue!', type: 'error' });
+      const msgFrustracao = preProfile?.comportamental.frustracaoAlta 
+        ? 'Tudo bem errar! Vamos tentar juntos novamente? ✨' 
+        : 'Ops! Vamos tentar de novo? Você consegue!';
+
+      speakCommand(preProfile?.comportamental.frustracaoAlta ? "Sem problemas. Vamos tentar juntos." : "Tente mais uma vez.");
+      setFeedbackMsg({ text: msgFrustracao, type: 'error' });
 
       // --- Lógica do Adaptive Cognitive Engine (ACE) para Modulação e Facilitação ---
       // Se errar duas vezes seguidas ou tiver muitos erros na rodada, diminuir opções (facilitação cognitiva)
