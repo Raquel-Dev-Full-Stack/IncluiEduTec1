@@ -84,15 +84,22 @@ const MediatorSettings: React.FC = () => {
                     <span className="text-[9px] text-gray-400 uppercase font-black">{pref.desc}</span>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={(notifications as any)[pref.id]} 
-                    onChange={() => setNotifications({ ...notifications, [pref.id]: !(notifications as any)[pref.id] })}
-                    className="sr-only peer" 
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
-                </label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-300 animate-in fade-in ${
+                    (notifications as any)[pref.id] ? 'text-emerald-500' : 'text-rose-500'
+                  }`}>
+                    {(notifications as any)[pref.id] ? 'Ativo' : 'Não ativo'}
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={(notifications as any)[pref.id]} 
+                      onChange={() => setNotifications({ ...notifications, [pref.id]: !(notifications as any)[pref.id] })}
+                      className="sr-only peer" 
+                    />
+                    <div className="w-9 h-5 bg-rose-500/10 border border-rose-500/35 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-500/10 peer-checked:border-emerald-500/35 peer-checked:after:bg-emerald-500"></div>
+                  </label>
+                </div>
               </div>
             ))}
             

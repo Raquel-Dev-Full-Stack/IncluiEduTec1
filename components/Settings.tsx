@@ -13,6 +13,7 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings, onUpdateSystemSettings, setSystemSettings }) => {
   const [language, setLanguage] = useState(systemSettings.activeLanguage || 'pt-br');
   const [notifications, setNotifications] = useState(true);
+  const [twoFactor, setTwoFactor] = useState(true);
   const [exportFormat, setExportFormat] = useState('pdf');
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -119,10 +120,25 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
                   <span className="text-[9px] text-slate-400 uppercase font-black">Camada extra de proteção</span>
                 </div>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
+              <div className="flex items-center gap-2">
+                <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-300 animate-in fade-in ${
+                  twoFactor ? 'text-emerald-400' : 'text-rose-500'
+                }`}>
+                  {twoFactor ? 'Ativo' : 'Não ativo'}
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={twoFactor}
+                    onChange={(e) => {
+                      setTwoFactor(e.target.checked);
+                      showFeedback(e.target.checked ? 'Autenticação 2FA ativada.' : 'Autenticação 2FA desativada.');
+                    }}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
+                </label>
+              </div>
             </div>
           </div>
         </section>
@@ -385,18 +401,25 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateTheme, systemSettings
                   <span className="text-[9px] text-gray-400 uppercase font-black">Mensagens e alertas</span>
                 </div>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={notifications} 
-                  onChange={() => {
-                    setNotifications(!notifications);
-                    showFeedback(notifications ? 'Notificações silenciadas.' : 'Notificações ativadas.');
-                  }}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
-              </label>
+              <div className="flex items-center gap-2">
+                <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-300 animate-in fade-in ${
+                  notifications ? 'text-emerald-500' : 'text-rose-500'
+                }`}>
+                  {notifications ? 'Ativo' : 'Não ativo'}
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={notifications} 
+                    onChange={() => {
+                      setNotifications(!notifications);
+                      showFeedback(notifications ? 'Notificações silenciadas.' : 'Notificações ativadas.');
+                    }}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-rose-500/10 border border-rose-500/35 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-500/10 peer-checked:border-emerald-500/35 peer-checked:after:bg-emerald-500"></div>
+                </label>
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">E-mail para Relatórios</label>
