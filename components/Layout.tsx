@@ -134,6 +134,12 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       profileOnly: [UserProfile.DIRETOR]
     },
     {
+      id: 'inclui_gamer',
+      label: '🎮 IncluiGamer',
+      icon: 'fa-gamepad text-indigo-400',
+      profileOnly: [UserProfile.ADMIN, UserProfile.SECRETARIA, UserProfile.DIRETOR, UserProfile.PROFESSOR, UserProfile.MEDIADOR]
+    },
+    {
       id: 'curso_inclusao',
       label: 'Curso de Inclusão',
       icon: 'fa-graduation-cap',

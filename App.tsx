@@ -35,6 +35,7 @@ import Table from './components/Table';
 import CourseTab from './components/CourseTab';
 import HelpGuide from './components/HelpGuide';
 import ClassDiary from './components/ClassDiary';
+import IncluiGamerHub from './components/incluigamer/IncluiGamerHub';
 import { User, UserProfile, School, Student, MediationRecord, Class, LessonPlan, Attendance, Meal, StudentRecord, Report, Municipio } from './types';
 import { MOCK_USERS, MOCK_SCHOOLS, MOCK_STUDENTS, MOCK_MEDIATION_RECORDS, MOCK_CLASSES, MOCK_LESSON_PLANS, MOCK_MEALS } from './constants';
 import { supabase } from './lib/supabaseClient';
@@ -3677,6 +3678,29 @@ export default function App() {
               initialData={schoolToEdit}
             />
           </div>
+        );
+
+      case 'inclui_gamer':
+        let filteredGamerStudents = students;
+        if (user.profile === UserProfile.PROFESSOR) {
+          const teacherClasses = classes.filter(c => c.teacherId === user.id);
+          filteredGamerStudents = students.filter(s => teacherClasses.some(c => c.id === s.classId));
+        } else if (user.profile === UserProfile.MEDIADOR) {
+          filteredGamerStudents = students.filter(s => s.mediatorId === user.id || user.studentIds?.includes(s.id));
+        } else if (user.profile === UserProfile.DIRETOR) {
+          filteredGamerStudents = students.filter(s => s.schoolId === user.schoolId);
+        } else if (user.profile === UserProfile.SECRETARIA) {
+          const schoolIds = schools.filter(sch => sch.municipio_id === user.municipio_id).map(sch => sch.id);
+          filteredGamerStudents = students.filter(s => schoolIds.includes(s.schoolId || ''));
+        }
+
+        return (
+          <IncluiGamerHub
+            students={filteredGamerStudents}
+            classes={classes}
+            user={user}
+            studentRecords={studentRecords}
+          />
         );
 
       case 'curso_inclusao':
