@@ -284,7 +284,7 @@ export default function App() {
       professorDetailsData,
       classTeachersData
     ] = await Promise.all([
-      safeFetch(['schools', 'escolas']),
+      safeFetch('schools'),
       safeFetch(['students', 'alunos']),
       safeFetch(['classes', 'turmas']),
       safeFetch(['users', 'usuarios']),
@@ -729,6 +729,61 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [user]);
+
+  // Rotina de sincronização automática e tempo real para a tabela schools
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    console.log("App: Iniciando escuta em tempo real para a tabela schools...");
+
+    const channel = supabase
+      .channel('schools-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Escuta INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'schools'
+        },
+        async (payload) => {
+          console.log('App: Mudança em tempo real detectada na tabela schools:', payload);
+          
+          // Buscar escolas atualizadas diretamente do banco de dados
+          const { data: updatedSchools, error } = await supabase
+            .from('schools')
+            .select('*');
+
+          if (error) {
+            console.error('App: Erro ao sincronizar escolas via realtime:', error);
+            return;
+          }
+
+          if (updatedSchools) {
+            console.log('App: Sincronizando', updatedSchools.length, 'escolas em tempo real.');
+            const mapped = updatedSchools.map(s => ({
+              ...s,
+              zipCode: s.zip_code,
+              principalName: s.principal_name,
+              principalEmail: s.principal_email,
+              principalPassword: s.principal_password,
+              teacherCount: s.teacher_count || 0,
+              mediatorCount: s.mediator_count || 0,
+              classCount: s.class_count || 0,
+              studentCount: s.student_count || 0,
+              createdAt: s.created_at
+            })) as School[];
+            
+            setSchools(mapped);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log("App: Cancelando escuta em tempo real para a tabela schools");
+      supabase.removeChannel(channel);
+    };
+  }, [isLoggedIn]);
 
   const handleLogin = async (emailOrName: string, selectedProfile: UserProfile, password?: string) => {
     if (!password) {
