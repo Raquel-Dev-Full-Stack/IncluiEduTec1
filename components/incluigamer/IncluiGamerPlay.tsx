@@ -168,6 +168,15 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     setLevelInterno(level || 1);
   }, [level]);
 
+  // Silenciar áudio ao fechar/desmontar o componente do jogo
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   // Métricas do Adaptive Cognitive Engine (ACE)
   const metrics = useRef({
     acertos: 0,
@@ -204,12 +213,42 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       return;
     }
 
-    if (accessibility.audioDescricao && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
+    if (!accessibility.audioDescricao) {
+      return;
+    }
+
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.volume = gameVolume; // Sincroniza com o volume do jogo!
+        utterance.onerror = (e) => {
+          console.warn("[ACE Speech] Erro na síntese nativa, acionando fallback:", e);
+          playFallbackTTS(text);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn("[ACE Speech] Exceção na síntese nativa, acionando fallback:", err);
+        playFallbackTTS(text);
+      }
+    } else {
+      playFallbackTTS(text);
+    }
+  };
+
+  const playFallbackTTS = (text: string) => {
+    try {
+      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=pt-BR&client=tw-ob&q=${encodeURIComponent(text)}`;
+      const audio = new Audio(ttsUrl);
+      audio.volume = gameVolume;
+      audio.play().catch(err => {
+        console.warn("[ACE Fallback TTS] Navegador bloqueou áudio do fallback:", err);
+      });
+    } catch (fallbackErr) {
+      console.error("[ACE Fallback TTS] Falha ao executar áudio de fallback:", fallbackErr);
     }
   };
 

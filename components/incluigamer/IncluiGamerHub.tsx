@@ -27,6 +27,41 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     audioDescricao: false,
   });
 
+  const speakNotification = (text: string) => {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 0.95;
+        utterance.onerror = (e) => {
+          console.warn("[Hub Speech] Erro de síntese de voz nativa, usando fallback:", e);
+          playHubFallbackTTS(text);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn("[Hub Speech] Exceção na síntese de voz nativa, usando fallback:", err);
+        playHubFallbackTTS(text);
+      }
+    } else {
+      playHubFallbackTTS(text);
+    }
+  };
+
+  const playHubFallbackTTS = (text: string) => {
+    try {
+      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=pt-BR&client=tw-ob&q=${encodeURIComponent(text)}`;
+      const audio = new Audio(ttsUrl);
+      audio.volume = 0.8;
+      audio.play().catch(e => {
+        console.warn("[Hub Fallback] O navegador bloqueou a reprodução automática de áudio:", e);
+      });
+    } catch (err) {
+      console.error("[Hub Fallback] Falha no áudio de fallback:", err);
+    }
+  };
+
   // Jogo ativo
   const [activeGame, setActiveGame] = useState<GameDefinition | null>(null);
   const [pendingGame, setPendingGame] = useState<GameDefinition | null>(null);
@@ -533,7 +568,24 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                         <input 
                           type="checkbox" 
                           checked={(accessibility as any)[item.key]} 
-                          onChange={(e) => setAccessibility(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setAccessibility(prev => ({ ...prev, [item.key]: val }));
+                            if (item.key === 'audioDescricao') {
+                              if (val) {
+                                if ('speechSynthesis' in window) {
+                                  window.speechSynthesis.resume();
+                                }
+                                setTimeout(() => {
+                                  speakNotification("Modo de voz ativado.");
+                                }, 50);
+                              } else {
+                                if ('speechSynthesis' in window) {
+                                  window.speechSynthesis.cancel();
+                                }
+                              }
+                            }
+                          }}
                           className="sr-only peer" 
                         />
                         <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
