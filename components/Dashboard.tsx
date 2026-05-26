@@ -129,6 +129,63 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedRecordType, setSelectedRecordType] = useState<string>('all');
   const [selectedDirectorStudentId, setSelectedDirectorStudentId] = useState<string>('all');
 
+  // Estados e Carregamento de dados da evolução cognitiva (IncluiGamer)
+  const [gamerRecords, setGamerRecords] = useState<any[]>([]);
+  const [loadingGamerRecords, setLoadingGamerRecords] = useState<boolean>(true);
+  const [selectedGamerStudentId, setSelectedGamerStudentId] = useState<string>('all');
+  const [selectedGamerDataType, setSelectedGamerDataType] = useState<string>('all');
+  const [selectedGamerPeriod, setSelectedGamerPeriod] = useState<string>('mes');
+
+  useEffect(() => {
+    const fetchGamerRecords = async () => {
+      if (!isProfessor) return;
+      try {
+        setLoadingGamerRecords(true);
+        const myClasses = (classes || []).filter(c => c.teacherId === user.id);
+        const myStudents = (students || []).filter(s => myClasses.some(c => c.id === s.classId));
+        const studentIds = myStudents.map(s => s.id);
+
+        if (studentIds.length === 0) {
+          setGamerRecords([]);
+          setLoadingGamerRecords(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('gamer_records')
+          .select('*')
+          .in('student_id', studentIds)
+          .order('date_played', { ascending: true });
+
+        if (error) throw error;
+        setGamerRecords(data || []);
+      } catch (err) {
+        console.warn('Erro ao buscar gamer_records para o dashboard do professor, usando fallback local:', err);
+        // Fallback localstorage
+        const myClasses = (classes || []).filter(c => c.teacherId === user.id);
+        const myStudents = (students || []).filter(s => myClasses.some(c => c.id === s.classId));
+        let allLocal: any[] = [];
+        myStudents.forEach(s => {
+          const local = localStorage.getItem(`incluigamer_records_${s.id}`);
+          if (local) {
+            try {
+              const parsed = JSON.parse(local);
+              if (Array.isArray(parsed)) {
+                allLocal = [...allLocal, ...parsed];
+              }
+            } catch(e) {}
+          }
+        });
+        allLocal.sort((a: any, b: any) => new Date(a.date_played || 0).getTime() - new Date(b.date_played || 0).getTime());
+        setGamerRecords(allLocal);
+      } finally {
+        setLoadingGamerRecords(false);
+      }
+    };
+
+    fetchGamerRecords();
+  }, [isProfessor, user.id, students, classes, refreshKey]);
+
   const [directorData, setDirectorData] = useState({
     alunos_atendidos: 0,
     turmas_ativas: 0,
@@ -587,6 +644,139 @@ const Dashboard: React.FC<DashboardProps> = ({
   if (isProfessor) {
     const myClasses = (classes || []).filter(c => c.teacherId === user.id);
     const myStudents = (students || []).filter(s => myClasses.some(c => c.id === s.classId));
+
+    // Processamento do Relatório de Evolução Cognitiva
+    // 1. Filtrar registros por aluno
+    let filteredGamerRecords = gamerRecords.filter(r => {
+      if (selectedGamerStudentId === 'all') {
+        return myStudents.some(s => s.id === r.student_id);
+      }
+      return r.student_id === selectedGamerStudentId;
+    });
+
+    // 2. Filtrar por período (mes ou semana)
+    if (selectedGamerPeriod === 'semana') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      filteredGamerRecords = filteredGamerRecords.filter(r => new Date(r.date_played || 0) >= oneWeekAgo);
+    } else if (selectedGamerPeriod === 'mes') {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+      filteredGamerRecords = filteredGamerRecords.filter(r => new Date(r.date_played || 0) >= oneMonthAgo);
+    }
+
+    // 3. Agrupar por data (ex: 'dd/MM') para o gráfico
+    const uniqueDates = Array.from(
+      new Set(
+        filteredGamerRecords.map(r => {
+          if (!r.date_played) return '';
+          return new Date(r.date_played).toISOString().split('T')[0];
+        }).filter(d => d !== '')
+      )
+    ).sort();
+
+    // Acumulados para cálculo de evolução
+    let accumulatedXP = 0;
+    const accumulatedSeals = new Set<string>();
+
+    let gamerChartData = uniqueDates.map((dateStr: any) => {
+      const dayRecs = filteredGamerRecords.filter(r => r.date_played && r.date_played.startsWith(dateStr as string));
+      
+      // Somar XP ganho no dia
+      const dayXP = dayRecs.reduce((acc, r) => acc + (r.xp_earned || 0), 0);
+      accumulatedXP += dayXP;
+
+      // Adicionar selos cognitivos obtidos
+      dayRecs.forEach(r => {
+        if (Array.isArray(r.cognitive_seals)) {
+          r.cognitive_seals.forEach((s: string) => accumulatedSeals.add(s));
+        } else if (typeof r.cognitive_seals === 'string') {
+          try {
+            const parsed = JSON.parse(r.cognitive_seals);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((s: string) => accumulatedSeals.add(s));
+            }
+          } catch(e) {}
+        }
+      });
+
+      // Média do progresso BNCC
+      const validBnccRecs = dayRecs.filter(r => r.progress_bncc !== undefined && r.progress_bncc !== null);
+      const dayBncc = validBnccRecs.length > 0 
+        ? Math.round(validBnccRecs.reduce((acc, r) => acc + (r.progress_bncc || 0), 0) / validBnccRecs.length)
+        : 0;
+
+      // Média de desempenho por eixos pedagógicos
+      let dayDesempenho = 0;
+      let countEixos = 0;
+      dayRecs.forEach(r => {
+        const axes = typeof r.heatmap_axes === 'object' && r.heatmap_axes !== null ? r.heatmap_axes : {};
+        let parsedAxes = axes;
+        if (typeof r.heatmap_axes === 'string') {
+          try {
+            parsedAxes = JSON.parse(r.heatmap_axes);
+          } catch(e) {}
+        }
+        const values = Object.values(parsedAxes || {}).filter(v => typeof v === 'number') as number[];
+        if (values.length > 0) {
+          dayDesempenho += values.reduce((acc, v) => acc + v, 0) / values.length;
+          countEixos++;
+        }
+      });
+      const avgDesempenho = countEixos > 0 ? Math.round(dayDesempenho / countEixos) : 0;
+
+      return {
+        date: new Date(dateStr as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        xp: Math.min(100, Math.round(accumulatedXP / 10)), // Escalado para caber no YAxis de 100
+        xpReal: accumulatedXP,
+        selos: Math.min(100, accumulatedSeals.size * 10), // Escalado por 10
+        selosReal: accumulatedSeals.size,
+        bncc: dayBncc,
+        desempenho: avgDesempenho || dayBncc
+      };
+    });
+
+    // Se não há dados, preenche com demonstração (Mock de evolução cognitivo lúdico)
+    if (gamerChartData.length === 0) {
+      gamerChartData = [
+        { date: '10/05', xp: 20, xpReal: 200, selos: 10, selosReal: 1, bncc: 35, desempenho: 40 },
+        { date: '14/05', xp: 45, xpReal: 450, selos: 30, selosReal: 3, bncc: 48, desempenho: 55 },
+        { date: '18/05', xp: 70, xpReal: 700, selos: 50, selosReal: 5, bncc: 62, desempenho: 68 },
+        { date: '22/05', xp: 85, xpReal: 850, selos: 70, selosReal: 7, bncc: 75, desempenho: 80 },
+        { date: '26/05', xp: 98, xpReal: 980, selos: 90, selosReal: 9, bncc: 88, desempenho: 92 },
+      ];
+    }
+
+    const CustomGamerTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200">
+            <p className="font-black text-gray-800 text-xs uppercase tracking-widest mb-2 border-b border-gray-50 pb-2">Sessão em {data.date}</p>
+            <div className="space-y-1.5 text-xs font-bold text-gray-600">
+              <div className="flex items-center justify-between gap-8">
+                <span className="text-blue-500">XP Acumulado:</span>
+                <span className="text-gray-800 font-black">{data.xpReal} XP</span>
+              </div>
+              <div className="flex items-center justify-between gap-8">
+                <span className="text-purple-500">Selos Conquistados:</span>
+                <span className="text-gray-800 font-black">{data.selosReal} selos</span>
+              </div>
+              <div className="flex items-center justify-between gap-8">
+                <span className="text-emerald-500">Progresso BNCC:</span>
+                <span className="text-gray-800 font-black">{data.bncc}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-8">
+                <span className="text-amber-500">Desempenho Pedagógico:</span>
+                <span className="text-gray-800 font-black">{data.desempenho}%</span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      return null;
+    };
+
     
     return (
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -740,6 +930,89 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Seção de Evolução Cognitiva (IncluiGamer) — Professor */}
+        <div className="bg-white rounded-[3rem] border border-gray-100 shadow-sm overflow-hidden mt-8">
+          <div className="px-8 py-7 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-gray-50/50 to-white">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                <i className="fa-solid fa-brain text-lg"></i>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Relatório de Evolução Cognitiva</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Acompanhamento e Métricas do IncluiGamer</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Selecionar Aluno</label>
+                <select 
+                  value={selectedGamerStudentId}
+                  onChange={(e) => setSelectedGamerStudentId(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                >
+                  <option value="all">Todos os Seus Alunos</option>
+                  {myStudents.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tipo de Indicador</label>
+                <select 
+                  value={selectedGamerDataType}
+                  onChange={(e) => setSelectedGamerDataType(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                >
+                  <option value="all">Todos</option>
+                  <option value="xp">XP Acumulado</option>
+                  <option value="selos">Selos Cognitivos</option>
+                  <option value="bncc">Progresso BNCC (%)</option>
+                  <option value="eixos">Desempenho Pedagógico</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Período</label>
+                <select 
+                  value={selectedGamerPeriod}
+                  onChange={(e) => setSelectedGamerPeriod(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                >
+                  <option value="mes">Mês Atual</option>
+                  <option value="semana">Semana</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="h-[300px] w-full bg-gray-50/30 rounded-[2rem] border border-gray-50 p-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={gamerChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
+                  <Tooltip content={<CustomGamerTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
+                  {(selectedGamerDataType === 'all' || selectedGamerDataType === 'xp') && (
+                    <Line type="monotone" dataKey="xp" name="XP Acumulado" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedGamerDataType === 'all' || selectedGamerDataType === 'selos') && (
+                    <Line type="monotone" dataKey="selos" name="Selos Cognitivos" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedGamerDataType === 'all' || selectedGamerDataType === 'bncc') && (
+                    <Line type="monotone" dataKey="bncc" name="Progresso BNCC %" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                  {(selectedGamerDataType === 'all' || selectedGamerDataType === 'eixos') && (
+                    <Line type="monotone" dataKey="desempenho" name="Desempenho Pedagógico %" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
       </div>
     );
   }

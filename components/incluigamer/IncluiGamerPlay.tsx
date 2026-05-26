@@ -225,246 +225,845 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     // 1. BIOMA: ALFABETIZAÇÃO
     // ==========================================
     if (bioma === 'alfabetizacao') {
-      if (lvl === 1) {
-        // Mecânica: caça_letras
-        const palavrasDB = [
-          { incompleta: 'B_LA', correta: 'O', incorretas: ['A', 'E', 'I'] },
-          { incompleta: 'C_SA', correta: 'A', incorretas: ['E', 'I', 'O'] },
-          { incompleta: 'L_VRO', correta: 'I', incorretas: ['A', 'E', 'U'] },
-          { incompleta: 'F_LIZ', correta: 'E', incorretas: ['A', 'I', 'O'] },
-        ];
-        const item = palavrasDB[(roundNum - 1) % palavrasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Qual vogal completa a palavra ${item.incompleta}?`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, incompleta: item.incompleta, tipo: 'letras' });
-      } 
-      else if (lvl === 2) {
-        // Mecânica: montar_silabas
-        const silabasDB = [
-          { palavra: 'CASA', lacuna: 'CA_ _', correta: 'SA', incorretas: ['TA', 'BA', 'LA'] },
-          { palavra: 'BOLA', lacuna: 'BO_ _', correta: 'LA', incorretas: ['MA', 'CA', 'RA'] },
-          { palavra: 'GATO', lacuna: 'GA_ _', correta: 'TO', incorretas: ['DO', 'PO', 'MO'] },
-          { palavra: 'LADO', lacuna: 'LA_ _', correta: 'DO', incorretas: ['TE', 'PO', 'VE'] },
-        ];
-        const item = silabasDB[(roundNum - 1) % silabasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Complete o pedacinho (sílaba) que falta para formar a palavra ${item.palavra}: ${item.lacuna}`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, incompleta: item.lacuna, tipo: 'letras' });
-      } 
+      const gameId = game.id;
+
+      // ----------------------------------------------------
+      // JOGO: Som das Palavras (som_palavras)
+      // ----------------------------------------------------
+      if (gameId === 'som_palavras') {
+        if (lvl === 1) {
+          const sonsDB = [
+            { prompt: 'Qual letra tem o som de /aaa/ como no início de "Abelha"? 🐝', correta: 'A', incorretas: ['E', 'O', 'I'] },
+            { prompt: 'Qual letra tem o som de /ooo/ como no início de "Ovo"? 🥚', correta: 'O', incorretas: ['A', 'U', 'E'] },
+            { prompt: 'Qual letra inicia o som de "Igreja"? ⛪', correta: 'I', incorretas: ['E', 'A', 'U'] },
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '_', tipo: 'letras' });
+        } 
+        else if (lvl === 2) {
+          const sonsDB = [
+            { prompt: 'Qual som silábico inicia a palavra "Bola"? ⚽', correta: 'BO', incorretas: ['PA', 'LI', 'MA'] },
+            { prompt: 'Qual som silábico inicia a palavra "Cachorro"? 🐶', correta: 'CA', incorretas: ['GA', 'TO', 'BE'] },
+            { prompt: 'Qual som silábico inicia a palavra "Gato"? 🐱', correta: 'GA', incorretas: ['MI', 'RU', 'PE'] },
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '_ _', tipo: 'letras' });
+        } 
+        else {
+          const sonsDB = [
+            { prompt: 'Qual o som final que você escuta na palavra "Gato"? 🐱', correta: 'TO', incorretas: ['GA', 'ME', 'LO'] },
+            { prompt: 'Qual o som final que você escuta na palavra "Mesa"? 🪑', correta: 'SA', incorretas: ['ME', 'TA', 'PA'] },
+            { prompt: 'Qual o som final que você escuta na palavra "Sapo"? 🐸', correta: 'PO', incorretas: ['SA', 'TO', 'NE'] },
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '_ _', tipo: 'letras' });
+        }
+      }
+      // ----------------------------------------------------
+      // JOGO: Formando Sílabas (formando_silabas)
+      // ----------------------------------------------------
+      else if (gameId === 'formando_silabas') {
+        if (lvl === 1) {
+          const silabasDB = [
+            { prompt: 'Junte as sílabas e descubra a palavra: BA + LÃO 🎈', correta: 'BALÃO 🎈', incorretas: ['BOLO 🎂', 'BALA 🍬', 'BOTA 🥾'] },
+            { prompt: 'Junte as sílabas e descubra a palavra: CA + SA 🏠', correta: 'CASA 🏠', incorretas: ['CAMA 🛏️', 'COLA 🧪', 'CABO 🔌'] },
+            { prompt: 'Junte as sílabas e descubra a palavra: DO + CE 🍬', correta: 'DOCE 🍬', incorretas: ['DADO 🎲', 'DONO 👤', 'DEDO ☝️'] },
+          ];
+          const item = silabasDB[(roundNum - 1) % silabasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'letras' });
+        } 
+        else if (lvl === 2) {
+          const silabasDB = [
+            { lacuna: '___ + TO = GATO 🐱', correta: 'GA', incorretas: ['MA', 'PA', 'LA'] },
+            { lacuna: '___ + LO = BOLO 🎂', correta: 'BO', incorretas: ['CO', 'MO', 'SO'] },
+            { lacuna: '___ + PO = SAPO 🐸', correta: 'SA', incorretas: ['PA', 'LA', 'MA'] },
+          ];
+          const item = silabasDB[(roundNum - 1) % silabasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Complete a palavra de forma correta: ${item.lacuna}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, incompleta: item.lacuna, tipo: 'letras' });
+        } 
+        else {
+          const silabasDB = [
+            { lacuna: 'CA + NE + ___ = CANETA 🖊️', correta: 'TA', incorretas: ['LO', 'RA', 'PE'] },
+            { lacuna: 'PI + PA + ___ = PIPOCA 🍿', correta: 'CA', incorretas: ['TE', 'DA', 'NO'] },
+            { lacuna: 'SA + PA + ___ = SAPATO 👟', correta: 'TO', incorretas: ['CO', 'DO', 'LE'] },
+          ];
+          const item = silabasDB[(roundNum - 1) % silabasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Complete a palavra de três sílabas: ${item.lacuna}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, incompleta: item.lacuna, tipo: 'letras' });
+        }
+      }
+      // ----------------------------------------------------
+      // JOGO: Palavras Ocultas (palavras_ocultas)
+      // ----------------------------------------------------
+      else if (gameId === 'palavras_ocultas') {
+        if (lvl === 1) {
+          const ocultasDB = [
+            { frase: 'O macaco 🐒 come banana no galho.', prompt: 'Qual animal come banana na frase?', correta: 'macaco 🐒', incorretas: ['galho 🌿', 'banana 🍌', 'leão 🦁'] },
+            { frase: 'O peixe 🐟 nada feliz no lago azul.', prompt: 'Quem nada feliz no lago azul?', correta: 'peixe 🐟', incorretas: ['lago 🌊', 'azul 🎨', 'sapo 🐸'] },
+            { frase: 'A menina 👧 lê um livro na biblioteca.', prompt: 'Quem lê um livro na biblioteca?', correta: 'menina 👧', incorretas: ['livro 📚', 'biblioteca 🏛️', 'escola 🏫'] },
+          ];
+          const item = ocultasDB[(roundNum - 1) % ocultasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.frase + " " + item.prompt);
+          setGameState({ prompt: `${item.frase} -> ${item.prompt}`, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'frase' });
+        } 
+        else if (lvl === 2) {
+          const ocultasDB = [
+            { frase: 'O carro corre rápido na ___ 🛣️', correta: 'pista 🛣️', incorretas: ['lua 🌙', 'mesa 🪑', 'parede 🧱'] },
+            { frase: 'A bola rolou para debaixo da ___ 🛏️', correta: 'cama 🛏️', incorretas: ['nuvem ☁️', 'porta 🚪', 'árvore 🌳'] },
+            { frase: 'O passarinho voou alto no ___ ☁️', correta: 'céu ☁️', incorretas: ['mar 🌊', 'chão 🪵', 'armário 🚪'] },
+          ];
+          const item = ocultasDB[(roundNum - 1) % ocultasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Descubra a palavra oculta para completar a frase:`;
+          speakCommand(item.frase);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, frase: item.frase, tipo: 'frase' });
+        } 
+        else {
+          const ocultasDB = [
+            { frase: 'A professora escreve na ___ com giz 🏫', correta: 'lousa 🏫', incorretas: ['mochila 🎒', 'janela 🪟', 'água 💧'] },
+            { frase: 'Eu uso escova de dentes para limpar a ___ 🪥', correta: 'boca 👄', incorretas: ['mão ✋', 'orelha 👂', 'roupa 👕'] },
+            { frase: 'Comemos sopa quente com uma ___ 🥣', correta: 'colher 🥣', incorretas: ['faca 🔪', 'caneta 🖊️', 'chave 🔑'] },
+          ];
+          const item = ocultasDB[(roundNum - 1) % ocultasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Descubra a palavra oculta de sentido mais complexo:`;
+          speakCommand(item.frase);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, frase: item.frase, tipo: 'frase' });
+        }
+      }
+      // ----------------------------------------------------
+      // JOGO: Desafio das Frases (desafio_frases)
+      // ----------------------------------------------------
+      else if (gameId === 'desafio_frases') {
+        if (lvl === 1) {
+          const frasesDB = [
+            { prompt: 'Ordene as palavras: "gosta - O - leite - de - gato 🐱"', correta: 'O gato gosta de leite. 🐱', incorretas: ['Leite de gosta o gato.', 'Gato o gosta de leite.', 'Gosta gato de leite o.'] },
+            { prompt: 'Ordene as palavras: "sol - O - brilha - no - céu ☀️"', correta: 'O sol brilha no céu. ☀️', incorretas: ['Céu no brilha o sol.', 'O brilha sol no céu.', 'Sol o brilha céu no.'] },
+            { prompt: 'Ordene as palavras: "bola - A - caiu - no - quintal ⚽"', correta: 'A bola caiu no quintal. ⚽', incorretas: ['Caiu no quintal a bola.', 'A quintal caiu no bola.', 'Bola a quintal caiu no.'] },
+          ];
+          const item = frasesDB[(roundNum - 1) % frasesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'frase' });
+        } 
+        else if (lvl === 2) {
+          const frasesDB = [
+            { prompt: 'Qual pontuação completa a frase de admiração: "Que dia maravilhoso___" ☀️', correta: 'Que dia maravilhoso! ☀️', incorretas: ['Que dia maravilhoso? ☀️', 'Que dia maravilhoso. ☀️', 'Que dia maravilhoso, ☀️'] },
+            { prompt: 'Qual pontuação completa a frase de pergunta: "Você quer brincar comigo___" 🧸', correta: 'Você quer brincar comigo? 🧸', incorretas: ['Você quer brincar comigo! 🧸', 'Você quer brincar comigo. 🧸', 'Você quer brincar comigo, 🧸'] },
+            { prompt: 'Qual pontuação completa a frase informativa: "Hoje vou estudar na escola___" 🏫', correta: 'Hoje vou estudar na escola. 🏫', incorretas: ['Hoje vou estudar na escola? 🏫', 'Hoje vou estudar na escola! 🏫', 'Hoje vou estudar na escola, 🏫'] },
+          ];
+          const item = frasesDB[(roundNum - 1) % frasesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'frase' });
+        } 
+        else {
+          const frasesDB = [
+            { prompt: 'Escolha a frase escrita e pontuada de forma 100% correta: ✍️', correta: 'Onde está o meu estojo azul? 🖊️', incorretas: ['onde esta o meu estojo azul.', 'Onde está o meu estojo azul!', 'Onde esta, o meu estojo azul?'] },
+            { prompt: 'Escolha a frase escrita e pontuada de forma 100% correta: ✍️', correta: 'Cuidado! A sopa está muito quente. 🥣', incorretas: ['cuidado a sopa esta muito quente?', 'Cuidado, a sopa esta muito quente', 'Cuidado! a sopa está muito quente.'] },
+            { prompt: 'Escolha a frase escrita e pontuada de forma 100% correta: ✍️', correta: 'Eu gosto de ler livros de mistério. 📚', incorretas: ['Eu gosto de ler livros de mistério?', 'eu gosto de ler livros de mistério!', 'Eu gosto, de ler livros de mistério.'] },
+          ];
+          const item = frasesDB[(roundNum - 1) % frasesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'frase' });
+        }
+      }
+      // ----------------------------------------------------
+      // JOGOS LEGADOS (CACADORES DE LETRAS / GRAFEMAS)
+      // ----------------------------------------------------
+      else if (gameId === 'cacadores_letras_infantil') {
+        if (lvl === 1) {
+          // Detetive das Vogais (faixa 4-5 anos)
+          const infantilDB = [
+            { prompt: 'Qual imagem começa com a letra A? 🐝', correta: '🐝 Abelha', incorretas: ['🧸 Urso', '🐱 Gato', '🎈 Balão'] },
+            { prompt: 'Qual imagem começa com a letra O? 🥚', correta: '🥚 Ovo', incorretas: ['🐶 Cachorro', '🏠 Casa', '🥛 Leite'] },
+            { prompt: 'Qual imagem começa com a letra I? ⛪', correta: '⛪ Igreja', incorretas: ['🚗 Carro', '🍉 Melancia', '👟 Sapato'] }
+          ];
+          const item = infantilDB[(roundNum - 1) % infantilDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'letras' });
+        }
+        else if (lvl === 2) {
+          // Par de Sílabas (faixa 4-5 anos)
+          const infantilDB = [
+            { prompt: 'Qual imagem começa com a sílaba BO? ⚽', correta: '⚽ Bola', incorretas: ['🍬 Bala', '🍇 Uva', '🏠 Casa'] },
+            { prompt: 'Qual imagem começa com a sílaba CA? 🏠', correta: '🏠 Casa', incorretas: ['🥛 Leite', '🐱 Gato', '🌸 Flor'] },
+            { prompt: 'Qual imagem começa com a sílaba PA? 🦆', correta: '🦆 Pato', incorretas: ['⚽ Bola', '🚗 Carro', '🥚 Ovo'] }
+          ];
+          const item = infantilDB[(roundNum - 1) % infantilDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'letras' });
+        }
+        else {
+          // Frase Lúdica Lacunada (faixa 4-5 anos)
+          const infantilDB = [
+            { frase: 'O jacaré mora na ___ 🌊', correta: 'lagoa 🌊', incorretas: ['árvore 🌳', 'nuvem ☁️', 'mesa 🪑'] },
+            { frase: 'O macaco adora comer ___ 🍌', correta: 'banana 🍌', incorretas: ['pedra 🪨', 'queijo 🧀', 'pipoca 🍿'] },
+            { frase: 'A abelha faz mel gostoso na ___ 🐝', correta: 'colmeia 🐝', incorretas: ['escola 🏫', 'grama 🌿', 'rua 🛣️'] }
+          ];
+          const item = infantilDB[(roundNum - 1) % infantilDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Complete a frase de forma lúdica:`;
+          speakCommand(item.frase);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, frase: item.frase, tipo: 'frase' });
+        }
+      }
       else {
-        // Mecânica: completar_frases
-        const frasesDB = [
-          { frase: 'O gato gosta de beber ___', correta: 'leite 🥛', incorretas: ['pedra 🪨', 'papel 📄', 'tinta 🎨'] },
-          { frase: 'O sol brilha forte no ___', correta: 'céu ☀️', incorretas: ['mar 🌊', 'chão 🪵', 'armário 🚪'] },
-          { frase: 'Eu uso os meus ___ para ler livros.', correta: 'olhos 👀', incorretas: ['pés 👣', 'dentes 🦷', 'cabelos 💇'] },
-        ];
-        const item = frasesDB[(roundNum - 1) % frasesDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Escolha a palavra que faz mais sentido para completar a frase:`;
-        speakCommand(item.frase);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, frase: item.frase, tipo: 'frase' });
+        if (lvl === 1) {
+          // Mecânica: caça_letras (Caçadores de Letras e Grafemas - 6-8 anos)
+          const palavrasDB = [
+            { incompleta: 'B_LA', correta: 'O', incorretas: ['A', 'E', 'I'] },
+            { incompleta: 'C_SA', correta: 'A', incorretas: ['E', 'I', 'O'] },
+            { incompleta: 'L_VRO', correta: 'I', incorretas: ['A', 'E', 'U'] },
+            { incompleta: 'F_LIZ', correta: 'E', incorretas: ['A', 'I', 'O'] },
+          ];
+          const item = palavrasDB[(roundNum - 1) % palavrasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Qual vogal completa a palavra ${item.incompleta}?`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, incompleta: item.incompleta, tipo: 'letras' });
+        } 
+        else if (lvl === 2) {
+          // Mecânica: montar_silabas (Caçadores de Letras e Grafemas - 6-8 anos)
+          const silabasDB = [
+            { palavra: 'CASA', lacuna: 'CA_ _', correta: 'SA', incorretas: ['TA', 'BA', 'LA'] },
+            { palavra: 'BOLA', lacuna: 'BO_ _', correta: 'LA', incorretas: ['MA', 'CA', 'RA'] },
+            { palavra: 'GATO', lacuna: 'GA_ _', correta: 'TO', incorretas: ['DO', 'PO', 'MO'] },
+            { palavra: 'LADO', lacuna: 'LA_ _', correta: 'DO', incorretas: ['TE', 'PO', 'VE'] },
+          ];
+          const item = silabasDB[(roundNum - 1) % silabasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Complete o pedacinho (sílaba) que falta para formar a palavra ${item.palavra}: ${item.lacuna}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, incompleta: item.lacuna, tipo: 'letras' });
+        } 
+        else {
+          // Mecânica: completar_frases (Caçadores de Letras e Grafemas - 6-8 anos)
+          const frasesDB = [
+            { frase: 'O gato gosta de beber ___', correta: 'leite 🥛', incorretas: ['pedra 🪨', 'papel 📄', 'tinta 🎨'] },
+            { frase: 'O sol brilha forte no ___', correta: 'céu ☀️', incorretas: ['mar 🌊', 'chão 🪵', 'armário 🚪'] },
+            { frase: 'Eu uso os meus ___ para ler livros.', correta: 'olhos 👀', incorretas: ['pés 👣', 'dentes 🦷', 'cabelos 💇'] },
+          ];
+          const item = frasesDB[(roundNum - 1) % frasesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Escolha a palavra que faz mais sentido para completar a frase:`;
+          speakCommand(item.frase);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, frase: item.frase, tipo: 'frase' });
+        }
       }
     }
-    // ==========================================
-    // 2. BIOMA: COGNITIVO
-    // ==========================================
     else if (bioma === 'cognitivo') {
-      if (lvl === 1) {
-        // Mecânica: atencao_seletiva
-        const formasDB = [
-          { molde: '▲ Triângulo', correta: '▲', incorretas: ['●', '■', '★', '♥'] },
-          { molde: '● Círculo', correta: '●', incorretas: ['▲', '■', '★', '♥'] },
-          { molde: '■ Quadrado', correta: '■', incorretas: ['●', '▲', '★', '♥'] },
-          { molde: '★ Estrela', correta: '★', incorretas: ['●', '■', '▲', '♥'] },
-        ];
-        const item = formasDB[(roundNum - 1) % formasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Ache a forma geométrica idêntica ao molde: ${item.molde}`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.molde, tipo: 'formas' });
-      } 
-      else if (lvl === 2) {
-        // Mecânica: sequencia_logica
-        const padroesDB = [
-          { sequencia: '▲  ●  ▲  ●  ?', correta: '▲', incorretas: ['●', '■', '★'] },
-          { sequencia: '■  ■  ★  ■  ■  ?', correta: '★', incorretas: ['■', '●', '▲'] },
-          { sequencia: '🍎  🍌  🍎  🍌  ?', correta: '🍎', incorretas: ['🍌', '🍊', '🍇'] },
-          { sequencia: '🟢  🔴  🟢  🔴  ?', correta: '🟢', incorretas: ['🔴', '🟡', '🔵'] },
-        ];
-        const item = padroesDB[(roundNum - 1) % padroesDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Observe o padrão visual e responda: qual figura completa a sequência?`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'sequencia' });
-      } 
+      const gameId = game.id;
+
+      if (gameId === 'logica_espacial') {
+        if (lvl === 1) {
+          // Tangram / Rotação Espacial
+          const rotacoesDB = [
+            { prompt: 'Se girarmos um triângulo do Tangram ▲ apontando para cima meia volta para a direita, como ele fica?', correta: 'Apontando para a direita ▶️', incorretas: ['Apontando para a esquerda ◀️', 'Apontando para baixo 🔽', 'Apontando para cima 🔼'] },
+            { prompt: 'Se girarmos uma seta apontando para cima 🔼 meia volta completa (180 graus), ela passa a apontar para onde?', correta: 'Para baixo 🔽', incorretas: ['Para a direita ▶️', 'Para a esquerda ◀️', 'Para cima 🔼'] },
+            { prompt: 'Se rotacionarmos um quadrado ⬛ em qualquer direção, qual forma geométrica ele continua parecendo?', correta: 'Quadrado ⬛', incorretas: ['Triângulo 🔺', 'Círculo 🔵', 'Estrela ⭐'] },
+          ];
+          const item = rotacoesDB[(roundNum - 1) % rotacoesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, molde: item.correta, tipo: 'formas' });
+        } 
+        else if (lvl === 2) {
+          // Trilha sequencial de formas abstratas
+          const sequenciasDB = [
+            { sequencia: '▲  ▲  ●  ●  ▲  ▲  ?', correta: '●', incorretas: ['▲', '■', '★'] },
+            { sequencia: '⭐  ⬛  ⭐  ⬛  ⭐  ?', correta: '⬛', incorretas: ['⭐', '●', '▲'] },
+            { sequencia: '🟢  🔵  🟢  🔵  🟢  ?', correta: '🔵', incorretas: ['🟢', '🔴', '🟡'] },
+          ];
+          const item = sequenciasDB[(roundNum - 1) % sequenciasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Observe o padrão visual do Tangram e responda: qual figura completa a sequência?`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'sequencia' });
+        } 
+        else {
+          // Memória de Tangram
+          const memoriasDB = [
+            { sequencia: '📐  🔺  🔷', correta: '📐', incorretas: ['🔺', '🔷', '⭐'] },
+            { sequencia: '🔴  🟩  🟡', correta: '🔴', incorretas: ['🟩', '🟡', '🔵'] },
+            { sequencia: '⭐️  🔺  ⬛️', correta: '⭐️', incorretas: ['🔺', '⬛️', '🔵'] },
+          ];
+          const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Memorize o padrão do Tangram que vai aparecer por um instante: ${item.sequencia}`;
+          speakCommand(prompt);
+          
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
+          
+          setTimeout(() => {
+            setGameState(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                prompt: 'Qual figura do Tangram apareceu na primeira posição da sequência que você acabou de ver?',
+                tipo: 'memoria_perguntar'
+              };
+            });
+            speakCommand("Qual figura do Tangram apareceu na primeira posição?");
+          }, 2200);
+        }
+      }
+      else if (gameId === 'balao_formas') {
+        if (lvl === 1) {
+          // Pareamento de Formas Planas Simples (faixa 0-3 anos)
+          const formasDB = [
+            { prompt: 'Ache o Círculo Vermelho 🔴', correta: '🔴 Círculo', incorretas: ['🔺 Triângulo', '⬛ Quadrado', '⭐ Estrela'] },
+            { prompt: 'Ache o Quadrado Azul 🟦', correta: '🟦 Quadrado', incorretas: ['🟡 Círculo', '🔺 Triângulo', '🌸 Flor'] },
+            { prompt: 'Ache o Triângulo Verde 💚', correta: '🔺 Triângulo', incorretas: ['🔵 Círculo', '⬛ Quadrado', '⭐ Estrela'] }
+          ];
+          const item = formasDB[(roundNum - 1) % formasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, molde: item.correta, tipo: 'formas' });
+        }
+        else if (lvl === 2) {
+          // Padrões de Cores e Formas Super Simples
+          const sequenciasDB = [
+            { sequencia: '🔴  🔵  🔴  ?', correta: '🔵', incorretas: ['🔴', '🔺', '⬛'] },
+            { sequencia: '💛  💚  💛  ?', correta: '💚', incorretas: ['💛', '💙', '💜'] },
+            { sequencia: '⭐️  🎈  ⭐️  ?', correta: '🎈', incorretas: ['⭐️', '🚗', '🐱'] }
+          ];
+          const item = sequenciasDB[(roundNum - 1) % sequenciasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Descubra qual figura completa a fileira simples:`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'sequencia' });
+        }
+        else {
+          // Onde está o brinquedo (Memória visual primária)
+          const memoriasDB = [
+            { sequencia: 'Caixa 📦  Urso 🧸  Caixa 📦', correta: 'Urso 🧸 (Caixa do Meio)', incorretas: ['Caixa da Esquerda 📦', 'Caixa da Direita 📦', 'Nenhuma 📦'] },
+            { sequencia: 'Gato 🐱  Caixa 📦  Caixa 📦', correta: 'Gato 🐱 (Caixa da Esquerda)', incorretas: ['Caixa do Meio 📦', 'Caixa da Direita 📦', 'Nenhuma 📦'] },
+            { sequencia: 'Caixa 📦  Caixa 📦  Bola ⚽', correta: 'Bola ⚽ (Caixa da Direita)', incorretas: ['Caixa da Esquerda 📦', 'Caixa do Meio 📦', 'Nenhuma 📦'] }
+          ];
+          const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Memorize a posição do brinquedo: ${item.sequencia}`;
+          speakCommand(prompt);
+          
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
+          
+          setTimeout(() => {
+            setGameState(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                prompt: 'Em qual caixa estava escondido o brinquedo que você acabou de ver?',
+                tipo: 'memoria_perguntar'
+              };
+            });
+            speakCommand("Em qual caixa estava escondido o brinquedo?");
+          }, 2200);
+        }
+      }
+      else if (gameId === 'desafio_sequencias') {
+        if (lvl === 1) {
+          // Lógica Algorítmica e Foco Computacional (9-12 anos)
+          const comandosDB = [
+            { prompt: 'Para o robô andar para frente 3 passos e virar para cima, qual a sequência correta?', correta: '▶️ ▶️ ▶️ 🔼', incorretas: ['▶️ 🔼 ◀️ 🔽', '🔼 🔼 🔼 ▶️', '🔽 🔽 ▶️ 🔼'] },
+            { prompt: 'Para o robô dar ré 2 passos e virar para baixo, qual a sequência?', correta: '◀️ ◀️ 🔽', incorretas: ['▶️ ▶️ 🔼', '◀️ 🔼 🔽', '🔽 🔽 ◀️'] },
+            { prompt: 'Para o robô dar um giro em formato de U (sobe, vira para a direita, desce), qual a ordem?', correta: '🔼 ▶️ 🔽', incorretas: ['🔽 ◀️ 🔼', '▶️ 🔼 ◀️', '🔼 🔼 🔽'] }
+          ];
+          const item = comandosDB[(roundNum - 1) % comandosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, molde: item.correta, tipo: 'formas' });
+        }
+        else if (lvl === 2) {
+          // Lógica Condicional de Fluxogramas
+          const fluxosDB = [
+            { prompt: 'Se a luz estiver VERMELHA 🔴, o robô para. Se estiver VERDE 🟢, o robô avança. A luz ficou verde! O robô deve...', correta: 'Avançar 🟢', incorretas: ['Parar 🔴', 'Recuar ◀️', 'Girar 🔄'] },
+            { prompt: 'Se o sensor detectar obstáculo 🧱, o robô vira para a direita. Se o caminho estiver livre, ele segue reto. Detectou obstáculo! O robô deve...', correta: 'Virar para a direita ➡️', incorretas: ['Seguir reto ⬆️', 'Parar 🛑', 'Recuar ⬇️'] },
+            { prompt: 'Se a bateria estiver menor que 20% 🪫, o robô vai para a base de recarga. A bateria está em 15%! O robô deve...', correta: 'Ir para a base de recarga ⚡', incorretas: ['Continuar limpando 🧹', 'Gritar por socorro 🗣️', 'Desligar no meio da sala 💤'] }
+          ];
+          const item = fluxosDB[(roundNum - 1) % fluxosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, sequencia: '💻 IF/ELSE', tipo: 'formas' });
+        }
+        else {
+          // Algoritmo de memória de comandos rápidos
+          const memoriasDB = [
+            { sequencia: '🔼  ▶️  🔽', correta: '🔼', incorretas: ['▶️', '🔽', '◀️'] },
+            { sequencia: '◀️  🔼  ▶️', correta: '◀️', incorretas: ['🔼', '▶️', '🔽'] },
+            { sequencia: '🔽  ◀️  🔼', correta: '🔽', incorretas: ['◀️', '🔼', '▶️'] }
+          ];
+          const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Memorize a sequência de comandos algorítmicos rápidos: ${item.sequencia}`;
+          speakCommand(prompt);
+          
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
+          
+          setTimeout(() => {
+            setGameState(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                prompt: 'Qual foi o primeiro comando da sequência algorítmica que você acabou de ver?',
+                tipo: 'memoria_perguntar'
+              };
+            });
+            speakCommand("Qual foi o primeiro comando da sequência algorítmica?");
+          }, 2200);
+        }
+      }
       else {
-        // Mecânica: memoria_visual
-        const memoriasDB = [
-          { sequencia: '★  ●  ■', correta: '★', incorretas: ['●', '■', '▲'] },
-          { sequencia: '🍎  🍌  🍊', correta: '🍎', incorretas: ['🍌', '🍊', '🍇'] },
-          { sequencia: '▲  ■  ●', correta: '▲', incorretas: ['■', '●', '★'] },
-        ];
-        const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Memorize a sequência que vai aparecer por um instante: ${item.sequencia}`;
-        speakCommand(prompt);
-        
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
-        
-        setTimeout(() => {
-          setGameState(prev => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              prompt: 'Qual figura apareceu na primeira posição da sequência que você acabou de ver?',
-              tipo: 'memoria_perguntar'
-            };
-          });
-          speakCommand("Qual figura apareceu na primeira posição?");
-        }, 2200);
+        // quebra_cabeca_formas (Caçadores de Formas - 6-8 anos) - Fallback original
+        if (lvl === 1) {
+          const formasDB = [
+            { molde: '▲ Triângulo', correta: '▲', incorretas: ['●', '■', '★', '♥'] },
+            { molde: '● Círculo', correta: '●', incorretas: ['▲', '■', '★', '♥'] },
+            { molde: '■ Quadrado', correta: '■', incorretas: ['●', '▲', '★', '♥'] },
+            { molde: '★ Estrela', correta: '★', incorretas: ['●', '■', '▲', '♥'] },
+          ];
+          const item = formasDB[(roundNum - 1) % formasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Ache a forma geométrica idêntica ao molde: ${item.molde}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.molde, tipo: 'formas' });
+        } 
+        else if (lvl === 2) {
+          const padroesDB = [
+            { sequencia: '▲  ●  ▲  ●  ?', correta: '▲', incorretas: ['●', '■', '★'] },
+            { sequencia: '■  ■  ★  ■  ■  ?', correta: '★', incorretas: ['■', '●', '▲'] },
+            { sequencia: '🍎  🍌  🍎  🍌  ?', correta: '🍎', incorretas: ['🍌', '🍊', '🍇'] },
+            { sequencia: '🟢  🔴  🟢  🔴  ?', correta: '🟢', incorretas: ['🔴', '🟡', '🔵'] },
+          ];
+          const item = padroesDB[(roundNum - 1) % padroesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Observe o padrão visual e responda: qual figura completa a sequência?`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'sequencia' });
+        } 
+        else {
+          const memoriasDB = [
+            { sequencia: '★  ●  ■', correta: '★', incorretas: ['●', '■', '▲'] },
+            { sequencia: '🍎  🍌  🍊', correta: '🍎', incorretas: ['🍌', '🍊', '🍇'] },
+            { sequencia: '▲  ■  ●', correta: '▲', incorretas: ['■', '●', '★'] },
+          ];
+          const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Memorize a sequência que vai aparecer por um instante: ${item.sequencia}`;
+          speakCommand(prompt);
+          
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
+          
+          setTimeout(() => {
+            setGameState(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                prompt: 'Qual figura apareceu na primeira posição da sequência que você acabou de ver?',
+                tipo: 'memoria_perguntar'
+              };
+            });
+            speakCommand("Qual figura apareceu na primeira posição?");
+          }, 2200);
+        }
       }
     }
     // ==========================================
     // 3. BIOMA: EMOÇÕES
     // ==========================================
     else if (bioma === 'emocoes') {
-      if (lvl === 1) {
-        // Mecânica: reconhecimento_facial
-        const carinhasDB = [
-          { emoji: '😊', correta: '😊 Feliz', incorretas: ['😢 Triste', '😡 Bravo', '😱 Assustado'] },
-          { emoji: '😢', correta: '😢 Triste', incorretas: ['😊 Feliz', '😡 Bravo', '😱 Assustado'] },
-          { emoji: '😡', correta: '😡 Bravo', incorretas: ['😊 Feliz', '😢 Triste', '😱 Assustado'] },
-          { emoji: '😱', correta: '😱 Assustado', incorretas: ['😊 Feliz', '😢 Triste', '😡 Bravo'] },
-        ];
-        const item = carinhasDB[(roundNum - 1) % carinhasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Qual sentimento esta carinha representa? ${item.emoji}`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, emoji: item.emoji, tipo: 'emocoes' });
-      } 
-      else if (lvl === 2) {
-        // Mecânica: interpretacao_emocional
-        const sentimentosDB = [
-          { situacao: 'Quando ganho um abraço de um amigo, eu me sinto...', correta: '😊 Feliz', incorretas: ['😢 Triste', '😡 Bravo', '😱 Assustado'] },
-          { situacao: 'Quando meu brinquedo favorito quebra, eu fico...', correta: '😢 Triste', incorretas: ['😊 Feliz', '😡 Bravo', '😱 Assustado'] },
-          { situacao: 'Se escuto um barulho muito forte no escuro, eu fico...', correta: '😱 Assustado', incorretas: ['😊 Feliz', '😢 Triste', '😡 Bravo'] },
-          { situacao: 'Quando alguém pega meu lápis sem pedir, eu fico...', correta: '😡 Bravo', incorretas: ['😊 Feliz', '😢 Triste', '😱 Assustado'] },
-        ];
-        const item = sentimentosDB[(roundNum - 1) % sentimentosDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = item.situacao;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, situacao: item.situacao, tipo: 'sentimentos' });
-      } 
+      const gameId = game.id;
+
+      if (gameId === 'empatia_autorregulacao') {
+        if (lvl === 1) {
+          // Detetive das Carinhas Mistas
+          const mistasDB = [
+            { prompt: 'Seu amigo está de braços cruzados, bochechas vermelhas e olhando para o chão. Como ele se sente?', correta: '😡 Bravo ou chateado', incorretas: ['😊 Feliz e alegre', '😢 Muito triste', '😱 Assustado'] },
+            { prompt: 'Seu colega está com os olhos bem abertos, boca em formato de "O" e mãos nas bochechas. Como ele está?', correta: '😱 Surpreso ou assustado', incorretas: ['😊 Feliz e sorridente', '😢 Triste', '😡 Bravo'] },
+            { prompt: 'Seu amigo está com um sorriso tímido no rosto, mas encolhendo os ombros ao apresentar o desenho para a sala. Ele está...', correta: '🫣 Envergonhado ou tímido', incorretas: ['😡 Com muita raiva', '😢 Chorando de tristeza', '😱 Apavorado'] }
+          ];
+          const item = mistasDB[(roundNum - 1) % mistasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, emoji: '👥', tipo: 'emocoes' });
+        } 
+        else if (lvl === 2) {
+          // Mediação no Recreio Escolar
+          const situacoesDB = [
+            { dilema: 'Durante o recreio, um colega escorrega e derruba o lanche no chão. A atitude mais empática é...', correta: 'Ajudar a limpar e oferecer compartilhar o seu lanche 🤝', incorretas: ['Ignorar e continuar brincando com os outros 🏃', 'Rir do tombo dele e contar para a turma 🗣️'] },
+            { dilema: 'Seu amigo quer jogar bola, mas você quer brincar de balanço. O que fazer?', correta: 'Combinar de brincar um pouco de cada coisa juntos 🧸', incorretas: ['Gritar e ir embora para casa sem falar nada 😡', 'Insistir que só vale a sua brincadeira 🔒'] },
+            { dilema: 'Um colega novo na escola está sentado sozinho na hora do recreio. Você pode...', correta: 'Convidá-lo para se juntar à sua brincadeira 🤝', incorretas: ['Ficar olhando de longe sem falar nada 👀', 'Dizer para os outros não brincarem com ele 🤫'] }
+          ];
+          const item = situacoesDB[(roundNum - 1) % situacoesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.dilema);
+          setGameState({ prompt: item.dilema, respostaCorreta: item.correta, opcoes, dilema: item.dilema, tipo: 'sentimentos' });
+        } 
+        else {
+          // Respirando com as Estrelas
+          const respiracaoDB = [
+            { dilema: 'Quando sentimos frustração ou raiva ao perder um jogo, a melhor técnica de autorregulação é...', correta: 'Respirar fundo devagar e contar até 5 calmamente 🌬️', incorretas: ['Jogar os controles no chão e gritar 😡', 'Guardar a raiva para si sem falar com ninguém 🤐'] },
+            { dilema: 'Se você está muito ansioso para a sua vez de apresentar um trabalho, você pode...', correta: 'Inspirar pelo nariz como se cheirasse uma flor e expirar pela boca soprando uma vela 🌬️', incorretas: ['Ficar roendo as unhas e reclamando com todos 😬', 'Chorar e se recusar a ir para a sala 😢'] },
+            { dilema: 'Quando sentimos o corpo tenso por causa de uma prova difícil, ajuda bastante...', correta: 'Alongar os braços, respirar fundo e relaxar os ombros 🧘', incorretas: ['Apertar o lápis até quebrar com raiva ✏️', 'Discutir com o professor e sair da sala 🚪'] }
+          ];
+          const item = respiracaoDB[(roundNum - 1) % respiracaoDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.dilema);
+          setGameState({ prompt: item.dilema, respostaCorreta: item.correta, opcoes, dilema: item.dilema, tipo: 'sentimentos' });
+        }
+      }
+      else if (gameId === 'termometro_sentimentos_infantil') {
+        if (lvl === 1) {
+          // Expressões Básicas por Bichinhos (0-3 anos)
+          const infantilDB = [
+            { prompt: 'O cachorrinho está abanando o rabo e latindo alegre 🐶. Como ele se sente?', correta: '😊 Feliz', incorretas: ['😢 Triste', '😡 Bravo', '😱 Assustado'] },
+            { prompt: 'O gatinho está encolhido chorando baixinho no canto 🐱. Como ele se sente?', correta: '😢 Triste', incorretas: ['😊 Feliz', '😡 Bravo', '😱 Assustado'] },
+            { prompt: 'O leãozinho ouviu um trovão muito forte e se escondeu 🦁. Como ele está?', correta: '😱 Assustado', incorretas: ['😊 Feliz', '😢 Triste', '😡 Bravo'] }
+          ];
+          const item = infantilDB[(roundNum - 1) % infantilDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, emoji: '🐾', tipo: 'emocoes' });
+        }
+        else if (lvl === 2) {
+          // Carrossel de Situações Simples
+          const situacoesDB = [
+            { prompt: 'Ganhei um abraço bem quentinho da vovó 🤗. Eu me sinto...', correta: '😊 Feliz e amado', incorretas: ['😢 Triste e sozinho', '😡 Com muita raiva'] },
+            { prompt: 'O meu sorvete gostoso caiu na areia 🍦. Eu fico...', correta: '😢 Triste e chateado', incorretas: ['😊 Feliz e contente', '😡 Muito bravo'] }
+          ];
+          const item = situacoesDB[(roundNum - 1) % situacoesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, dilema: item.prompt, tipo: 'sentimentos' });
+        }
+        else {
+          // Escolhas de Carinho Primárias
+          const escolhasDB = [
+            { prompt: 'Seu irmãozinho está chorando porque perdeu a chupeta. O que você faz?', correta: 'Dou um abraço e ajudo a procurar 🧸', incorretas: ['Dou risada dele 🤪', 'Grito bem alto perto dele 😡'] },
+            { prompt: 'Sua mãe preparou um lanche gostoso. A melhor atitude é...', correta: 'Agradecer com carinho e dar um beijo 🤗', incorretas: ['Reclamar e jogar o prato no chão 😡'] }
+          ];
+          const item = escolhasDB[(roundNum - 1) % escolhasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, dilema: item.prompt, tipo: 'sentimentos' });
+        }
+      }
+      else if (gameId === 'detetive_social') {
+        if (lvl === 1) {
+          // Expressões Complexas de Adolescentes (13+ anos)
+          const complexasDB = [
+            { prompt: 'Um colega diz "tudo bem" com a voz baixa e ombros caídos após a nota da prova. Ele está...', correta: 'Frustrado e desanimado com o resultado 😔', incorretas: ['Muito entusiasmado e alegre 😄', 'Completamente indiferente 😐', 'Extremamente furioso 😡'] },
+            { prompt: 'Sua colega está rindo alto enquanto morde os lábios e bate o pé freneticamente na fila. Ela demonstra...', correta: 'Ansiedade e agitação interna ⚡', incorretas: ['Paz e tranquilidade profunda 🧘', 'Tristeza e isolamento 😢', 'Tédio absoluto 😑'] }
+          ];
+          const item = complexasDB[(roundNum - 1) % complexasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, emoji: '💬', tipo: 'emocoes' });
+        }
+        else if (lvl === 2) {
+          // Dilemas Éticos e Mediação Escolar
+          const dilemasDB = [
+            { prompt: 'Dois colegas estão discutindo asperamente por causa de um projeto em grupo. Como mediador escolar, o ideal é...', correta: 'Ouvir os dois lados com calma e buscar um acordo justo 🤝', incorretas: ['Ficar do lado do meu melhor amigo sem ouvir o outro 👈', 'Deixar que briguem e não me envolver 🏃', 'Gritar mais alto que eles para fazê-los parar 😡'] },
+            { prompt: 'Um amigo seu confidenciou que está sofrendo exclusão deliberada no grupo de esportes da escola. A melhor atitude é...', correta: 'Apoiar o amigo e conversar com o grupo para integrá-lo 🤝', incorretas: ['Dizer que a culpa é dele e não me meter 🤫', 'Rir e compartilhar os boatos do grupo 📱'] }
+          ];
+          const item = dilemasDB[(roundNum - 1) % dilemasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, dilema: item.prompt, tipo: 'sentimentos' });
+        }
+        else {
+          // Cidadania Ativa e Bullying Digital
+          const cidadaniaDB = [
+            { prompt: 'Alguns alunos criaram um perfil falso para divulgar apelidos maldosos de um colega na internet. A atitude ética é...', correta: 'Apoiar o colega, repudiar a página e denunciar aos responsáveis 🛡️', incorretas: ['Seguir e curtir os posts para não parecer excluído 📱', 'Ignorar por completo, pois não é comigo 🤫', 'Comentar na foto dele rindo do apelido 🗣️'] },
+            { prompt: 'Você presencia um colega com deficiência física tendo dificuldades para subir a rampa da biblioteca. A melhor atitude cidadã é...', correta: 'Aproximar-me com respeito e perguntar se ele gostaria de ajuda 🤝', incorretas: ['Empurrar a cadeira dele sem pedir permissão 🦽', 'Passar direto fingindo que não vi 🏃'] }
+          ];
+          const item = cidadaniaDB[(roundNum - 1) % cidadaniaDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, dilema: item.prompt, tipo: 'sentimentos' });
+        }
+      }
       else {
-        // Mecânica: empatia_guiada
-        const escolhasDB = [
-          { dilema: 'Se vejo um amigo cair e se machucar no parquinho, eu devo...', correta: 'Ajudá-lo a levantar e chamar ajuda 🤝', incorretas: ['Ignorar e continuar correndo 🏃', 'Dar risada do tropeço dele 🗣️'] },
-          { dilema: 'Se um colega quer brincar com o mesmo brinquedo que eu, eu posso...', correta: 'Propor brincar juntos ou dividir o tempo 🧸', incorretas: ['Esconder o brinquedo para brincar só 🔒', 'Gritar que o brinquedo é meu 😡'] },
-          { dilema: 'Se eu quebro um objeto de um amigo sem querer, eu devo...', correta: 'Pedir desculpas e contar a verdade 🤝', incorretas: ['Esconder o objeto quebrado 🤫', 'Culpar outra pessoa que estava perto 👈'] },
-        ];
-        const item = escolhasDB[(roundNum - 1) % escolhasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = item.dilema;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, dilema: item.dilema, tipo: 'sentimentos' });
+        // termometro_sentimentos (Termômetro das Emoções Adaptativo - 4-5 anos) - Fallback original
+        if (lvl === 1) {
+          const carinhasDB = [
+            { emoji: '😊', correta: '😊 Feliz', incorretas: ['😢 Triste', '😡 Bravo', '😱 Assustado'] },
+            { emoji: '😢', correta: '😢 Triste', incorretas: ['😊 Feliz', '😡 Bravo', '😱 Assustado'] },
+            { emoji: '😡', correta: '😡 Bravo', incorretas: ['😊 Feliz', '😢 Triste', '😱 Assustado'] },
+            { emoji: '😱', correta: '😱 Assustado', incorretas: ['😊 Feliz', '😢 Triste', '😡 Bravo'] },
+          ];
+          const item = carinhasDB[(roundNum - 1) % carinhasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Qual sentimento esta carinha representa? ${item.emoji}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, emoji: item.emoji, tipo: 'emocoes' });
+        } 
+        else if (lvl === 2) {
+          const sentimentosDB = [
+            { situacao: 'Quando ganho um abraço de um amigo, eu me sinto...', correta: '😊 Feliz', incorretas: ['😢 Triste', '😡 Bravo', '😱 Assustado'] },
+            { situacao: 'Quando meu brinquedo favorito quebra, eu fico...', correta: '😢 Triste', incorretas: ['😊 Feliz', '😡 Bravo', '😱 Assustado'] },
+            { situacao: 'Se escuto um barulho muito forte no escuro, eu fico...', correta: '😱 Assustado', incorretas: ['😊 Feliz', '😢 Triste', '😡 Bravo'] },
+            { situacao: 'Quando alguém pega meu lápis sem pedir, eu fico...', correta: '😡 Bravo', incorretas: ['😊 Feliz', '😢 Triste', '😱 Assustado'] },
+          ];
+          const item = sentimentosDB[(roundNum - 1) % sentimentosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.situacao;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, situacao: item.situacao, tipo: 'sentimentos' });
+        } 
+        else {
+          const escolhasDB = [
+            { dilema: 'Se vejo um amigo cair e se machucar no parquinho, eu devo...', correta: 'Ajudá-lo a levantar e chamar ajuda 🤝', incorretas: ['Ignorar e continuar correndo 🏃', 'Dar risada do tropeço dele 🗣️'] },
+            { dilema: 'Se um colega quer brincar com o mesmo brinquedo que eu, eu posso...', correta: 'Propor brincar juntos ou dividir o tempo 🧸', incorretas: ['Esconder o brinquedo para brincar só 🔒', 'Gritar que o brinquedo é meu 😡'] },
+            { dilema: 'Se eu quebro um objeto de um amigo sem querer, eu devo...', correta: 'Pedir desculpas e contar a verdade 🤝', incorretas: ['Esconder o objeto quebrado 🤫', 'Culpar outra pessoa que estava perto 👈'] },
+          ];
+          const item = escolhasDB[(roundNum - 1) % escolhasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.dilema;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, dilema: item.dilema, tipo: 'sentimentos' });
+        }
       }
     }
     // ==========================================
     // 4. BIOMA: SENSORIAL
     // ==========================================
     else if (bioma === 'sensorial') {
-      if (lvl === 1) {
-        // Mecânica: causa_efeito_sonora
-        const sonsDB = [
-          { som: 'Chuva caindo de mansinho 🌧️', correta: '🌧️ Som de Chuva', incorretas: ['🐦 Canto de Pássaro', '🌊 Ondas do Mar'], audioKey: 'chuva' as const },
-          { som: 'Canto alegre de um passarinho 🐦', correta: '🐦 Canto de Pássaro', incorretas: ['🌧️ Som de Chuva', '🌊 Ondas do Mar'], audioKey: 'passaro' as const },
-          { som: 'Ondas do mar que vêm e vão 🌊', correta: '🌊 Ondas do Mar', incorretas: ['🌧️ Som de Chuva', '🐦 Canto de Pássaro'], audioKey: 'mar' as const },
-        ];
-        const item = sonsDB[(roundNum - 1) % sonsDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Toque no botão correspondente para orquestrar o som de: ${item.som}`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
-        
-        // Tocar o som correspondente automaticamente após 1.4 segundos para fins de estimulação e calibração
-        setTimeout(() => {
-          playSynthesizedSound(item.audioKey);
-        }, 1400);
-      } 
-      else if (lvl === 2) {
-        // Mecânica: cores_sensoriais
-        const coresDB = [
-          { pedido: 'Toque na cor que transmite mais calma e paz 🟢', correta: '🟢 Verde Pastel', incorretas: ['🔴 Vermelho Forte', '⚡ Amarelo Piscante'] },
-          { pedido: 'Toque na cor que parece o céu limpo e tranquilo 🔵', correta: '🔵 Azul Suave', incorretas: ['⚫ Preto Escuro', '🟧 Laranja Vibrante'] },
-          { pedido: 'Toque na cor que lembra um abraço caloroso e confortável 🌸', correta: '🌸 Rosa Claro', incorretas: ['🟤 Marrom Opaco', '💀 Roxo Elétrico'] },
-        ];
-        const item = coresDB[(roundNum - 1) % coresDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = item.pedido;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.pedido, tipo: 'sons' });
-      } 
+      const gameId = game.id;
+
+      if (gameId === 'percepcao_sonora_motora') {
+        if (lvl === 1) {
+          // Sons da Natureza Rítmicos
+          const sonsDB = [
+            { som: 'Folhas de árvore balançando ao vento suave 🍃', correta: '🍃 Som do Vento', incorretas: ['⚡ Trovão Forte', '🎺 Corneta Barulhenta'], audioKey: 'chuva' as const },
+            { som: 'Sapo coaxando calmamente no lago 🐸', correta: '🐸 Som de Sapo', incorretas: ['🦁 Rugido de Leão', '🚓 Sirene Alta'], audioKey: 'passaro' as const },
+            { som: 'Ondas do mar batendo de leve na areia 🌊', correta: '🌊 Ondas do Mar', incorretas: ['💥 Explosão Forte', '🔔 Despertador Alto'], audioKey: 'mar' as const },
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Toque no botão para orquestrar o som de: ${item.som}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          
+          setTimeout(() => {
+            playSynthesizedSound(item.audioKey);
+          }, 1400);
+        } 
+        else if (lvl === 2) {
+          // Paleta Cromática Pastel
+          const coresDB = [
+            { pedido: 'Toque na cor pastel que transmite mais calma e paz 🟢', correta: '🟢 Verde Erva Doce', incorretas: ['🔴 Vermelho Neon', '⚡ Amarelo Elétrico'] },
+            { pedido: 'Toque na cor que parece o céu limpo e tranquilo 🔵', correta: '🔵 Azul Suave', incorretas: ['⚫ Preto Escuro', '🟧 Laranja Vibrante'] },
+            { pedido: 'Toque na cor que lembra um abraço caloroso e confortável 🌸', correta: '🌸 Rosa Claro', incorretas: ['🟤 Marrom Opaco', '💀 Roxo Vibrante'] },
+          ];
+          const item = coresDB[(roundNum - 1) % coresDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.pedido;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.pedido, tipo: 'sons' });
+        } 
+        else {
+          // Guia de Borboletas Suaves
+          const alvosDB = [
+            { instrucao: 'Ajude a borboleta dourada a pousar com cuidado na flor rosa mais próxima! 🦋', correta: '🌸 Ir para a flor rosa com calma 🦋', incorretas: ['🌪️ Voar na ventania forte 💨', '🪵 Bater no galho seco 🍂'] },
+            { instrucao: 'Toque na bolha de sabão brilhante que flutua bem devagar na tela... 🫧', correta: '🫧 Bolha Lenta de Sabão', incorretas: ['⚡ Raio Piscante', '🧱 Tijolo Pesado'] },
+            { instrucao: 'Pegue a estrela cadente que brilha suavemente no céu! 🌠', correta: '🌠 Estrela Cadente Suave', incorretas: ['🔥 Fogo Quente', '💣 Alvo Rápido'] }
+          ];
+          const item = alvosDB[(roundNum - 1) % alvosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.instrucao;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.instrucao, tipo: 'sons' });
+        }
+      }
+      else if (gameId === 'orquestra_sons') {
+        if (lvl === 1) {
+          // Instrumentos de Causa-Efeito (0-3 anos)
+          const sonsDB = [
+            { som: 'Sons suaves de uma harpa dedilhada 🎵', correta: '🎵 Harpa Suave', incorretas: ['🥁 Tambor Forte', '🎺 Corneta Alta'], audioKey: 'mar' as const },
+            { som: 'Sons mágicos de um xilofone lúdico 🎼', correta: '🎼 Xilofone Mágico', incorretas: ['🔔 Alarme Barulhento', '💥 Ruído Alto'], audioKey: 'passaro' as const }
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Toque no botão para orquestrar o som de: ${item.som}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          
+          setTimeout(() => {
+            playSynthesizedSound(item.audioKey);
+          }, 1400);
+        }
+        else if (lvl === 2) {
+          // Sons de animais do cotidiano
+          const sonsDB = [
+            { som: 'Gatinho miando querendo carinho 🐱', correta: '🐱 Miau do Gatinho', incorretas: ['🦁 Rugido de Leão', '🐕 Latido Alto'], audioKey: 'passaro' as const },
+            { som: 'Passarinho cantando feliz na árvore 🐦', correta: '🐦 Canto de Passarinho', incorretas: ['🐍 Coaxar Alto', '🦈 Mar Revolto'], audioKey: 'passaro' as const }
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Identifique o som de carinho correspondente: ${item.som}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+        }
+        else {
+          // Estrelas cadentes em movimento rápido
+          const alvosDB = [
+            { instrucao: 'Toque na estrela azul mágica e rápida! ✨', correta: '✨ Estrela Mágica Rápida', incorretas: ['✨ Estrela Parada', '☁️ Nuvem Cinza'] },
+            { instrucao: 'Toque na nuvem de algodão que brilha suavemente! ☁️', correta: '☁️ Nuvem de Algodão', incorretas: ['🪨 Pedra Escura', '🔥 Fogueira'] }
+          ];
+          const item = alvosDB[(roundNum - 1) % alvosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.instrucao;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.instrucao, tipo: 'sons' });
+        }
+      }
       else {
-        // Mecânica: coordenacao_motora
-        const alvosDB = [
-          { instrucao: 'Tente tocar no balão azul que está flutuando bem alto! 🎈', correta: '🎈 Balão Azul Alto', incorretas: ['🎈 Balão Pequeno', '🎈 Balão Lento'] },
-          { instrucao: 'Toque na bolha brilhante que pisca rápido! 🫧', correta: '🫧 Bolha Rápida', incorretas: ['🫧 Bolha Parada', '🫧 Bolha Lenta'] },
-          { instrucao: 'Pegue a estrela cadente dourada! 🌠', correta: '🌠 Estrela Cadente', incorretas: ['🌠 Estrela Parada', '🌠 Nuvem Parada'] },
-        ];
-        const item = alvosDB[(roundNum - 1) % alvosDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = item.instrucao;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.instrucao, tipo: 'sons' });
+        // toque_cores (Floresta de Toques Luminosos - 0-3 anos) - Fallback original
+        if (lvl === 1) {
+          const sonsDB = [
+            { som: 'Chuva caindo de mansinho 🌧️', correta: '🌧️ Som de Chuva', incorretas: ['🐦 Canto de Pássaro', '🌊 Ondas do Mar'], audioKey: 'chuva' as const },
+            { som: 'Canto alegre de um passarinho 🐦', correta: '🐦 Canto de Pássaro', incorretas: ['🌧️ Som de Chuva', '🌊 Ondas do Mar'], audioKey: 'passaro' as const },
+            { som: 'Ondas do mar que vêm e vão 🌊', correta: '🌊 Ondas do Mar', incorretas: ['🌧️ Som de Chuva', '🐦 Canto de Pássaro'], audioKey: 'mar' as const },
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Toque no botão correspondente para orquestrar o som de: ${item.som}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          
+          setTimeout(() => {
+            playSynthesizedSound(item.audioKey);
+          }, 1400);
+        } 
+        else if (lvl === 2) {
+          const coresDB = [
+            { pedido: 'Toque na cor que transmite mais calma e paz 🟢', correta: '🟢 Verde Pastel', incorretas: ['🔴 Vermelho Forte', '⚡ Amarelo Piscante'] },
+            { pedido: 'Toque na cor que parece o céu limpo e tranquilo 🔵', correta: '🔵 Azul Suave', incorretas: ['⚫ Preto Escuro', '🟧 Laranja Vibrante'] },
+            { pedido: 'Toque na cor que lembra um abraço caloroso e confortável 🌸', correta: '🌸 Rosa Claro', incorretas: ['🟤 Marrom Opaco', '💀 Roxo Elétrico'] },
+          ];
+          const item = coresDB[(roundNum - 1) % coresDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.pedido;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.pedido, tipo: 'sons' });
+        } 
+        else {
+          const alvosDB = [
+            { instrucao: 'Tente tocar no balão azul que está flutuando bem alto! 🎈', correta: '🎈 Balão Azul Alto', incorretas: ['🎈 Balão Pequeno', '🎈 Balão Lento'] },
+            { instrucao: 'Toque na bolha brilhante que pisca rápido! 🫧', correta: '🫧 Bolha Rápida', incorretas: ['🫧 Bolha Parada', '🫧 Bolha Lenta'] },
+            { instrucao: 'Pegue a estrela cadente dourada! 🌠', correta: '🌠 Estrela Cadente', incorretas: ['🌠 Estrela Parada', '🌠 Nuvem Parada'] },
+          ];
+          const item = alvosDB[(roundNum - 1) % alvosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.instrucao;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.instrucao, tipo: 'sons' });
+        }
       }
     }
     // ==========================================
     // 5. BIOMA: MATEMÁTICO
     // ==========================================
     else {
-      if (lvl === 1) {
-        // Mecânica: contar_objetos
-        const objetosDB = [
-          { conjunto: '♥  ♥  ♥', quantidade: '3', incorretas: ['2', '4', '5'] },
-          { conjunto: '⭐  ⭐  ⭐  ⭐', quantidade: '4', incorretas: ['3', '5', '2'] },
-          { conjunto: '🍎  🍎', quantidade: '2', incorretas: ['1', '3', '4'] },
-          { conjunto: '🍎  🍎  🍎  🍎  🍎', quantidade: '5', incorretas: ['4', '3', '6'] },
-        ];
-        const item = objetosDB[(roundNum - 1) % objetosDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.quantidade].sort(() => Math.random() - 0.5);
-        const prompt = `Quantos elementos lúdicos estão desenhados na caixa:  ${item.conjunto} ?`;
-        speakCommand("Quantos elementos estão desenhados?");
-        setGameState({ prompt, respostaCorreta: item.quantidade, opcoes, conjunto: item.conjunto, tipo: 'matematica' });
-      } 
-      else if (lvl === 2) {
-        // Mecânica: sequencia_numerica
-        const sequenciasDB = [
-          { sequencia: '1,  2,  ?,  4,  5', correta: '3', incorretas: ['0', '5', '6'] },
-          { sequencia: '4,  5,  6,  ?,  8', correta: '7', incorretas: ['3', '8', '9'] },
-          { sequencia: '2,  4,  ?,  8,  10', correta: '6', incorretas: ['5', '7', '9'] },
-          { sequencia: '10,  9,  ?,  7,  6', correta: '8', incorretas: ['9', '7', '5'] },
-        ];
-        const item = sequenciasDB[(roundNum - 1) % sequenciasDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = `Qual número completa a trilha numérica: ${item.sequencia}`;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'matematica' });
-      } 
+      const gameId = game.id;
+
+      if (gameId === 'desafio_multiplicacao') {
+        if (lvl === 1) {
+          // Agrupador de Cestas de Frutas
+          const objetosDB = [
+            { prompt: 'Se temos 3 cestas e cada cesta tem 2 maçãs 🍎🍎, qual o total de maçãs?', correta: '6 maçãs (3 x 2) 🍎', incorretas: ['5 maçãs', '4 maçãs', '8 maçãs'] },
+            { prompt: 'Se temos 2 ninhos e cada ninho tem 3 passarinhos 🐥🐥🐥, quantos passarinhos há ao todo?', correta: '6 passarinhos (2 x 3) 🐥', incorretas: ['5 passarinhos', '8 passarinhos', '4 passarinhos'] },
+            { prompt: 'Se temos 4 saquinhos e cada saquinho tem 2 doces 🍬🍬, quantos doces temos no total?', correta: '8 doces (4 x 2) 🍬', incorretas: ['6 doces', '10 doces', '7 doces'] }
+          ];
+          const item = objetosDB[(roundNum - 1) % objetosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.prompt);
+          setGameState({ prompt: item.prompt, respostaCorreta: item.correta, opcoes, conjunto: '🧺', tipo: 'matematica' });
+        } 
+        else if (lvl === 2) {
+          // Trilha do Multiplicador Espacial
+          const sequenciasDB = [
+            { sequencia: '2,  4,  6,  ?,  10', correta: '8', incorretas: ['7', '9', '12'] },
+            { sequencia: '3,  6,  9,  ?,  15', correta: '12', incorretas: ['10', '11', '14'] },
+            { sequencia: '5,  10,  15,  ?,  25', correta: '20', incorretas: ['18', '22', '30'] }
+          ];
+          const item = sequenciasDB[(roundNum - 1) % sequenciasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Complete a trilha da tabuada: ${item.sequencia}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'matematica' });
+        } 
+        else {
+          // Desafios da Fazenda Multiplicativa
+          const operacoesDB = [
+            { desafio: 'Na fazenda, cada ovelha tem 4 patas. Se temos 3 ovelhas correndo no pasto, quantas patas temos no total?', correta: '12 patas (3 x 4) 🐑', incorretas: ['10 patas', '8 patas', '16 patas'] },
+            { desafio: 'Cada caixa de ovos da fazenda vem com 6 ovos. Se o fazendeiro colheu 2 caixas cheias, quantos ovos ele tem?', correta: '12 ovos (2 x 6) 🥚', incorretas: ['10 ovos', '8 ovos', '18 ovos'] },
+            { desafio: 'Se plantamos 5 fileiras de cenouras e cada fileira tem 3 cenouras, quantas cenouras colheremos?', correta: '15 cenouras (5 x 3) 🥕', incorretas: ['12 cenouras', '10 cenouras', '18 cenouras'] }
+          ];
+          const item = operacoesDB[(roundNum - 1) % operacoesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.desafio);
+          setGameState({ prompt: item.desafio, respostaCorreta: item.correta, opcoes, desafio: item.desafio, tipo: 'sentimentos' });
+        }
+      }
       else {
-        // Mecânica: mini_desafios
-        const operacoesDB = [
-          { desafio: 'Se eu tenho 2 maçãs 🍎🍎 e ganho mais 1 maçã 🍎, com quantas maçãs eu fico?', correta: '3 maçãs 🍎🍎🍎', incorretas: ['2 maçãs 🍎🍎', '4 maçãs 🍎🍎🍎🍎'] },
-          { desafio: 'Tenho 3 estrelas ⭐⭐⭐ e ganho mais 2 estrelas ⭐⭐, qual o total?', correta: '5 estrelas ⭐⭐⭐⭐⭐', incorretas: ['4 estrelas ⭐⭐⭐⭐', '6 estrelas ⭐⭐⭐⭐⭐⭐'] },
-          { desafio: 'Se eu tenho 4 corações ♥♥♥♥ e perco 1 coração ♥, com quantos eu fico?', correta: '3 corações ♥♥♥', incorretas: ['2 corações ♥♥', '4 corações ♥♥♥•'] },
-        ];
-        const item = operacoesDB[(roundNum - 1) % operacoesDB.length];
-        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-        const prompt = item.desafio;
-        speakCommand(prompt);
-        setGameState({ prompt, respostaCorreta: item.correta, opcoes, desafio: item.desafio, tipo: 'sentimentos' });
+        // reino_numeros (Reino dos Números e Quantidades - 6-8 anos) - Fallback original
+        if (lvl === 1) {
+          // Contagem de Animais da Fazenda (Ilustrado)
+          const objetosDB = [
+            { conjunto: '🦆  🦆  🦆', quantidade: '3 patinhos 🦆', incorretas: ['2 patinhos', '4 patinhos', '5 patinhos'] },
+            { conjunto: '🐖  🐖  🐖  🐖', quantidade: '4 porquinhos 🐖', incorretas: ['3 porquinhos', '5 porquinhos', '2 porquinhos'] },
+            { conjunto: '🐑  🐑', quantidade: '2 ovelhas 🐑', incorretas: ['1 ovelha', '3 ovelhas', '4 ovelhas'] },
+          ];
+          const item = objetosDB[(roundNum - 1) % objetosDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.quantidade].sort(() => Math.random() - 0.5);
+          const prompt = `Contagem na fazenda: quantos animais estão no cercado? ${item.conjunto}`;
+          speakCommand("Quantos animais estão no cercado?");
+          setGameState({ prompt, respostaCorreta: item.quantidade, opcoes, conjunto: item.conjunto, tipo: 'matematica' });
+        } 
+        else if (lvl === 2) {
+          // Trilha Sequencial de Adição Fácil
+          const sequenciasDB = [
+            { sequencia: '2,  4,  6,  ?,  10', correta: '8', incorretas: ['7', '9', '11'] },
+            { sequencia: '1,  3,  5,  ?,  9', correta: '7', incorretas: ['6', '8', '10'] },
+            { sequencia: '5,  10,  15,  ?,  25', correta: '20', incorretas: ['16', '18', '22'] },
+          ];
+          const item = sequenciasDB[(roundNum - 1) % sequenciasDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = `Complete o número que falta na trilha de contagem: ${item.sequencia}`;
+          speakCommand(prompt);
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'matematica' });
+        } 
+        else {
+          // Alimentar Animais: Soma Ilustrada com Frutas
+          const operacoesDB = [
+            { desafio: 'O coelhinho comeu 3 cenouras de manhã 🥕🥕🥕 e mais 3 cenouras à tarde 🥕🥕🥕. Quantas cenouras ele comeu no total?', correta: '6 cenouras 🥕', incorretas: ['5 cenouras', '7 cenouras', '9 cenouras'] },
+            { desafio: 'Temos 4 maçãs vermelhas 🍎🍎🍎🍎 e colhemos mais 2 maçãs verdes 🍏🍏. Quantas frutas temos ao todo?', correta: '6 frutas 🍎🍏', incorretas: ['5 frutas', '7 frutas', '8 frutas'] },
+            { desafio: 'O cavalinho ganhou 5 torrões de açúcar 🍬🍬🍬🍬🍬 e comeu 2 🍬🍬. Quantos torrões sobraram?', correta: '3 torrões 🍬', incorretas: ['2 torrões', '4 torrões', '5 torrões'] },
+          ];
+          const item = operacoesDB[(roundNum - 1) % operacoesDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          speakCommand(item.desafio);
+          setGameState({ prompt: item.desafio, respostaCorreta: item.correta, opcoes, desafio: item.desafio, tipo: 'sentimentos' });
+        }
       }
     }
   };
@@ -772,6 +1371,32 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         };
       }
       localStorage.setItem(localScoresKey, JSON.stringify(mergedScoresPayload));
+
+      // 4. Salvar na nova tabela gamer_records localmente (Garantia de histórico unificado local)
+      const localRecordsKey = `incluigamer_records_${student.id}`;
+      const localRecords = JSON.parse(localStorage.getItem(localRecordsKey) || '[]');
+      const gamerRecordPayload = {
+        student_id: student.id,
+        school_id: user.schoolId || student.schoolId || null,
+        activity_name: game.name,
+        xp_earned: score,
+        level: levelInterno,
+        progress_bncc: Math.round(aproveitamento),
+        cognitive_seals: badges,
+        heatmap_axes: {
+          'Alfabetização': game.bioma === 'alfabetizacao' ? Math.round(desenvolvimento) : Math.round(coordenacao),
+          'Raciocínio Lógico': game.bioma === 'matematico' ? Math.round(desenvolvimento) : Math.round((foco + desenvolvimento) / 2),
+          'Socioemocional': game.bioma === 'emocoes' ? Math.round(desenvolvimento) : Math.round(emocional),
+          'Percepção Sensorial': game.bioma === 'sensorial' ? Math.round(desenvolvimento) : Math.round(coordenacao * 0.9 + 5),
+          'Coordenação Visomotora': Math.round(coordenacao)
+        },
+        date_played: new Date().toISOString(),
+        status: 'concluído',
+        notes: `Atividade concluída com sucesso. Foco: ${Math.round(foco)}%, Autonomia: ${Math.round(autonomia)}%, Coordenação: ${Math.round(coordenacao)}%.`
+      };
+      localRecords.push({ ...gamerRecordPayload, id: crypto.randomUUID() });
+      localStorage.setItem(localRecordsKey, JSON.stringify(localRecords));
+
       console.log("[ACE Play] Salvamento local concluido com sucesso.");
     } catch (e) {
       console.error("[ACE Play] Falha critica ao salvar dados localmente no LocalStorage:", e);
@@ -783,6 +1408,34 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     try {
       console.log("[ACE Play] Tentando sincronizar dados expandidos com a nuvem (Supabase)...");
       
+      // Gravação na tabela gamer_records
+      const { error: recErr } = await supabase.from('gamer_records').insert([
+        {
+          student_id: student.id,
+          school_id: user.schoolId || student.schoolId || null,
+          activity_name: game.name,
+          xp_earned: score,
+          level: levelInterno,
+          progress_bncc: Math.round(aproveitamento),
+          cognitive_seals: badges,
+          heatmap_axes: {
+            'Alfabetização': game.bioma === 'alfabetizacao' ? Math.round(desenvolvimento) : Math.round(coordenacao),
+            'Raciocínio Lógico': game.bioma === 'matematico' ? Math.round(desenvolvimento) : Math.round((foco + desenvolvimento) / 2),
+            'Socioemocional': game.bioma === 'emocoes' ? Math.round(desenvolvimento) : Math.round(emocional),
+            'Percepção Sensorial': game.bioma === 'sensorial' ? Math.round(desenvolvimento) : Math.round(coordenacao * 0.9 + 5),
+            'Coordenação Visomotora': Math.round(coordenacao)
+          },
+          date_played: new Date().toISOString(),
+          status: 'concluído',
+          notes: `Atividade concluída com sucesso. Foco: ${Math.round(foco)}%, Autonomia: ${Math.round(autonomia)}%, Coordenação: ${Math.round(coordenacao)}%.`
+        }
+      ]);
+      if (recErr) {
+        console.warn("[ACE Play] Erro ao gravar gamer_records no Supabase:", recErr.message);
+      } else {
+        console.log("[ACE Play] gamer_records persistido com sucesso no Supabase.");
+      }
+
       // 1. Persistir no novo histórico de sessões (game_sessions)
       const gameSessionsPayload = {
         student_id: student.id,

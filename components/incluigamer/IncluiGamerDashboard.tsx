@@ -29,6 +29,7 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
   const [loading, setLoading] = useState<boolean>(false);
   const [scoresData, setScoresData] = useState<any>(null);
   const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [gamerRecords, setGamerRecords] = useState<any[]>([]);
 
   // Carregar os scores cognitivos de forma híbrida (Supabase + LocalStorage Fallback)
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
       
       let dbScore = null;
       let dbHistory = [];
+      let dbGamerRecords = [];
 
       try {
         console.log("[ACE Dashboard] Tentando buscar do Supabase...");
@@ -64,6 +66,17 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
         if (historyErr) throw historyErr;
         dbHistory = history || [];
 
+        // 3. Busca a nova tabela gamer_records
+        const { data: recs, error: recsErr } = await supabase
+          .from('gamer_records')
+          .select('*')
+          .eq('student_id', student.id)
+          .order('date_played', { ascending: false });
+
+        if (!recsErr && recs) {
+          dbGamerRecords = recs;
+        }
+
       } catch (err) {
         console.warn("[ACE Dashboard] Erro ao buscar do Supabase, buscando localmente...", err);
       }
@@ -77,32 +90,75 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
         dbHistory = JSON.parse(localStorage.getItem(localProgressKey) || '[]');
       }
 
+      const localRecordsKey = `incluigamer_records_${student.id}`;
+      if (dbGamerRecords.length === 0) {
+        dbGamerRecords = JSON.parse(localStorage.getItem(localRecordsKey) || '[]');
+        dbGamerRecords.sort((a: any, b: any) => new Date(b.date_played).getTime() - new Date(a.date_played).getTime());
+      }
+      setGamerRecords(dbGamerRecords);
+
       // Se ainda assim não houver registros (primeira vez jogando), estruturar dados de convite
-      if (!dbScore) {
+      if (!dbScore && dbGamerRecords.length === 0) {
         setScoresData(null);
         setHistoricalData([]);
       } else {
+        // Se temos registros na nova tabela mas nenhum score bruto, estruturar score a partir do mais recente
+        if (dbGamerRecords.length > 0 && !dbScore) {
+          const latest = dbGamerRecords[0];
+          const axes = latest.heatmap_axes || {};
+          dbScore = {
+            student_id: student.id,
+            foco: axes['Raciocínio Lógico'] || 50,
+            autonomia: axes['Socioemocional'] || 50,
+            emocional: axes['Socioemocional'] || 50,
+            coordenacao: axes['Coordenação Visomotora'] || 50,
+            engajamento: 80,
+            desenvolvimento_pedagogico: latest.progress_bncc || 50,
+            total_play_time: dbGamerRecords.reduce((acc, r) => acc + (r.duration_seconds || 60), 0),
+            skills_developed: Array.isArray(latest.cognitive_seals) ? latest.cognitive_seals.map((s: string) => ({ code: s, proficiency: latest.progress_bncc, date: latest.date_played })) : []
+          };
+        }
+
         setScoresData(dbScore);
         
         // Mapear histórico de evolução cognitiva para o gráfico de linhas
-        const mappedHistory = dbHistory.map((item: any, idx: number) => {
-          const dateStr = item.created_at || item.created_at;
-          const label = dateStr 
-            ? new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-            : `Sessão ${idx + 1}`;
-          
-          // Pegar o score daquela época ou simular evolução linear baseada no score final
-          const ratio = (idx + 1) / dbHistory.length;
-          const scoreObj = item.event_data?.scores || item.event_data?.scores || dbScore;
+        let mappedHistory = [];
+        if (dbGamerRecords.length > 0) {
+          mappedHistory = dbGamerRecords.slice().reverse().map((item: any, idx: number) => {
+            const dateStr = item.date_played;
+            const label = dateStr 
+              ? new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+              : `Sessão ${idx + 1}`;
+            
+            const axes = item.heatmap_axes || {};
 
-          return {
-            name: label,
-            Foco: Math.round(scoreObj.foco * (0.8 + ratio * 0.2)),
-            Autonomia: Math.round(scoreObj.autonomia * (0.8 + ratio * 0.2)),
-            Coordenação: Math.round(scoreObj.coordenacao * (0.8 + ratio * 0.2)),
-            Cognitivo: Math.round(scoreObj.desenvolvimento_pedagogico * (0.8 + ratio * 0.2))
-          };
-        });
+            return {
+              name: label,
+              Foco: axes['Raciocínio Lógico'] || 50,
+              Autonomia: axes['Socioemocional'] || 50,
+              Coordenação: axes['Coordenação Visomotora'] || 50,
+              Cognitivo: item.progress_bncc || 50
+            };
+          });
+        } else {
+          mappedHistory = dbHistory.map((item: any, idx: number) => {
+            const dateStr = item.created_at;
+            const label = dateStr 
+              ? new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+              : `Sessão ${idx + 1}`;
+            
+            const ratio = (idx + 1) / dbHistory.length;
+            const scoreObj = item.event_data?.scores || dbScore;
+
+            return {
+              name: label,
+              Foco: Math.round(scoreObj.foco * (0.8 + ratio * 0.2)),
+              Autonomia: Math.round(scoreObj.autonomia * (0.8 + ratio * 0.2)),
+              Coordenação: Math.round(scoreObj.coordenacao * (0.8 + ratio * 0.2)),
+              Cognitivo: Math.round(scoreObj.desenvolvimento_pedagogico * (0.8 + ratio * 0.2))
+            };
+          });
+        }
 
         // Caso o histórico seja muito curto, duplicar pontos para dar perspectiva de linha
         if (mappedHistory.length === 1) {
@@ -570,6 +626,85 @@ export default function IncluiGamerDashboard({ student, studentRecords }: Inclui
               </div>
             </div>
           )}
+          {/* SEÇÃO: HISTÓRICO GAMER */}
+          <div className="p-6 bg-slate-950/40 border border-slate-850 rounded-[2.5rem] space-y-4 shadow-sm w-full">
+            <div>
+              <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <i className="fa-solid fa-clock-rotate-left text-indigo-400"></i> Histórico Gamer
+              </h4>
+              <p className="text-[10px] text-slate-500 font-semibold mt-1 leading-relaxed">
+                Acompanhamento diário da evolução lúdica e curricular do aluno.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-semibold text-slate-350">
+                <thead>
+                  <tr className="border-b border-slate-850 text-slate-500 text-[9px] uppercase tracking-wider">
+                    <th className="py-3 px-4">Data</th>
+                    <th className="py-3 px-4">Atividade</th>
+                    <th className="py-3 px-4">Nível</th>
+                    <th className="py-3 px-4">XP Ganho</th>
+                    <th className="py-3 px-4">Progresso BNCC</th>
+                    <th className="py-3 px-4">Selos Obtidos</th>
+                    <th className="py-3 px-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gamerRecords.length > 0 ? (
+                    gamerRecords.map((rec) => (
+                      <tr key={rec.id} className="border-b border-slate-850/50 hover:bg-slate-900/40 transition-colors">
+                        <td className="py-3.5 px-4 font-mono text-[10px] text-slate-400">
+                          {new Date(rec.date_played).toLocaleDateString('pt-BR')} {new Date(rec.date_played).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="py-3.5 px-4 font-black text-white">{rec.activity_name}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-500/20 rounded-md text-[9px] font-extrabold uppercase">
+                            Lvl {rec.level}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-amber-400 font-black">{rec.xp_earned} XP</td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-850/60">
+                              <div className="h-full bg-emerald-500" style={{ width: `${rec.progress_bncc}%` }}></div>
+                            </div>
+                            <span className="font-black text-emerald-400">{rec.progress_bncc}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {Array.isArray(rec.cognitive_seals) && rec.cognitive_seals.length > 0 ? (
+                              rec.cognitive_seals.map((seal: string, i: number) => (
+                                <span key={i} className="bg-indigo-950/50 text-indigo-300 border border-indigo-500/25 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded" title={seal}>
+                                  {seal.split(' ').pop()} {seal.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-slate-650 italic text-[9px]">-</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${
+                            rec.status === 'concluído' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                          }`}>
+                            {rec.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                        Nenhum registro de atividade gamer encontrado para este aluno.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
         </div>
       )}

@@ -27,6 +27,15 @@ export interface GameDefinition {
   stimuli: string[]; // ['Visual', 'Auditivo', 'Tátil', 'Foco', 'Calmante']
   skillsWorked: string[]; // Habilidades estimuladas
   levels: GameLevelDefinition[]; // Níveis pedagógicos de progressão
+
+  // Novos campos de compatibilidade requisitados
+  nome_da_atividade?: string;
+  faixa_etaria?: string;
+  codigo_bncc?: string[];
+  descricao_curta?: string;
+  nivel_dificuldade?: string;
+  xp_base?: number;
+  categoria_cognitiva?: string;
 }
 
 export const GAMES_CATALOG: GameDefinition[] = [
@@ -301,6 +310,255 @@ export const GAMES_CATALOG: GameDefinition[] = [
       { level: 1, name: 'Reconhecimento Social e Expressões', objective: 'Identificar a intenção/sentimento alheio em discussões', mechanic: 'reconhecimento_facial', bnccSkills: ['EF06ER07'], difficulty: 'Fácil' },
       { level: 2, name: 'Análise de Conflitos e Empatia', objective: 'Interpretar sentimentos em contextos de conflito', mechanic: 'interpretacao_emocional', bnccSkills: ['EF08ER04'], difficulty: 'Médio' },
       { level: 3, name: 'Cidadania Ativa e Escolhas Éticas', objective: 'Dilemas éticos complexos com escolhas inclusivas', mechanic: 'empatia_guiada', bnccSkills: ['EF09ER01'], difficulty: 'Difícil' }
+    ]
+  },
+  // --- NOVAS ATIVIDADES ADICIONADAS EM EXPANSÃO DE CONTEÚDO PEDAGÓGICO ---
+  {
+    id: 'som_palavras',
+    name: 'Som das Palavras',
+    nome_da_atividade: 'Som das Palavras',
+    description: 'Jogo auditivo leve focado em identificar o som fonético e sílabas iniciais de palavras simples, ideal para consciência fonológica primária.',
+    descricao_curta: 'Jogo auditivo leve focado em identificar o som fonético e sílabas iniciais de palavras simples, ideal para consciência fonológica primária.',
+    bioma: 'alfabetizacao',
+    categoria_cognitiva: 'alfabetizacao',
+    ageGroup: '4-5',
+    faixa_etaria: '4-5',
+    ageLabel: '4 a 5 anos',
+    fieldOfExperience: 'Escuta, fala, pensamento e imaginação',
+    bnccSkills: ['EI03EF01'],
+    codigo_bncc: ['EI03EF01'],
+    pedagogicalObjectives: [
+      'Desenvolver a consciência fonológica na pré-escola.',
+      'Identificar o som inicial de palavras do cotidiano.',
+      'Associar sons falados a imagens e termos lúdicos.'
+    ],
+    cognitiveLevel: 'Entender',
+    difficulty: 'Fácil',
+    nivel_dificuldade: 'Fácil',
+    xp_base: 100,
+    stimuli: ['Auditivo', 'Visual', 'Calmante'],
+    skillsWorked: ['Consciência Fonológica', 'Percepção Auditiva', 'Foco Sustentado'],
+    levels: [
+      { level: 1, name: 'Vogais Cantadas', objective: 'Diferenciar o som de vogais iniciais calmas', mechanic: 'caca_letras', bnccSkills: ['EI03EF01'], difficulty: 'Fácil' },
+      { level: 2, name: 'Sons de Animais e Sílabas', objective: 'Parear sons silábicos iniciais fáceis', mechanic: 'montar_silabas', bnccSkills: ['EI03EF01'], difficulty: 'Médio' },
+      { level: 3, name: 'Completar sons na Trilha', objective: 'Completar vogal que falta baseando-se no áudio', mechanic: 'completar_frases', bnccSkills: ['EI03EF01'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'formando_silabas',
+    name: 'Formando Sílabas',
+    nome_da_atividade: 'Formando Sílabas',
+    description: 'Combine e encaixe diferentes sílabas na tela para construir palavras completas e reforçar a leitura elementar de forma gamificada.',
+    descricao_curta: 'Combine e encaixe diferentes sílabas na tela para construir palavras completas e reforçar a leitura elementar de forma gamificada.',
+    bioma: 'alfabetizacao',
+    categoria_cognitiva: 'alfabetizacao',
+    ageGroup: '6-8',
+    faixa_etaria: '6-8',
+    ageLabel: '6 a 8 anos',
+    subject: 'Língua Portuguesa',
+    bnccSkills: ['EF01LP04', 'EF01LP02', 'EF01LP05'],
+    codigo_bncc: ['EF01LP04', 'EF01LP02', 'EF01LP05'],
+    pedagogicalObjectives: [
+      'Arrastar e combinar grafemas e fonemas em sílabas.',
+      'Reforçar o letramento e alfabetização primária.',
+      'Estimular a percepção de rimas e concatenação.'
+    ],
+    cognitiveLevel: 'Aplicar',
+    difficulty: 'Médio',
+    nivel_dificuldade: 'Médio',
+    xp_base: 150,
+    stimuli: ['Visual', 'Foco', 'Tátil'],
+    skillsWorked: ['Ortografia Prática', 'Consciência Silábica', 'Precisão Visomotora'],
+    levels: [
+      { level: 1, name: 'Silabando Consoantes e Vogais', objective: 'Identificar sílabas canônicas simples', mechanic: 'caca_letras', bnccSkills: ['EF01LP02'], difficulty: 'Fácil' },
+      { level: 2, name: 'Montador de Palavras de Duas Sílabas', objective: 'Unir sílabas para montar nomes ilustrados', mechanic: 'montar_silabas', bnccSkills: ['EF01LP04'], difficulty: 'Médio' },
+      { level: 3, name: 'Frase Lacunada Ortográfica', objective: 'Escolher a palavra silabicamente correta para fechar oração', mechanic: 'completar_frases', bnccSkills: ['EF01LP05'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'palavras_ocultas',
+    name: 'Palavras Ocultas',
+    nome_da_atividade: 'Palavras Ocultas',
+    description: 'Encontre as palavras que estão escondidas ou omitidas em frases cotidianas lúdicas, estimulando decodificação rápida e semântica.',
+    descricao_curta: 'Encontre as palavras que estão escondidas ou omitidas em frases cotidianas lúdicas, estimulando decodificação rápida e semântica.',
+    bioma: 'alfabetizacao',
+    categoria_cognitiva: 'alfabetizacao',
+    ageGroup: '6-8',
+    faixa_etaria: '6-8',
+    ageLabel: '6 a 8 anos',
+    subject: 'Língua Portuguesa',
+    bnccSkills: ['EF02LP08'],
+    codigo_bncc: ['EF02LP08'],
+    pedagogicalObjectives: [
+      'Reconhecer palavras em frases com omissões.',
+      'Fomentar a decodificação fonológica e semântica autônoma.',
+      'Aumentar o tempo de foco e rastreamento em leitura silenciosa.'
+    ],
+    cognitiveLevel: 'Aplicar',
+    difficulty: 'Médio',
+    nivel_dificuldade: 'Médio',
+    xp_base: 200,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Decodificação Rápida', 'Compreensão de Leitura', 'Foco Sustentado'],
+    levels: [
+      { level: 1, name: 'Caçador de Termos', objective: 'Achar letras perdidas em substantivos', mechanic: 'caca_letras', bnccSkills: ['EF02LP08'], difficulty: 'Fácil' },
+      { level: 2, name: 'Esconderijo das Palavras', objective: 'Achar a palavra oculta no enunciado curto', mechanic: 'montar_silabas', bnccSkills: ['EF02LP08'], difficulty: 'Médio' },
+      { level: 3, name: 'Lacuna Semântica Avançada', objective: 'Preencher frase deduzindo o termo adequado ao sentido', mechanic: 'completar_frases', bnccSkills: ['EF02LP08'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'desafio_frases',
+    name: 'Desafio das Frases',
+    nome_da_atividade: 'Desafio das Frases',
+    description: 'Ordene e monte frases estruturadas de forma coesa, aplicando a pontuação gramatical correspondente e exercitando concordância.',
+    descricao_curta: 'Ordene e monte frases estruturadas de forma coesa, aplicando a pontuação gramatical correspondente e exercitando concordância.',
+    bioma: 'alfabetizacao',
+    categoria_cognitiva: 'alfabetizacao',
+    ageGroup: '9-12',
+    faixa_etaria: '9-12',
+    ageLabel: '9 a 12 anos',
+    subject: 'Língua Portuguesa',
+    bnccSkills: ['EF03LP10'],
+    codigo_bncc: ['EF03LP10'],
+    pedagogicalObjectives: [
+      'Estruturar orações completas aplicando concordância verbal.',
+      'Utilizar pontuação gramatical de forma adequada ao contexto.',
+      'Estimular a coesão textual em pequenos parágrafos.'
+    ],
+    cognitiveLevel: 'Criar',
+    difficulty: 'Difícil',
+    nivel_dificuldade: 'Difícil',
+    xp_base: 250,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Concordância Gramatical', 'Pontuação Coesa', 'Pensamento Linguístico'],
+    levels: [
+      { level: 1, name: 'Organizador de Orações Simples', objective: 'Colocar palavras bagunçadas em ordem lógica de oração', mechanic: 'caca_letras', bnccSkills: ['EF03LP10'], difficulty: 'Fácil' },
+      { level: 2, name: 'Montador de Frase Complexa', objective: 'Articular conectivos e pontuação no período curto', mechanic: 'montar_silabas', bnccSkills: ['EF03LP10'], difficulty: 'Médio' },
+      { level: 3, name: 'Dialogando com Pontuação', objective: 'Completar pontos em diálogos lúdicos da turma', mechanic: 'completar_frases', bnccSkills: ['EF03LP10'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'logica_espacial',
+    name: 'Desafio da Lógica Espacial e Padrões',
+    nome_da_atividade: 'Desafio da Lógica Espacial e Padrões',
+    description: 'Solucione quebra-cabeças geométricos de lógica visual, rotações espaciais e sequências lógica de figuras do Tangram.',
+    descricao_curta: 'Solucione quebra-cabeças geométricos de lógica visual, rotações espaciais e sequências lógica de figuras do Tangram.',
+    bioma: 'cognitivo',
+    categoria_cognitiva: 'cognitivo',
+    ageGroup: '9-12',
+    faixa_etaria: '9-12',
+    ageLabel: '9 a 12 anos',
+    subject: 'Matemática',
+    bnccSkills: ['EF02MA09', 'EF03MA07'],
+    codigo_bncc: ['EF02MA09', 'EF03MA07'],
+    pedagogicalObjectives: [
+      'Identificar regularidades em sequências de formas e objetos.',
+      'Desenvolver a rotação mental de formas bidimensionais.',
+      'Estimular a resiliência cognitiva no raciocínio espacial.'
+    ],
+    cognitiveLevel: 'Analisar',
+    difficulty: 'Adaptativo',
+    nivel_dificuldade: 'Adaptativo',
+    xp_base: 200,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Lógica Visual', 'Pareamento Espacial', 'Resolução de Quebra-Cabeça'],
+    levels: [
+      { level: 1, name: 'Matriz e Rotação Espacial', objective: 'Parear figuras idênticas rotacionadas no plano', mechanic: 'atencao_seletiva', bnccSkills: ['EF03MA07'], difficulty: 'Fácil' },
+      { level: 2, name: 'Trilha Sequencial Visual', objective: 'Completar a sequência lógica de formas abstratas', mechanic: 'sequencia_logica', bnccSkills: ['EF02MA09'], difficulty: 'Médio' },
+      { level: 3, name: 'Memória e Rastreamento Tangram', objective: 'Memorizar padrões de matrizes que desaparecem da tela', mechanic: 'memoria_visual', bnccSkills: ['EF03MA07'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'empatia_autorregulacao',
+    name: 'Cidade das Emoções: Empatia e Autorregulação',
+    nome_da_atividade: 'Cidade das Emoções: Empatia e Autorregulação',
+    description: 'Exercícios dinâmicos socioemocionais para identificar sentimentos sutis e escolher resoluções solidárias de conflitos cotidianos.',
+    descricao_curta: 'Exercícios dinâmicos socioemocionais para identificar sentimentos sutis e escolher resoluções solidárias de conflitos cotidianos.',
+    bioma: 'emocoes',
+    categoria_cognitiva: 'emocoes',
+    ageGroup: '4-5',
+    faixa_etaria: '4-5',
+    ageLabel: '4 a 5 anos',
+    fieldOfExperience: 'O eu, o outro e o nós',
+    bnccSkills: ['EI03EO01', 'EI03EO02'],
+    codigo_bncc: ['EI03EO01', 'EI03EO02'],
+    pedagogicalObjectives: [
+      'Nomear e compreender sentimentos complexos em amigos.',
+      'Estimular a cooperação e resoluções harmônicas de atrito.',
+      'Praticar técnicas adaptativas de respiração e regulação de frustração.'
+    ],
+    cognitiveLevel: 'Aplicar',
+    difficulty: 'Fácil',
+    nivel_dificuldade: 'Fácil',
+    xp_base: 120,
+    stimuli: ['Visual', 'Calmante'],
+    skillsWorked: ['Inteligência Socioemocional', 'Escolhas de Empatia', 'Gestão de Crises e Frustração'],
+    levels: [
+      { level: 1, name: 'Detetive das Carinhas Mistas', objective: 'Nomear rostos com expressões faciais complexas', mechanic: 'reconhecimento_facial', bnccSkills: ['EI03EO01'], difficulty: 'Fácil' },
+      { level: 2, name: 'Mediação no Recreio Escolar', objective: 'Escolher atitudes colaborativas em situações sociais', mechanic: 'interpretacao_emocional', bnccSkills: ['EI03EO02'], difficulty: 'Médio' },
+      { level: 3, name: 'Respirando com as Estrelas', objective: 'Exercício lúdico de acalmar e foco sensorial', mechanic: 'empatia_guiada', bnccSkills: ['EI03EO02'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'percepcao_sonora_motora',
+    name: 'Floresta Sensorial: Sons e Movimentos',
+    nome_da_atividade: 'Floresta Sensorial: Sons e Movimentos',
+    description: 'Atividade de exploração de áudio calmo de natureza e música instrumental lúdica com toques de rastreamento de alvos suaves.',
+    descricao_curta: 'Atividade de exploração de áudio calmo de natureza e música instrumental lúdica com toques de rastreamento de alvos suaves.',
+    bioma: 'sensorial',
+    categoria_cognitiva: 'sensorial',
+    ageGroup: '0-3',
+    faixa_etaria: '0-3',
+    ageLabel: '0 a 3 anos',
+    fieldOfExperience: 'Traços, sons, cores e formas',
+    bnccSkills: ['EI01TS01', 'EI01TS02'],
+    codigo_bncc: ['EI01TS01', 'EI01TS02'],
+    pedagogicalObjectives: [
+      'Explorar sons naturais e paisagens auditivas relaxantes.',
+      'Rastrear e interagir com elementos visuais de baixa luminosidade.',
+      'Reforçar o foco motor fino por touchscreen.'
+    ],
+    cognitiveLevel: 'Lembrar',
+    difficulty: 'Fácil',
+    nivel_dificuldade: 'Fácil',
+    xp_base: 110,
+    stimuli: ['Visual', 'Auditivo', 'Calmante'],
+    skillsWorked: ['Consciência Auditiva Calma', 'Foco Rítmico', 'Interação Visomotora Primária'],
+    levels: [
+      { level: 1, name: 'Sons da Natureza Rítmicos', objective: 'Associação de toques simples com ondas e pássaros', mechanic: 'causa_efeito_sonora', bnccSkills: ['EI01TS01'], difficulty: 'Fácil' },
+      { level: 2, name: 'Paleta Cromática Pastel', objective: 'Estimulação com toques cromáticos calmos', mechanic: 'cores_sensoriais', bnccSkills: ['EI01TS02'], difficulty: 'Médio' },
+      { level: 3, name: 'Guia de Borboletas Suaves', objective: 'Toque preciso em alvos orgânicos calmos e lentos', mechanic: 'coordenacao_motora', bnccSkills: ['EI01TS02'], difficulty: 'Difícil' }
+    ]
+  },
+  {
+    id: 'desafio_multiplicacao',
+    name: 'Reino Matemático: Desafio de Multiplicação',
+    nome_da_atividade: 'Reino Matemático: Desafio de Multiplicação',
+    description: 'Jogos matemáticos e tabuadas ilustradas em cenários lúdicos de fazenda, ajudando personagens a agrupar e multiplicar alimentos.',
+    descricao_curta: 'Jogos matemáticos e tabuadas ilustradas em cenários lúdicos de fazenda, ajudando personagens a agrupar e multiplicar alimentos.',
+    bioma: 'matematico',
+    categoria_cognitiva: 'matematico',
+    ageGroup: '9-12',
+    faixa_etaria: '9-12',
+    ageLabel: '9 a 12 anos',
+    subject: 'Matemática',
+    bnccSkills: ['EF03MA06', 'EF04MA07'],
+    codigo_bncc: ['EF03MA06', 'EF04MA07'],
+    pedagogicalObjectives: [
+      'Consolidar a noção de multiplicação como somas repetidas.',
+      'Desenvolver o raciocínio lógico-matemático dedutivo simples.',
+      'Articular estratégias pessoais para contagens agrupadas.'
+    ],
+    cognitiveLevel: 'Aplicar',
+    difficulty: 'Médio',
+    nivel_dificuldade: 'Médio',
+    xp_base: 180,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Agrupamento Lógico', 'Contagem de Tabuadas', 'Mini Desafios Lógicos do Cotidiano'],
+    levels: [
+      { level: 1, name: 'Agrupador de Cestas de Frutas', objective: 'Resolver adições repetidas ilustradas lógicas', mechanic: 'contar_objetos', bnccSkills: ['EF03MA06'], difficulty: 'Fácil' },
+      { level: 2, name: 'Trilha do Multiplicador Espacial', objective: 'Achar números na sequência de tabuadas crescentes', mechanic: 'sequencia_numerica', bnccSkills: ['EF03MA06'], difficulty: 'Médio' },
+      { level: 3, name: 'Desafios da Fazenda Multiplicativa', objective: 'Somas e multiplicações aplicadas no cotidiano lúdico', mechanic: 'mini_desafios', bnccSkills: ['EF04MA07'], difficulty: 'Difícil' }
     ]
   }
 ];

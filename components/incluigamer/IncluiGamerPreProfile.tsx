@@ -104,7 +104,7 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
     <div className="bg-slate-900 border border-slate-800 p-8 rounded-[3.5rem] shadow-2xl relative overflow-hidden max-w-2xl mx-auto animate-in zoom-in-95 duration-500">
       {/* Background glow sutil */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
-      
+
       {/* Header com Stepper */}
       <div className="space-y-6 mb-8 border-b border-slate-800 pb-6">
         <div>
@@ -125,19 +125,17 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
             <React.Fragment key={item.id}>
               {/* Conector */}
               {idx > 0 && (
-                <div className={`flex-1 h-0.5 mx-2 transition-colors duration-300 ${
-                  step >= item.id ? 'bg-indigo-600' : 'bg-slate-850'
-                }`}></div>
+                <div className={`flex-1 h-0.5 mx-2 transition-colors duration-300 ${step >= item.id ? 'bg-indigo-600' : 'bg-slate-850'
+                  }`}></div>
               )}
               {/* Círculo do Passo */}
-              <div 
-                className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all ${
-                  step === item.id 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30 scale-110 border border-indigo-500' 
-                    : step > item.id 
-                      ? 'bg-slate-800 text-indigo-400 border border-slate-700' 
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all ${step === item.id
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30 scale-110 border border-indigo-500'
+                    : step > item.id
+                      ? 'bg-slate-800 text-indigo-400 border border-slate-700'
                       : 'bg-slate-900 text-slate-600 border border-slate-850'
-                }`}
+                  }`}
                 title={item.label}
               >
                 <i className={`fa-solid ${item.icon} text-xs`}></i>
@@ -149,14 +147,14 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
 
       {/* Conteúdo dos Passos */}
       <div className="min-h-[220px] flex flex-col justify-between py-2">
-        
+
         {/* PASSO 1: COMUNICAÇÃO */}
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider">🗣️ Perfil de Comunicação</h3>
             </div>
-            
+
             {latestProfile && (
               <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between gap-3 text-left animate-in slide-in-from-top-2 duration-300">
                 <div className="flex gap-2">
@@ -181,20 +179,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Usa fala articulada para se expressar.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.comunicacao.verbal ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.comunicacao.verbal ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.comunicacao.verbal ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.comunicacao.verbal}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        comunicacao: { ...prev.comunicacao, verbal: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        comunicacao: { ...prev.comunicacao, verbal: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -207,20 +204,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Necessita de figuras/pranchas de apoio.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.comunicacao.alternativa ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.comunicacao.alternativa ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.comunicacao.alternativa ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.comunicacao.alternativa}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        comunicacao: { ...prev.comunicacao, alternativa: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        comunicacao: { ...prev.comunicacao, alternativa: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -238,16 +234,16 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                       Nível {profile.comunicacao.compreensao} / 5
                     </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
                     value={profile.comunicacao.compreensao}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      setProfile(prev => ({ 
-                        ...prev, 
-                        comunicacao: { ...prev.comunicacao, compreensao: val } 
+                      setProfile(prev => ({
+                        ...prev,
+                        comunicacao: { ...prev.comunicacao, compreensao: val }
                       }));
                     }}
                     className="w-full accent-indigo-600 bg-slate-800 rounded-lg h-1.5 cursor-pointer appearance-none"
@@ -261,20 +257,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Repete palavras ou frases de forma involuntária.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.comunicacao.ecolalia ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.comunicacao.ecolalia ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.comunicacao.ecolalia ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.comunicacao.ecolalia}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        comunicacao: { ...prev.comunicacao, ecolalia: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        comunicacao: { ...prev.comunicacao, ecolalia: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -295,20 +290,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Desconforto com sons altos ou agudos.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.sensorial.hipersensibilidadeSonora ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.sensorial.hipersensibilidadeSonora ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.sensorial.hipersensibilidadeSonora ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.sensorial.hipersensibilidadeSonora}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        sensorial: { ...prev.sensorial, hipersensibilidadeSonora: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        sensorial: { ...prev.sensorial, hipersensibilidadeSonora: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -321,20 +315,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Desconforto com flashes ou alta luminosidade.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.sensorial.hipersensibilidadeVisual ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.sensorial.hipersensibilidadeVisual ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.sensorial.hipersensibilidadeVisual ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.sensorial.hipersensibilidadeVisual}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        sensorial: { ...prev.sensorial, hipersensibilidadeVisual: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        sensorial: { ...prev.sensorial, hipersensibilidadeVisual: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -352,16 +345,16 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                       Nível {profile.sensorial.toleranciaEstimulos} / 5
                     </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
                     value={profile.sensorial.toleranciaEstimulos}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      setProfile(prev => ({ 
-                        ...prev, 
-                        sensorial: { ...prev.sensorial, toleranciaEstimulos: val } 
+                      setProfile(prev => ({
+                        ...prev,
+                        sensorial: { ...prev.sensorial, toleranciaEstimulos: val }
                       }));
                     }}
                     className="w-full accent-indigo-600 bg-slate-800 rounded-lg h-1.5 cursor-pointer appearance-none"
@@ -383,20 +376,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Consegue guiar e clicar usando mouse.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.coordenacao.mouse ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.coordenacao.mouse ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.coordenacao.mouse ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.coordenacao.mouse}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        coordenacao: { ...prev.coordenacao, mouse: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        coordenacao: { ...prev.coordenacao, mouse: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -409,20 +401,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Consegue tocar diretamente em alvos na tela.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.coordenacao.touchscreen ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.coordenacao.touchscreen ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.coordenacao.touchscreen ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.coordenacao.touchscreen}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        coordenacao: { ...prev.coordenacao, touchscreen: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        coordenacao: { ...prev.coordenacao, touchscreen: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -440,16 +431,16 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                       Nível {profile.coordenacao.motoraFina} / 5
                     </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
                     value={profile.coordenacao.motoraFina}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      setProfile(prev => ({ 
-                        ...prev, 
-                        coordenacao: { ...prev.coordenacao, motoraFina: val } 
+                      setProfile(prev => ({
+                        ...prev,
+                        coordenacao: { ...prev.coordenacao, motoraFina: val }
                       }));
                     }}
                     className="w-full accent-indigo-600 bg-slate-800 rounded-lg h-1.5 cursor-pointer appearance-none"
@@ -465,7 +456,7 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
           <div className="space-y-6 animate-in fade-in duration-300">
             <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider mb-4">🧠 Reconhecimento Pedagógico</h3>
             <p className="text-[10px] text-slate-500 font-medium leading-relaxed mb-4">Selecione abaixo as competências que o aluno já demonstra dominar ativamente:</p>
-            
+
             <div className="grid grid-cols-2 gap-4">
               {[
                 { key: 'letras' as const, label: 'Letras e Alfabeto', desc: 'Reconhece e nomeia grafemas.' },
@@ -474,17 +465,16 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                 { key: 'cores' as const, label: 'Cores Básicas', desc: 'Reconhece e nomeia tons.' },
                 { key: 'associacaoLogica' as const, label: 'Associação Lógica', desc: 'Pareia objetos semelhantes.' },
               ].map(item => (
-                <div 
+                <div
                   key={item.key}
                   onClick={() => setProfile(prev => ({
                     ...prev,
                     cognitivo: { ...prev.cognitivo, [item.key]: !prev.cognitivo[item.key] }
                   }))}
-                  className={`p-4 border rounded-2xl transition-all cursor-pointer group flex flex-col justify-between min-h-[90px] ${
-                    profile.cognitivo[item.key]
+                  className={`p-4 border rounded-2xl transition-all cursor-pointer group flex flex-col justify-between min-h-[90px] ${profile.cognitivo[item.key]
                       ? 'bg-indigo-600/15 border-indigo-500/50 text-indigo-300 shadow-md shadow-indigo-950/20'
                       : 'bg-slate-850/45 border-slate-850 text-slate-400 hover:border-slate-800'
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-start">
                     <span className="text-xs font-black text-slate-200">{item.label}</span>
@@ -515,16 +505,16 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                       {profile.comportamental.tempoFocoMinutos} minutos
                     </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="15" 
+                  <input
+                    type="range"
+                    min="1"
+                    max="15"
                     value={profile.comportamental.tempoFocoMinutos}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      setProfile(prev => ({ 
-                        ...prev, 
-                        comportamental: { ...prev.comportamental, tempoFocoMinutos: val } 
+                      setProfile(prev => ({
+                        ...prev,
+                        comportamental: { ...prev.comportamental, tempoFocoMinutos: val }
                       }));
                     }}
                     className="w-full accent-indigo-600 bg-slate-800 rounded-lg h-1.5 cursor-pointer appearance-none"
@@ -538,20 +528,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Irrita-se facilmente diante de erros.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.comportamental.frustracaoAlta ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.comportamental.frustracaoAlta ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.comportamental.frustracaoAlta ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.comportamental.frustracaoAlta}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        comportamental: { ...prev.comportamental, frustracaoAlta: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        comportamental: { ...prev.comportamental, frustracaoAlta: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -564,20 +553,19 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                   <p className="text-[9px] text-slate-500 font-medium">Necessita de estímulos e aplausos constantes.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
-                    profile.comportamental.reforcoPositivo ? 'text-emerald-400' : 'text-rose-500'
-                  }`}>
+                  <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${profile.comportamental.reforcoPositivo ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
                     {profile.comportamental.reforcoPositivo ? 'Ativo' : 'Não ativo'}
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={profile.comportamental.reforcoPositivo}
-                      onChange={(e) => setProfile(prev => ({ 
-                        ...prev, 
-                        comportamental: { ...prev.comportamental, reforcoPositivo: e.target.checked } 
+                      onChange={(e) => setProfile(prev => ({
+                        ...prev,
+                        comportamental: { ...prev.comportamental, reforcoPositivo: e.target.checked }
                       }))}
-                      className="sr-only peer" 
+                      className="sr-only peer"
                     />
                     <div className="w-9 h-5 bg-rose-950/20 border border-rose-500/30 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-rose-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-950/20 peer-checked:border-emerald-500/30 peer-checked:after:bg-emerald-400"></div>
                   </label>
@@ -595,16 +583,16 @@ export default function IncluiGamerPreProfile({ student, game, onConfirm, onCanc
                       Nível {profile.comportamental.autonomia} / 5
                     </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
                     value={profile.comportamental.autonomia}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      setProfile(prev => ({ 
-                        ...prev, 
-                        comportamental: { ...prev.comportamental, autonomia: val } 
+                      setProfile(prev => ({
+                        ...prev,
+                        comportamental: { ...prev.comportamental, autonomia: val }
                       }));
                     }}
                     className="w-full accent-indigo-600 bg-slate-800 rounded-lg h-1.5 cursor-pointer appearance-none"
