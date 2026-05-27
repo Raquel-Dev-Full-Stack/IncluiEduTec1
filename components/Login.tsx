@@ -282,10 +282,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
         
         {/* COLUNA ESQUERDA: APRESENTAÇÃO INSTITUCIONAL E CARDS GAMIFICADOS */}
-        <div className="md:w-1/2 animated-gradient text-white p-8 lg:p-12 flex flex-col justify-between relative overflow-y-auto custom-scrollbar max-h-[calc(100vh-60px)]">
+        <div className="w-full md:w-1/2 animated-gradient text-white p-6 md:p-12 flex flex-col justify-between relative md:overflow-y-auto custom-scrollbar md:max-h-[calc(100vh-60px)]">
           {/* Luzes de Fundo para Elegância Visual */}
           <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/10 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
@@ -548,7 +548,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isLoading }) => {
         </div>
 
         {/* COLUNA DIREITA: MASCOTE LÚDICO E FORMULÁRIO DE LOGIN */}
-        <div className="md:w-1/2 flex flex-col justify-center items-center p-6 lg:p-12 bg-slate-900 border-l border-slate-800 overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 md:p-12 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 md:overflow-y-auto custom-scrollbar">
           
           {/* MASCOTE EDU: FLUTUANTE E DIALOGANDO DINAMICAMENTE */}
           <div className="w-full max-w-md flex items-center gap-4 bg-slate-950/80 border border-indigo-500/20 p-4 rounded-3xl mb-6 shadow-xl relative overflow-hidden float-mascot">
