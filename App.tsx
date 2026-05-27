@@ -785,6 +785,15 @@ export default function App() {
     };
   }, [isLoggedIn]);
 
+  const getWelcomeXPMessage = (prof: UserProfile) => {
+    let label = 'Professor(a)';
+    if (prof === UserProfile.MEDIADOR) label = 'Mediador(a)';
+    if (prof === UserProfile.DIRETOR) label = 'Diretor(a)';
+    if (prof === UserProfile.SECRETARIA) label = 'Secretária(o)';
+    if (prof === UserProfile.ADMIN) label = 'Administrador(a)';
+    return `🎉 Bem-vindo(a), ${label}! Você ganhou +10 XP por acessar o sistema hoje.`;
+  };
+
   const handleLogin = async (emailOrName: string, selectedProfile: UserProfile, password?: string) => {
     if (!password) {
       showNotification('A senha é obrigatória.', 'error');
@@ -838,7 +847,7 @@ export default function App() {
           } as unknown as User);
           setIsLoggedIn(true);
           setActiveTab('admin_total');
-          showNotification('Acesso administrativo realizado!', 'success');
+          showNotification(getWelcomeXPMessage(UserProfile.ADMIN), 'success');
           fetchData();
           return;
         }
@@ -897,19 +906,19 @@ export default function App() {
         // Redirecionamento baseado no perfil
         if (mappedFromMeta === UserProfile.ADMIN) {
           setActiveTab('admin_total');
-          showNotification('Login de Administrador (Auth)!', 'success');
+          showNotification(getWelcomeXPMessage(UserProfile.ADMIN), 'success');
         } else if (mappedFromMeta === UserProfile.MEDIADOR) {
           setActiveTab('mediator_dashboard');
-          showNotification('Login de Mediador (Auth)!', 'success');
+          showNotification(getWelcomeXPMessage(UserProfile.MEDIADOR), 'success');
         } else if (mappedFromMeta === UserProfile.SECRETARIA) {
           setActiveTab('secretaria_dashboard');
-          showNotification('Login de Secretaria (Auth)!', 'success');
+          showNotification(getWelcomeXPMessage(UserProfile.SECRETARIA), 'success');
         } else if (mappedFromMeta === UserProfile.DIRETOR) {
           setActiveTab('dashboard');
-          showNotification('Login de Diretor (Auth)!', 'success');
+          showNotification(getWelcomeXPMessage(UserProfile.DIRETOR), 'success');
         } else {
           setActiveTab('dashboard');
-          showNotification('Login realizado via metadados Auth!', 'success');
+          showNotification(getWelcomeXPMessage(mappedFromMeta || UserProfile.PROFESSOR), 'success');
         }
         
         fetchData();
@@ -922,7 +931,7 @@ export default function App() {
       
       // Se o usuário for um Administrador, ele entra como Admin independente do que selecionou na tela
       if (mappedProfile === UserProfile.ADMIN) {
-        showNotification('Login de Administrador realizado com sucesso!', 'success');
+        showNotification(getWelcomeXPMessage(UserProfile.ADMIN), 'success');
         setUser({
           ...userData,
           name: userData.name || userData.nome || 'Admin Geral',
@@ -945,7 +954,7 @@ export default function App() {
       }
 
       // Login normal bem-sucedido
-      showNotification('Login realizado com sucesso!', 'success');
+      showNotification(getWelcomeXPMessage(mappedProfile), 'success');
       const nameValue = userData.name || userData.nome || userData.email || 'Usuário';
       setUser({
         ...userData,
