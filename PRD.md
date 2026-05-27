@@ -76,4 +76,4 @@ O **IncluiEduTec** é uma plataforma de gestão pedagógica e operacional especi
 
 ---
 **Início do Projeto:** 3 de Janeiro de 2026
-**Última Atualização:** 30 de Abril de 2026
+**Última Atualização:** 30 de Abril de 2026 
