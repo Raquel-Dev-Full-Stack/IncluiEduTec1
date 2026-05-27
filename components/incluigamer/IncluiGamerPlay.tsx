@@ -937,13 +937,34 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           // Instrumentos de Causa-Efeito (0-3 anos)
           const sonsDB = [
             { som: 'Sons suaves de uma harpa dedilhada 🎵', correta: '🎵 Harpa Suave', incorretas: ['🥁 Tambor Forte', '🎺 Corneta Alta'], audioKey: 'mar' as const },
-            { som: 'Sons mágicos de um xilofone lúdico 🎼', correta: '🎼 Xilofone Mágico', incorretas: ['🔔 Alarme Barulhento', '💥 Ruído Alto'], audioKey: 'passaro' as const }
+            { som: 'Sons mágicos de um xilofone lúdico 🎼', correta: '🎼 Xilofone Mágico', incorretas: ['🔔 Alarme Barulhento', '💥 Ruído Alto'], audioKey: 'passaro' as const },
+            { 
+              som: 'O bichinho quer dormir… ajude escolhendo o som mais calminho.', 
+              correta: '🎵 Harpa (som suave)', 
+              incorretas: ['🥁 Tambor (som forte)'], 
+              audioKey: 'mar' as const,
+              feedbackCorreto: 'Muito bem! Você ajudou o bichinho a dormir com o som suave da harpa. 🌙',
+              feedbackIncorreto: 'Ops! Esse som é muito forte, tente escolher o mais calminho.',
+              xpReward: 20,
+              seloCognitivo: 'Calma e Conforto 🌙'
+            }
           ];
           const item = sonsDB[(roundNum - 1) % sonsDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-          const prompt = `Toque no botão para orquestrar o som de: ${item.som}`;
+          const prompt = item.som.includes('dormir') ? item.som : `Toque no botão para orquestrar o som de: ${item.som}`;
           speakCommand(prompt);
-          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          setGameState({ 
+            prompt, 
+            respostaCorreta: item.correta, 
+            opcoes, 
+            molde: item.som, 
+            tipo: 'sons', 
+            audioKey: item.audioKey,
+            feedbackCorreto: item.feedbackCorreto,
+            feedbackIncorreto: item.feedbackIncorreto,
+            xpReward: item.xpReward,
+            seloCognitivo: item.seloCognitivo
+          });
           
           setTimeout(() => {
             playSynthesizedSound(item.audioKey);
@@ -972,6 +993,173 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const prompt = item.instrucao;
           speakCommand(prompt);
           setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.instrucao, tipo: 'sons' });
+        }
+      }
+      else if (gameId === 'musicalizacao_infantil_0_3') {
+        if (lvl === 1) {
+          // Descobrindo Sons e Timbres
+          const sonsDB = [
+            { 
+              som: 'Sabia que o mundo é cheio de sons? Vamos ouvir com atenção! O que faz o som de ‘piu-piu’ bem de mansinho?', 
+              correta: '🐦 Passarinho cantando', 
+              incorretas: ['🚗 Carro buzinando'], 
+              audioKey: 'passaro' as const,
+              feedbackCorreto: 'Isso mesmo! O passarinho canta com um som muito doce e suave! 🐦',
+              feedbackIncorreto: 'Ops! O carro faz bi-bi, que é bem forte. Tente de novo ouvir o piu-piu!',
+              xpReward: 20,
+              seloCognitivo: 'Atenção Auditiva 👂'
+            },
+            { 
+              som: 'A natureza cria sons lindos, e as pessoas também criam! Qual desses sons vem da chuva caindo do céu?', 
+              correta: '🌧️ Chuva (som da natureza)', 
+              incorretas: ['🔔 Sino da igreja (som criado pelo homem)'], 
+              audioKey: 'chuva' as const,
+              feedbackCorreto: 'Parabéns! A chuva é um som fresquinho da nossa mãe natureza! 🌧️',
+              feedbackIncorreto: 'O sino é muito legal, mas foi feito pelas mãos das pessoas. Vamos tentar a chuva?',
+              xpReward: 20,
+              seloCognitivo: 'Detetive da Natureza 🌿'
+            },
+            { 
+              som: 'Cada instrumento tem uma voz diferente! Qual deles faz um som suave de corda dedilhada?', 
+              correta: '🎵 Harpa suave', 
+              incorretas: ['🥁 Tambor forte', '🎺 Trompete alto'], 
+              audioKey: 'mar' as const,
+              feedbackCorreto: 'Perfeito! A harpa dedilhada produz ondas de puro carinho! 🎵',
+              feedbackIncorreto: 'O tambor e o trompete são incríveis, mas não usam dedilhado de corda calma. Tente a harpa!',
+              xpReward: 20,
+              seloCognitivo: 'Mestre dos Timbres 🎼'
+            }
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.som;
+          speakCommand(prompt);
+          setGameState({ 
+            prompt, 
+            respostaCorreta: item.correta, 
+            opcoes, 
+            molde: item.som, 
+            tipo: 'sons', 
+            audioKey: item.audioKey,
+            feedbackCorreto: item.feedbackCorreto,
+            feedbackIncorreto: item.feedbackIncorreto,
+            xpReward: item.xpReward,
+            seloCognitivo: item.seloCognitivo
+          });
+          
+          setTimeout(() => {
+            playSynthesizedSound(item.audioKey);
+          }, 1400);
+        }
+        else if (lvl === 2) {
+          // Propriedades do Som
+          const sonsDB = [
+            { 
+              som: 'Alguns sons são gigantes e fortes, outros são sussurros! Qual desses sons é muito suave e fraquinho?', 
+              correta: '🦋 Vento na asa da borboleta (som fraco)', 
+              incorretas: ['🦁 Rugido de leão (som forte)'], 
+              audioKey: 'chuva' as const,
+              feedbackCorreto: 'Excelente! O voo da borboleta é um sussurro quase invisível de tão calmo! 🦋',
+              feedbackIncorreto: 'Uau, o leão ruge muito alto e forte! Procure o som que é um sussurro.',
+              xpReward: 20,
+              seloCognitivo: 'Sensibilidade Auditiva 🤫'
+            },
+            { 
+              som: 'Existem sons rápidos que acabam logo, e sons compridos que duram bastante! Qual deles é um som bem longo?', 
+              correta: '🔔 Sino tocando (som longo)', 
+              incorretas: ['💥 Estalo de dedos (som curto)'], 
+              audioKey: 'mar' as const,
+              feedbackCorreto: 'Isso! O sino vibra no ar e o som continua por muito tempo! 🔔',
+              feedbackIncorreto: 'O estalo de dedos é super rápido, faz ‘clic’ e acaba! Vamos tentar o som comprido?',
+              xpReward: 20,
+              seloCognitivo: 'Foco Temporal ⏳'
+            },
+            { 
+              som: 'Os sons podem ser grossos e pesados (graves) ou fininhos e altos (agudos). Qual desses animais faz um som bem agudo e fininho?', 
+              correta: '🐭 Ratinho guinchando (som agudo)', 
+              incorretas: ['🐻 Urso roncando (som grave)'], 
+              audioKey: 'passaro' as const,
+              feedbackCorreto: 'Que fofo! O ratinho tem uma voz fininha que sobe lá no alto! 🐭',
+              feedbackIncorreto: 'O ronco do urso é grosso e pesado lá no chão! Tente encontrar o guincho fininho.',
+              xpReward: 20,
+              seloCognitivo: 'Afinador de Alturas 🎶'
+            }
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.som;
+          speakCommand(prompt);
+          setGameState({ 
+            prompt, 
+            respostaCorreta: item.correta, 
+            opcoes, 
+            molde: item.som, 
+            tipo: 'sons', 
+            audioKey: item.audioKey,
+            feedbackCorreto: item.feedbackCorreto,
+            feedbackIncorreto: item.feedbackIncorreto,
+            xpReward: item.xpReward,
+            seloCognitivo: item.seloCognitivo
+          });
+          
+          setTimeout(() => {
+            playSynthesizedSound(item.audioKey);
+          }, 1400);
+        }
+        else {
+          // Ritmo e Notas
+          const sonsDB = [
+            { 
+              som: 'O coração do relógio faz tic-tac sempre no mesmo ritmo constante! Qual desses sons mantém a batida certinha do relógio?', 
+              correta: '⏰ Tic-tac do relógio (ritmo constante)', 
+              incorretas: ['⚡ Trovão caindo (ritmo incerto)'], 
+              audioKey: 'mar' as const,
+              feedbackCorreto: 'Incrível! Você acompanhou o pulso certinho do tempo! ⏰',
+              feedbackIncorreto: 'O trovão cai de repente e assusta, não tem ritmo certinho. Vamos no tic-tac?',
+              xpReward: 20,
+              seloCognitivo: 'Rítmico do Pulso 🥁'
+            },
+            { 
+              som: 'As notas musicais são degraus de uma escada sonora! Vamos brincar na escada: quem vem logo depois do Dó e Ré na música?', 
+              correta: '🎵 Mi (próximo degrau)', 
+              incorretas: ['🎵 Sol (degrau longe)'], 
+              audioKey: 'passaro' as const,
+              feedbackCorreto: 'Perfeito! Subimos a escadinha: Dó, Ré, Mi! Que som lindo! 🎵',
+              feedbackIncorreto: 'O Sol é uma nota linda, mas está muito alto na escada. Vamos no degrau Mi?',
+              xpReward: 20,
+              seloCognitivo: 'Degraus Musicais 🧗‍♂️'
+            },
+            { 
+              som: 'Os bichinhos estão dançando na floresta! Vamos dançar com eles? Toque no ritmo bem alegre e rápido!', 
+              correta: '🐿️ Esquilo dançando rápido', 
+              incorretas: ['🐢 Tartaruga andando lenta'], 
+              audioKey: 'passaro' as const,
+              feedbackCorreto: 'Isso! Você acompanhou a dança rápida e divertida do esquilo! 🐿️',
+              feedbackIncorreto: 'A tartaruga anda muito devagar para essa dança agitada. Tente o esquilo!',
+              xpReward: 20,
+              seloCognitivo: 'Expressão Corporal 🕺'
+            }
+          ];
+          const item = sonsDB[(roundNum - 1) % sonsDB.length];
+          const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
+          const prompt = item.som;
+          speakCommand(prompt);
+          setGameState({ 
+            prompt, 
+            respostaCorreta: item.correta, 
+            opcoes, 
+            molde: item.som, 
+            tipo: 'sons', 
+            audioKey: item.audioKey,
+            feedbackCorreto: item.feedbackCorreto,
+            feedbackIncorreto: item.feedbackIncorreto,
+            xpReward: item.xpReward,
+            seloCognitivo: item.seloCognitivo
+          });
+          
+          setTimeout(() => {
+            playSynthesizedSound(item.audioKey);
+          }, 1400);
         }
       }
       else {
@@ -1213,11 +1401,26 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       metrics.current.acertos++;
       metrics.current.acertosSeguidos++;
       metrics.current.errosSeguidos = 0;
-      setScore(prev => prev + Math.max(10, 50 - Math.floor(tempoReacao / 1000) * 2));
-      const msgReforco = preProfile?.comportamental.reforcoPositivo ? 'Incrível! Você é uma estrela brilhante! ⭐🎉' : 'Excelente! Resposta correta! 🎉';
-      speakCommand(preProfile?.comportamental.reforcoPositivo ? "Incrível! Você acertou e brilhou!" : "Muito bem! Acertou.");
+      
+      const xpGanho = gameState.xpReward !== undefined ? gameState.xpReward : Math.max(10, 50 - Math.floor(tempoReacao / 1000) * 2);
+      setScore(prev => prev + xpGanho);
+      
+      const msgReforco = gameState.feedbackCorreto || (preProfile?.comportamental.reforcoPositivo ? 'Incrível! Você é uma estrela brilhante! ⭐🎉' : 'Excelente! Resposta correta! 🎉');
+      
+      const cleanSpeakText = (text: string) => {
+        return text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
+      };
+      
+      speakCommand(gameState.feedbackCorreto ? cleanSpeakText(gameState.feedbackCorreto) : (preProfile?.comportamental.reforcoPositivo ? "Incrível! Você acertou e brilhou!" : "Muito bem! Acertou."));
       setFeedbackMsg({ text: msgReforco, type: 'success' });
-      metrics.current.respostas.push({ rodada: currentRound, correta: true, tempoReacaoMs: tempoReacao, errosTentativa: errorsInCurrentRound.current });
+      metrics.current.respostas.push({ 
+        rodada: currentRound, 
+        correta: true, 
+        tempoReacaoMs: tempoReacao, 
+        errosTentativa: errorsInCurrentRound.current,
+        xpEarned: xpGanho,
+        seloCognitivo: gameState.seloCognitivo
+      });
       metrics.current.tempoTotalMs += tempoReacao;
       let novoNumOpcoes = difficultyModulation.numeroOpcoes;
       if (metrics.current.acertosSeguidos >= 3) {
@@ -1243,8 +1446,14 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       metrics.current.errosSeguidos++;
       metrics.current.acertosSeguidos = 0;
       errorsInCurrentRound.current++;
-      const msgFrustracao = preProfile?.comportamental.frustracaoAlta ? 'Tudo bem errar! Vamos tentar juntos novamente? ✨' : 'Ops! Vamos tentar de novo? Você consegue!';
-      speakCommand(preProfile?.comportamental.frustracaoAlta ? "Sem problemas. Vamos tentar juntos." : "Tente mais uma vez.");
+      
+      const msgFrustracao = gameState.feedbackIncorreto || (preProfile?.comportamental.frustracaoAlta ? 'Tudo bem errar! Vamos tentar juntos novamente? ✨' : 'Ops! Vamos tentar de novo? Você consegue!');
+      
+      const cleanSpeakText = (text: string) => {
+        return text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
+      };
+      
+      speakCommand(gameState.feedbackIncorreto ? cleanSpeakText(gameState.feedbackIncorreto) : (preProfile?.comportamental.frustracaoAlta ? "Sem problemas. Vamos tentar juntos." : "Tente mais uma vez."));
       setFeedbackMsg({ text: msgFrustracao, type: 'error' });
       let novoNumOpcoes = difficultyModulation.numeroOpcoes;
       let novoTamanho = difficultyModulation.tamanhoAlvo;
@@ -1296,7 +1505,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     let newScore = 0;
     metrics.current.respostas.forEach(r => {
       if (r.correta) {
-        newScore += Math.max(10, 50 - Math.floor(r.tempoReacaoMs / 1000) * 2);
+        newScore += r.xpEarned !== undefined ? r.xpEarned : Math.max(10, 50 - Math.floor(r.tempoReacaoMs / 1000) * 2);
       }
     });
     setScore(newScore);
@@ -1339,6 +1548,15 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       else if (bioma === 'sensorial') badges.push(levelInterno === 3 ? '🏆 Precisão Táctil 🎯' : 'Harmonia Sensorial 🎵');
       else badges.push(levelInterno === 3 ? '🏆 Pensador Matemático 📐' : 'Explorador dos Números 🔢');
     }
+    
+    // Adicionar selos cognitivos customizados conquistados
+    metrics.current.respostas.forEach(r => {
+      if (r.correta && r.seloCognitivo) {
+        if (!badges.includes(r.seloCognitivo)) {
+          badges.push(r.seloCognitivo);
+        }
+      }
+    });
     setBadgesConquistadas(badges);
 
     const developedSkills = game.bnccSkills.map(code => ({ code, proficiency: Math.round(desenvolvimento), date: new Date().toISOString().split('T')[0] }));

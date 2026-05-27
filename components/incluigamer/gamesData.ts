@@ -560,5 +560,188 @@ export const GAMES_CATALOG: GameDefinition[] = [
       { level: 2, name: 'Trilha do Multiplicador Espacial', objective: 'Achar números na sequência de tabuadas crescentes', mechanic: 'sequencia_numerica', bnccSkills: ['EF03MA06'], difficulty: 'Médio' },
       { level: 3, name: 'Desafios da Fazenda Multiplicativa', objective: 'Somas e multiplicações aplicadas no cotidiano lúdico', mechanic: 'mini_desafios', bnccSkills: ['EF04MA07'], difficulty: 'Difícil' }
     ]
+  },
+  // --- NOVAS ATIVIDADES ADICIONADAS EM EXPANSÃO ---
+  {
+    id: 'caca_letras_4_6',
+    name: 'Caça às Letras',
+    nome_da_atividade: 'Caça às Letras',
+    description: 'Atividade interativa para reconhecimento de letras e estimulação fonológica de forma divertida.',
+    descricao_curta: 'Atividade interativa para reconhecimento de letras de forma divertida.',
+    bioma: 'alfabetizacao',
+    categoria_cognitiva: 'Linguagem',
+    ageGroup: '4-5',
+    faixa_etaria: '4-6',
+    ageLabel: '4 a 6 anos',
+    fieldOfExperience: 'Escuta, fala, pensamento e imaginação',
+    bnccSkills: ['EI03EF01'],
+    codigo_bncc: ['EI03EF01'],
+    pedagogicalObjectives: ['Reconhecer letras do alfabeto.', 'Estimular o foco visual e pareamento de grafemas.'],
+    cognitiveLevel: 'Lembrar',
+    difficulty: 'Fácil',
+    nivel_dificuldade: 'Fácil',
+    xp_base: 10,
+    stimuli: ['Visual', 'Auditivo', 'Calmante'],
+    skillsWorked: ['Reconhecimento de Letras', 'Atenção Visual'],
+    levels: [
+      { level: 1, name: 'Descobrindo as Letras', objective: 'Achar letras iguais ao molde', mechanic: 'caca_letras', bnccSkills: ['EI03EF01'], difficulty: 'Fácil' }
+    ]
+  },
+  {
+    id: 'formas_cores_4_6',
+    name: 'Formas e Cores',
+    nome_da_atividade: 'Formas e Cores',
+    description: 'Exercício lúdico para reconhecimento de formas geométricas básicas e pareamento sensorial.',
+    descricao_curta: 'Exercício lúdico para reconhecimento de formas geométricas básicas e pareamento.',
+    bioma: 'sensorial',
+    categoria_cognitiva: 'Coordenação motora / lógica',
+    ageGroup: '4-5',
+    faixa_etaria: '4-6',
+    ageLabel: '4 a 6 anos',
+    fieldOfExperience: 'Espaços, tempos, quantidades, relações e transformações',
+    bnccSkills: ['EI03MA01'],
+    codigo_bncc: ['EI03MA01'],
+    pedagogicalObjectives: ['Identificar formas geométricas planas simples.', 'Desenvolver coordenação olho-mão.'],
+    cognitiveLevel: 'Entender',
+    difficulty: 'Fácil',
+    nivel_dificuldade: 'Fácil',
+    xp_base: 12,
+    stimuli: ['Visual', 'Tátil', 'Foco'],
+    skillsWorked: ['Formas Geométricas', 'Coordenação Visomotora'],
+    levels: [
+      { level: 1, name: 'Formas Básicas', objective: 'Parear círculos, quadrados e triângulos', mechanic: 'cores_sensoriais', bnccSkills: ['EI03MA01'], difficulty: 'Fácil' }
+    ]
+  },
+  {
+    id: 'somando_brincando_7_9',
+    name: 'Somando e Brincando',
+    nome_da_atividade: 'Somando e Brincando',
+    description: 'Desafio lúdico com contas simples de adição apoiadas por elementos visuais na fazenda.',
+    descricao_curta: 'Desafio lúdico com contas simples de adição apoiadas por elementos visuais.',
+    bioma: 'matematico',
+    categoria_cognitiva: 'Lógica matemática',
+    ageGroup: '6-8',
+    faixa_etaria: '7-9',
+    ageLabel: '7 a 9 anos',
+    subject: 'Matemática',
+    bnccSkills: ['EF01MA06'],
+    codigo_bncc: ['EF01MA06'],
+    pedagogicalObjectives: ['Resolver problemas simples de adição.', 'Estimular o raciocínio matemático básico.'],
+    cognitiveLevel: 'Aplicar',
+    difficulty: 'Médio',
+    nivel_dificuldade: 'Médio',
+    xp_base: 15,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Adição Básica', 'Cálculo Mental'],
+    levels: [
+      { level: 1, name: 'Somas Divertidas', objective: 'Somar frutas e brinquedos', mechanic: 'contar_objetos', bnccSkills: ['EF01MA06'], difficulty: 'Fácil' }
+    ]
+  },
+  {
+    id: 'historia_interativa_7_9',
+    name: 'História Interativa',
+    nome_da_atividade: 'História Interativa',
+    description: 'Leitura compartilhada e interpretação de textos curtos através de escolhas narrativas lúdicas.',
+    descricao_curta: 'Leitura compartilhada e interpretação de textos curtos através de escolhas lúdicas.',
+    bioma: 'alfabetizacao',
+    categoria_cognitiva: 'Linguagem / leitura',
+    ageGroup: '6-8',
+    faixa_etaria: '7-9',
+    ageLabel: '7 a 9 anos',
+    subject: 'Língua Portuguesa',
+    bnccSkills: ['EF02LP09'],
+    codigo_bncc: ['EF02LP09'],
+    pedagogicalObjectives: ['Compreender a narrativa de textos curtos.', 'Estimular a decodificação e letramento.'],
+    cognitiveLevel: 'Entender',
+    difficulty: 'Médio',
+    nivel_dificuldade: 'Médio',
+    xp_base: 18,
+    stimuli: ['Visual', 'Auditivo'],
+    skillsWorked: ['Interpretação Textual', 'Compreensão Leitora'],
+    levels: [
+      { level: 1, name: 'O Pequeno Explorador', objective: 'Interpretar parágrafos simples e escolher rumo da história', mechanic: 'completar_frases', bnccSkills: ['EF02LP09'], difficulty: 'Fácil' }
+    ]
+  },
+  {
+    id: 'desafio_fracoes_10_12',
+    name: 'Desafio das Frações',
+    nome_da_atividade: 'Desafio das Frações',
+    description: 'Exercício interativo para associar partes visuais de pizzas e formas geométricas a frações equivalentes.',
+    descricao_curta: 'Exercício interativo para associar partes visuais de pizzas e formas a frações equivalentes.',
+    bioma: 'matematico',
+    categoria_cognitiva: 'Matemática',
+    ageGroup: '9-12',
+    faixa_etaria: '10-12',
+    ageLabel: '10 a 12 anos',
+    subject: 'Matemática',
+    bnccSkills: ['EF05MA07'],
+    codigo_bncc: ['EF05MA07'],
+    pedagogicalObjectives: ['Identificar frações equivalentes simples.', 'Visualizar frações como partes de um todo.'],
+    cognitiveLevel: 'Analisar',
+    difficulty: 'Difícil',
+    nivel_dificuldade: 'Difícil',
+    xp_base: 20,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Frações Equivalentes', 'Raciocínio Geométrico'],
+    levels: [
+      { level: 1, name: 'Fatias Equivalentes', objective: 'Parear frações com imagens equivalentes', mechanic: 'mini_desafios', bnccSkills: ['EF05MA07'], difficulty: 'Médio' }
+    ]
+  },
+  {
+    id: 'mapa_regioes_10_12',
+    name: 'Mapa das Regiões',
+    nome_da_atividade: 'Mapa das Regiões',
+    description: 'Desafio de raciocínio espacial e identificação das grandes regiões do mapa do Brasil.',
+    descricao_curta: 'Desafio de raciocínio espacial e identificação das grandes regiões do mapa do Brasil.',
+    bioma: 'cognitivo',
+    categoria_cognitiva: 'Geografia / raciocínio espacial',
+    ageGroup: '9-12',
+    faixa_etaria: '10-12',
+    ageLabel: '10 a 12 anos',
+    subject: 'Geografia',
+    bnccSkills: ['EF04GE03'],
+    codigo_bncc: ['EF04GE03'],
+    pedagogicalObjectives: ['Localizar e diferenciar as regiões do Brasil.', 'Estimular o raciocínio de localização espacial.'],
+    cognitiveLevel: 'Analisar',
+    difficulty: 'Difícil',
+    nivel_dificuldade: 'Difícil',
+    xp_base: 22,
+    stimuli: ['Visual', 'Foco'],
+    skillsWorked: ['Localização Geográfica', 'Raciocínio Espacial'],
+    levels: [
+      { level: 1, name: 'Descobrindo o Brasil', objective: 'Associar estados às suas respectivas regiões', mechanic: 'atencao_seletiva', bnccSkills: ['EF04GE03'], difficulty: 'Fácil' }
+    ]
+  },
+  {
+    id: 'musicalizacao_infantil_0_3',
+    name: 'Musicalização Infantil - Caderno de Atividades',
+    nome_da_atividade: 'Musicalização Infantil - Caderno de Atividades',
+    description: 'Missões musicais gamificadas do Caderno de Musicalização, estimulando percepção, ritmo, altura e expressão sensorial para creche.',
+    descricao_curta: 'Missões musicais gamificadas do Caderno de Musicalização, estimulando percepção e expressão sensorial.',
+    bioma: 'sensorial',
+    categoria_cognitiva: 'Sensorial',
+    ageGroup: '0-3',
+    faixa_etaria: '0-3',
+    ageLabel: '0 a 3 anos',
+    fieldOfExperience: 'Traços, sons, cores e formas',
+    bnccSkills: ['EI01TS01', 'EI01TS02', 'EI01CG01', 'EI01EF01'],
+    codigo_bncc: ['EI01TS01', 'EI01TS02', 'EI01CG01', 'EI01EF01'],
+    pedagogicalObjectives: [
+      'Explorar o que é som e discriminar fontes sonoras naturais e criadas pelo homem.',
+      'Perceber propriedades sonoras como intensidade, duração, altura, pulso e notas.',
+      'Estimular a expressão corporal integrada ao ritmo musical.'
+    ],
+    cognitiveLevel: 'Lembrar',
+    difficulty: 'Fácil',
+    nivel_dificuldade: 'Fácil',
+    xp_base: 20,
+    stimuli: ['Visual', 'Auditivo', 'Calmante'],
+    skillsWorked: ['Atenção Auditiva Calma', 'Diferenciação de Timbres', 'Rítmica e Expressão Corporal'],
+    levels: [
+      { level: 1, name: 'Sons e Timbres', objective: 'Explorar o que é som, timbres de instrumentos e sons naturais/culturais', mechanic: 'causa_efeito_sonora', bnccSkills: ['EI01TS01', 'EI01TS02'], difficulty: 'Fácil' },
+      { level: 2, name: 'Propriedades do Som', objective: 'Diferenciar intensidade (forte/fraco), duração (curto/longo) e altura (grave/agudo)', mechanic: 'cores_sensoriais', bnccSkills: ['EI01TS01', 'EI01EF01'], difficulty: 'Médio' },
+      { level: 3, name: 'Ritmo e Notas', objective: 'Acompanhar o pulso, notas musicais e expressar-se corporalmente no ritmo', mechanic: 'coordenacao_motora', bnccSkills: ['EI01CG01', 'EI01TS01'], difficulty: 'Difícil' }
+    ]
   }
 ];
+

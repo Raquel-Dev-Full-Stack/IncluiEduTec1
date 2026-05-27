@@ -537,6 +537,26 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               )}
             </div>
 
+            {/* Material de Apoio Offline */}
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-4 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+              <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                <i className="fa-solid fa-file-pdf"></i> Apoio Pedagógico Offline
+              </h4>
+              <div className="space-y-3">
+                <p className="text-[10px] text-slate-400 leading-relaxed font-semibold">
+                  Baixe o Caderno de Atividades de Musicalização Infantil para dinâmicas offline complementares com os alunos.
+                </p>
+                <a 
+                  href="/Musicalizacao_Infantil_1ano.pdf" 
+                  download="Musicalizacao_Infantil_1ano.pdf"
+                  className="w-full py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 hover:text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <i className="fa-solid fa-download text-xs animate-bounce"></i> Baixar Caderno PDF
+                </a>
+              </div>
+            </div>
+
             {/* Configurações de Acessibilidade Gamer */}
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-5 shadow-sm">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
