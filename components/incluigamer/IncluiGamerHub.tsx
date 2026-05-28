@@ -34,7 +34,85 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'pt-BR';
-        utterance.rate = 0.95;
+        utterance.rate = 0.95; // Mantém ritmo original ligeiramente rápido de notificação
+
+        // Seleção inteligente da voz masculina brasileira de alta qualidade (priorizando vozes neurais/naturais)
+        const voices = window.speechSynthesis.getVoices();
+        const ptBrVoices = voices.filter(v => v.lang.startsWith('pt'));
+
+        // Ordem de preferência para máxima naturalidade e empatia:
+        // 1. Microsoft Antonio Online (Natural) - Melhor voz masculina neural pt-BR existente no navegador
+        // 2. Outras vozes masculinas neurais/online (que contenham "male"/"masculino" e "neural"/"natural"/"online")
+        // 3. Apple Felipe (Voz local masculina de excelente qualidade e suavidade)
+        // 4. Microsoft Daniel (Voz local do Windows)
+        // 5. Outras vozes masculinas pt-BR locais
+        // 6. Fallback para qualquer voz Neural pt-BR (como Francisca Online ou Google), modulando o tom para andrógina/masculina
+        let selectedVoice = ptBrVoices.find(v => 
+          (v.name.includes('Antonio') || v.name.includes('antonio')) && 
+          (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Online'))
+        );
+
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => 
+            (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('masculino') || v.name.toLowerCase().includes('man')) &&
+            (v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('online'))
+          );
+        }
+
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => v.name.includes('Felipe') || v.name.includes('felipe'));
+        }
+        
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => v.name.includes('Daniel') || v.name.includes('daniel'));
+        }
+
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => 
+            v.name.toLowerCase().includes('male') || 
+            v.name.toLowerCase().includes('masculino') || 
+            v.name.toLowerCase().includes('man') || 
+            v.name.toLowerCase().includes('antonio')
+          );
+        }
+
+        if (!selectedVoice) {
+          // Fallback para qualquer voz Neural pt-BR de altíssima qualidade (mesmo feminina), modulando o tom para soar grave
+          selectedVoice = ptBrVoices.find(v => 
+            v.name.toLowerCase().includes('neural') || 
+            v.name.toLowerCase().includes('natural') || 
+            v.name.toLowerCase().includes('online')
+          );
+        }
+
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+          const nameLower = selectedVoice.name.toLowerCase();
+          
+          // Calibração empática de tom baseada na identidade acústica da voz
+          if (nameLower.includes('antonio')) {
+            utterance.pitch = 1.0; // Antonio Neural já possui entonação humana impecável e suave
+          } else if (nameLower.includes('daniel')) {
+            utterance.pitch = 1.06; // Pequeno brilho para tornar a voz local do Daniel mais leve
+          } else if (nameLower.includes('felipe')) {
+            utterance.pitch = 0.98; // Ajuste para tom caloroso e aveludado
+          } else if (nameLower.includes('neural') || nameLower.includes('natural') || nameLower.includes('online')) {
+            // Se for uma voz neural feminina extremamente natural (ex: Francisca), reduzimos o pitch
+            // para 0.86, transformando-a em uma voz andrógina/masculina super suave, empática e acolhedora
+            utterance.pitch = 0.86;
+          } else {
+            utterance.pitch = 1.0;
+          }
+        } else {
+          // Sem vozes pré-filtradas no sistema: modulamos a voz padrão pt-BR para tom grave (pitch = 0.83)
+          // gerando um timbre masculino/andrógino suave, calmo e acolhedor.
+          const bestPtBr = ptBrVoices[0] || voices.find(v => v.lang.includes('pt'));
+          if (bestPtBr) {
+            utterance.voice = bestPtBr;
+          }
+          utterance.pitch = 0.83; 
+        }
+
         utterance.onerror = (e) => {
           console.warn("[Hub Speech] Erro de síntese de voz nativa, usando fallback:", e);
           playHubFallbackTTS(text);
@@ -68,17 +146,17 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
   const [preProfile, setPreProfile] = useState<PreGamerProfile | null>(null);
   const [latestPreProfile, setLatestPreProfile] = useState<PreGamerProfile | null>(null);
 
-  // Expansão Pedagógica BNCC (Fase 3)
+  // ExpansÃ£o PedagÃ³gica BNCC (Fase 3)
   const [ageWarningGame, setAgeWarningGame] = useState<GameDefinition | null>(null);
   const [ageBlockGame, setAgeBlockGame] = useState<GameDefinition | null>(null);
   const [cognitiveScore, setCognitiveScore] = useState<any>(null);
 
-  // Progressão e Níveis (Fase 5)
+  // ProgressÃ£o e NÃ­veis (Fase 5)
   const [gameProgress, setGameProgress] = useState<Record<string, { current_level: number; stars_earned: number; completed: boolean }>>({});
   const [levelSelectorGame, setLevelSelectorGame] = useState<GameDefinition | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number>(1);
 
-  // Carregamento de Scores Cognitivos Históricos
+  // Carregamento de Scores Cognitivos HistÃ³ricos
   useEffect(() => {
     if (!selectedStudentId) {
       setCognitiveScore(null);
@@ -119,7 +197,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     loadScores();
   }, [selectedStudentId]);
 
-  // Carregar perfil cognitivo pré-jogo mais recente (reutilização rápida)
+  // Carregar perfil cognitivo prÃ©-jogo mais recente (reutilizaÃ§Ã£o rÃ¡pida)
   useEffect(() => {
     if (!selectedStudentId) {
       setLatestPreProfile(null);
@@ -186,7 +264,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     loadLatestProfile();
   }, [selectedStudentId]);
 
-  // Carregamento reativo de Progresso de Jogos / Níveis (Fase 5)
+  // Carregamento reativo de Progresso de Jogos / NÃ­veis (Fase 5)
   const loadProgress = async () => {
     if (!selectedStudentId) {
       setGameProgress({});
@@ -250,19 +328,19 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       return;
     }
 
-    // Regra 1: Bloqueio Pedagógico Absoluto (diferença de 2 faixas etárias ou mais para cima)
+    // Regra 1: Bloqueio PedagÃ³gico Absoluto (diferenÃ§a de 2 faixas etÃ¡rias ou mais para cima)
     if (gameIdx - studentIdx >= 2) {
       setAgeBlockGame(game);
       return;
     }
 
-    // Regra 2: Alerta de Mediação / Subestimulação (studentIdx > gameIdx) ou Pequeno Desvio Superior (gameIdx - studentIdx === 1)
+    // Regra 2: Alerta de MediaÃ§Ã£o / SubestimulaÃ§Ã£o (studentIdx > gameIdx) ou Pequeno Desvio Superior (gameIdx - studentIdx === 1)
     if (studentIdx > gameIdx || gameIdx - studentIdx === 1) {
       setAgeWarningGame(game);
       return;
     }
 
-    // Regra 3: Faixa etária correspondente exata -> Abrir seletor de nível
+    // Regra 3: Faixa etÃ¡ria correspondente exata -> Abrir seletor de nÃ­vel
     setLevelSelectorGame(game);
   };
 
@@ -299,7 +377,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     }
   }, [students, selectedStudentId]);
 
-  // Função para calcular a idade a partir da data de nascimento
+  // FunÃ§Ã£o para calcular a idade a partir da data de nascimento
   const studentAge = useMemo(() => {
     if (!selectedStudent) return 0;
     const dateStr = selectedStudent.birth_date || selectedStudent.birthDate;
@@ -315,7 +393,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     return age;
   }, [selectedStudent]);
 
-  // Determinar a faixa etária para recomendação da BNCC
+  // Determinar a faixa etÃ¡ria para recomendaÃ§Ã£o da BNCC
   const ageGroupKey = useMemo(() => {
     if (!selectedStudent) return null;
     const age = studentAge;
@@ -327,13 +405,13 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     return '13+';
   }, [selectedStudent, studentAge]);
 
-  // Sistema de Recomendação Pedagógica Inteligente Local (Expansão Fase 3)
+  // Sistema de RecomendaÃ§Ã£o PedagÃ³gica Inteligente Local (ExpansÃ£o Fase 3)
   const recommendations = useMemo(() => {
     if (!selectedStudent || !ageGroupKey) return [];
     
     let list = GAMES_CATALOG;
     
-    // Obter deficiência e dados históricos de scores
+    // Obter deficiÃªncia e dados histÃ³ricos de scores
     const deficiency = (selectedStudent.deficiency || '').toLowerCase();
     const diagnosis = (selectedStudent.diagnosis || '').toLowerCase();
     const scores = cognitiveScore || {
@@ -463,7 +541,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           </div>
         </div>
 
-        {/* Seleção do Aluno */}
+        {/* SeleÃ§Ã£o do Aluno */}
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto z-10">
           <div className="space-y-1 w-full sm:w-64">
             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Acompanhamento do Aluno</label>
@@ -487,7 +565,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       </header>
 
       {activeGame ? (
-        /* Seção de Jogo Ativo */
+        /* SeÃ§Ã£o de Jogo Ativo */
         <IncluiGamerPlay 
           game={activeGame} 
           student={selectedStudent!} 
@@ -499,12 +577,12 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           onClose={() => {
             setActiveGame(null);
             setPreProfile(null);
-            loadProgress(); // Atualiza os níveis na gaveta reativamente
-            setActiveSubTab('dashboard'); // Ir para o dashboard ver os resultados após o jogo
+            loadProgress(); // Atualiza os nÃ­veis na gaveta reativamente
+            setActiveSubTab('dashboard'); // Ir para o dashboard ver os resultados apÃ³s o jogo
           }} 
         />
       ) : pendingGame ? (
-        /* Stepper de Perfil Cognitivo Pré-Jogo Obrigatório */
+        /* Stepper de Perfil Cognitivo PrÃ©-Jogo ObrigatÃ³rio */
         <IncluiGamerPreProfile
           student={selectedStudent!}
           game={pendingGame}
@@ -514,7 +592,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
         />
       ) : selectedStudent ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Painel Lateral: Perfil, Acessibilidade e Recomendações */}
+          {/* Painel Lateral: Perfil, Acessibilidade e RecomendaÃ§Ãµes */}
           <div className="lg:col-span-1 space-y-6">
             
             {/* Mini Card Aluno */}
@@ -541,11 +619,11 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-4 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
               <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-file-pdf"></i> Apoio Pedagógico Offline
+                <i className="fa-solid fa-file-pdf"></i> Apoio PedagÃ³gico Offline
               </h4>
               <div className="space-y-3">
                 <p className="text-[10px] text-slate-400 leading-relaxed font-semibold">
-                  Baixe o Caderno de Atividades de Musicalização Infantil para dinâmicas offline complementares com os alunos.
+                  Baixe o Caderno de Atividades de MusicalizaÃ§Ã£o Infantil para dinÃ¢micas offline complementares com os alunos.
                 </p>
                 <a 
                   href="/Musicalizacao_Infantil_1ano.pdf" 
@@ -557,7 +635,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               </div>
             </div>
 
-            {/* Configurações de Acessibilidade Gamer */}
+            {/* ConfiguraÃ§Ãµes de Acessibilidade Gamer */}
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-5 shadow-sm">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <i className="fa-solid fa-sliders text-indigo-500"></i> Acessibilidade Adaptativa
@@ -565,10 +643,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
 
               <div className="space-y-3.5">
                 {[
-                  { key: 'modoCalmante', label: 'Modo Calmante', desc: 'Reduz luzes e remove estímulos agressivos.', icon: 'fa-wind', color: 'text-sky-400' },
+                  { key: 'modoCalmante', label: 'Modo Calmante', desc: 'Reduz luzes e remove estÃ­mulos agressivos.', icon: 'fa-wind', color: 'text-sky-400' },
                   { key: 'altoContraste', label: 'Alto Contraste', desc: 'Maximiza cores para foco visual ampliado.', icon: 'fa-circle-half-stroke', color: 'text-yellow-400' },
-                  { key: 'tempoEstendido', label: 'Tempo Estendido', desc: 'Dobra os contadores e reduz cobrança de tempo.', icon: 'fa-clock', color: 'text-amber-400' },
-                  { key: 'audioDescricao', label: 'Suporte por Voz', desc: 'Sintetiza comandos e feedbacks em áudio.', icon: 'fa-volume-high', color: 'text-emerald-400' },
+                  { key: 'tempoEstendido', label: 'Tempo Estendido', desc: 'Dobra os contadores e reduz cobranÃ§a de tempo.', icon: 'fa-clock', color: 'text-amber-400' },
+                  { key: 'audioDescricao', label: 'Suporte por Voz', desc: 'Sintetiza comandos e feedbacks em Ã¡udio.', icon: 'fa-volume-high', color: 'text-emerald-400' },
                 ].map(item => (
                   <div key={item.key} className="flex items-start justify-between gap-3 p-2 rounded-xl hover:bg-slate-800/40 transition-all">
                     <div className="flex gap-2.5">
@@ -582,7 +660,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                       <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
                         (accessibility as any)[item.key] ? 'text-emerald-400' : 'text-rose-500'
                       }`}>
-                        {(accessibility as any)[item.key] ? 'Ativo' : 'Não ativo'}
+                        {(accessibility as any)[item.key] ? 'Ativo' : 'NÃ£o ativo'}
                       </span>
                       <label className="relative inline-flex items-center cursor-pointer mt-0.5 select-none">
                         <input 
@@ -616,10 +694,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               </div>
             </div>
 
-            {/* Recomendações Inteligentes da BNCC */}
+            {/* RecomendaÃ§Ãµes Inteligentes da BNCC */}
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-4 shadow-sm">
               <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-brain"></i> Sugestões Inteligentes
+                <i className="fa-solid fa-brain"></i> SugestÃµes Inteligentes
               </h4>
               <div className="space-y-3">
                 {recommendations.map(({ game, reason, isClinica }) => (
@@ -637,7 +715,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                         isClinica 
                           ? 'bg-rose-500/10 text-rose-300 border-rose-500/20' 
                           : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'
-                      }`}>{isClinica ? 'Clínico' : game.difficulty}</span>
+                      }`}>{isClinica ? 'ClÃ­nico' : game.difficulty}</span>
                     </div>
                     <p className="text-[9px] text-slate-400 leading-relaxed font-semibold">{reason}</p>
                   </div>
@@ -646,10 +724,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             </div>
           </div>
 
-          {/* Área Principal: Abas e Telas */}
+          {/* Ãrea Principal: Abas e Telas */}
           <div className="lg:col-span-3 space-y-6">
             
-            {/* Navegação entre Mapa e Dashboard */}
+            {/* NavegaÃ§Ã£o entre Mapa e Dashboard */}
             <div className="flex bg-slate-900/60 p-2 rounded-[2rem] border border-slate-800/80 shadow-inner w-full max-w-sm">
               <button
                 onClick={() => setActiveSubTab('mapa')}
@@ -675,7 +753,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               </button>
             </div>
 
-            {/* Conteúdo Ativo */}
+            {/* ConteÃºdo Ativo */}
             <div className="bg-slate-900 border border-slate-800 p-8 rounded-[3.5rem] shadow-xl relative min-h-[500px]">
               {activeSubTab === 'mapa' ? (
                 <IncluiGamerMap 
@@ -696,23 +774,23 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       ) : (
         /* Estado Vazio - Selecione um Aluno */
         <div className="bg-slate-900 border border-slate-800 p-20 rounded-[3.5rem] text-center space-y-6 max-w-2xl mx-auto shadow-xl relative overflow-hidden">
-          {/* Decorações Neon Gamer */}
+          {/* DecoraÃ§Ãµes Neon Gamer */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent blur-[2px]"></div>
           
           <div className="w-24 h-24 bg-slate-800 rounded-[2.5rem] border border-slate-700 flex items-center justify-center mx-auto text-indigo-400 text-4xl shadow-inner animate-bounce">
             <i className="fa-solid fa-gamepad"></i>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white tracking-tight">Iniciar Sessão IncluiGamer</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">Iniciar SessÃ£o IncluiGamer</h2>
             <p className="text-slate-400 text-sm font-medium leading-relaxed">
-              O IncluiGamer é um módulo de jogos pedagógicos alinhados à BNCC. <br />
-              Selecione um dos seus alunos no menu superior para começar a trilha de <br />
+              O IncluiGamer Ã© um mÃ³dulo de jogos pedagÃ³gicos alinhados Ã  BNCC. <br />
+              Selecione um dos seus alunos no menu superior para comeÃ§ar a trilha de <br />
               aprendizagem adaptativa e monitorar seu desenvolvimento.
             </p>
           </div>
         </div>
       )}
-      {/* Modal de Alerta Pedagógico de Faixa Etária BNCC */}
+      {/* Modal de Alerta PedagÃ³gico de Faixa EtÃ¡ria BNCC */}
       {ageWarningGame && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-amber-500/30 p-8 rounded-[3rem] shadow-2xl max-w-md w-full text-center space-y-6 relative overflow-hidden">
@@ -724,10 +802,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-black text-white tracking-tight">Adequação Pedagógica</h3>
+              <h3 className="text-xl font-black text-white tracking-tight">AdequaÃ§Ã£o PedagÃ³gica</h3>
               <p className="text-slate-400 text-xs font-semibold leading-relaxed">
-                Esta atividade é classificada para a faixa de <span className="text-amber-400 font-bold">{ageWarningGame.ageLabel}</span>. 
-                O aluno selecionado, <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos), possui perfil correspondente à faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
+                Esta atividade Ã© classificada para a faixa de <span className="text-amber-400 font-bold">{ageWarningGame.ageLabel}</span>. 
+                O aluno selecionado, <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos), possui perfil correspondente Ã  faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
               </p>
             </div>
 
@@ -753,14 +831,14 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 onClick={() => handleForceLaunchGame(ageWarningGame)}
                 className="w-full py-3.5 bg-gradient-to-tr from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-950/20"
               >
-                Forçar Inicialização (Mediação)
+                ForÃ§ar InicializaÃ§Ã£o (MediaÃ§Ã£o)
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Bloqueio Pedagógico Absoluto por Faixa Etária BNCC */}
+      {/* Modal de Bloqueio PedagÃ³gico Absoluto por Faixa EtÃ¡ria BNCC */}
       {ageBlockGame && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-rose-500/30 p-8 rounded-[3rem] shadow-2xl max-w-md w-full text-center space-y-6 relative overflow-hidden">
@@ -774,11 +852,11 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             <div className="space-y-2">
               <h3 className="text-xl font-black text-white tracking-tight">Atividade Restrita</h3>
               <p className="text-slate-400 text-xs font-semibold leading-relaxed">
-                Complexidade cognitiva incompatível com a etapa de desenvolvimento do aluno.
+                Complexidade cognitiva incompatÃ­vel com a etapa de desenvolvimento do aluno.
               </p>
               <p className="text-slate-400 text-[11px] leading-relaxed">
-                O aluno <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos) está na faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
-                O jogo <span className="text-rose-400 font-bold">{ageBlockGame.name}</span> é exclusivo para a faixa de <span className="text-rose-400 font-bold">{ageBlockGame.ageLabel}</span>.
+                O aluno <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos) estÃ¡ na faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
+                O jogo <span className="text-rose-400 font-bold">{ageBlockGame.name}</span> Ã© exclusivo para a faixa de <span className="text-rose-400 font-bold">{ageBlockGame.ageLabel}</span>.
               </p>
             </div>
 
@@ -804,7 +882,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
         </div>
       )}
 
-      {/* Modal Seletor de Níveis Pedagógicos Premium (Fase 5) */}
+      {/* Modal Seletor de NÃ­veis PedagÃ³gicos Premium (Fase 5) */}
       {levelSelectorGame && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] shadow-2xl max-w-lg w-full text-center space-y-6 relative overflow-hidden">
@@ -818,7 +896,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 </div>
                 <div className="text-left">
                   <h3 className="text-base font-black text-white uppercase tracking-wider">{levelSelectorGame.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{levelSelectorGame.ageLabel} • Bioma: {levelSelectorGame.bioma.toUpperCase()}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{levelSelectorGame.ageLabel} â€¢ Bioma: {levelSelectorGame.bioma.toUpperCase()}</p>
                 </div>
               </div>
               <button 
@@ -837,7 +915,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 const progress = gameProgress[levelSelectorGame.id] || { current_level: 1, stars_earned: 0, completed: false };
                 const isDesbloqueado = lvlNum <= progress.current_level;
                 
-                // Exibir estrelas se concluído
+                // Exibir estrelas se concluÃ­do
                 const estrelas = lvlNum < progress.current_level 
                   ? progress.stars_earned 
                   : lvlNum === progress.current_level && progress.completed 
@@ -855,10 +933,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                   >
                     <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase text-indigo-400">Nível {lvlNum}</span>
+                        <span className="text-[10px] font-black uppercase text-indigo-400">NÃ­vel {lvlNum}</span>
                         <h4 className="text-xs font-black text-white">{lvlDef.name}</h4>
                         
-                        {/* Estrelas obtidas no nível */}
+                        {/* Estrelas obtidas no nÃ­vel */}
                         {isDesbloqueado && estrelas > 0 && (
                           <div className="flex gap-0.5 text-xs text-amber-400">
                             {Array.from({ length: estrelas }).map((_, idx) => (

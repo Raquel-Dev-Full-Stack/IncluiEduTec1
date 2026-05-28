@@ -71,13 +71,27 @@ const fetchUserProfile = async (authUserId: string) => {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('incluiedutec_active_tab') || 'dashboard');
   // Rastreia se o login foi feito via bypass (sem sessão Supabase Auth)
   const isBypassLogin = React.useRef(false);
   // Evita que o onAuthStateChange sobreponha o login manual em andamento
   const isHandlingLogin = React.useRef(false);
+  
+  // Referências para evitar stale closures no onAuthStateChange
+  const userRef = React.useRef<User | null>(null);
+  const isLoggedInRef = React.useRef(false);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
+    isLoggedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
   const [teacherSubTab, setTeacherSubTab] = useState<'list' | 'records'>('list');
-  const [classDiaryTab, setClassDiaryTab] = useState<'turmas' | 'alunos' | 'planos' | 'planejamento'>('turmas');
+  const [classDiaryTab, setClassDiaryTab] = useState<'turmas' | 'alunos' | 'planos' | 'planejamento'>(() => 
+    (localStorage.getItem('incluiedutec_class_diary_tab') as any) || 'turmas'
+  );
 
   // Estados Locais Reativos (Iniciados vazios para carregar do Supabase)
   const [schools, setSchools] = useState<School[]>([]);
@@ -95,9 +109,9 @@ export default function App() {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [selectedMunicipioId, setSelectedMunicipioId] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
-  const [selectedMediatorId, setSelectedMediatorId] = useState<string | null>(null);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(() => localStorage.getItem('incluiedutec_selected_school_id'));
+  const [selectedMediatorId, setSelectedMediatorId] = useState<string | null>(() => localStorage.getItem('incluiedutec_selected_mediator_id'));
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(() => localStorage.getItem('incluiedutec_selected_teacher_id'));
   const [teacherToEdit, setTeacherToEdit] = useState<User | null>(null);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [classToEdit, setClassToEdit] = useState<Class | null>(null);
@@ -108,10 +122,44 @@ export default function App() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedClassIdForActivity, setSelectedClassIdForActivity] = useState<string | null>(null);
-  const [selectedClassIdForStudents, setSelectedClassIdForStudents] = useState<string | null>(null);
+  const [selectedClassIdForStudents, setSelectedClassIdForStudents] = useState<string | null>(() => localStorage.getItem('incluiedutec_selected_class_students_id'));
   const [selectedSecretariaId, setSelectedSecretariaId] = useState<string | null>(null);
-  const [selectedStudentIdForView, setSelectedStudentIdForView] = useState<string | null>(null);
+  const [selectedStudentIdForView, setSelectedStudentIdForView] = useState<string | null>(() => localStorage.getItem('incluiedutec_selected_student_view_id'));
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+
+  // Sincronizar estados de rota com localStorage
+  useEffect(() => {
+    localStorage.setItem('incluiedutec_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('incluiedutec_class_diary_tab', classDiaryTab);
+  }, [classDiaryTab]);
+
+  useEffect(() => {
+    if (selectedSchoolId) localStorage.setItem('incluiedutec_selected_school_id', selectedSchoolId);
+    else localStorage.removeItem('incluiedutec_selected_school_id');
+  }, [selectedSchoolId]);
+
+  useEffect(() => {
+    if (selectedMediatorId) localStorage.setItem('incluiedutec_selected_mediator_id', selectedMediatorId);
+    else localStorage.removeItem('incluiedutec_selected_mediator_id');
+  }, [selectedMediatorId]);
+
+  useEffect(() => {
+    if (selectedTeacherId) localStorage.setItem('incluiedutec_selected_teacher_id', selectedTeacherId);
+    else localStorage.removeItem('incluiedutec_selected_teacher_id');
+  }, [selectedTeacherId]);
+
+  useEffect(() => {
+    if (selectedClassIdForStudents) localStorage.setItem('incluiedutec_selected_class_students_id', selectedClassIdForStudents);
+    else localStorage.removeItem('incluiedutec_selected_class_students_id');
+  }, [selectedClassIdForStudents]);
+
+  useEffect(() => {
+    if (selectedStudentIdForView) localStorage.setItem('incluiedutec_selected_student_view_id', selectedStudentIdForView);
+    else localStorage.removeItem('incluiedutec_selected_student_view_id');
+  }, [selectedStudentIdForView]);
 
   // Monitorar ações do sistema
   const logActivity = async (acao: string, detalhes: any, forced_municipio_id?: string, forced_school_id?: string) => {
@@ -596,7 +644,19 @@ export default function App() {
         themePreference: 'light'
       } as unknown as User;
 
-      setUser(initialUser);
+      setUser(prev => {
+        // Se já temos um usuário completo correspondente ao mesmo ID, preservamos as propriedades dele
+        if (prev && prev.id === authUser.id) {
+          return {
+            ...prev,
+            ...initialUser,
+            studentIds: prev.studentIds || initialUser.studentIds,
+            schoolId: prev.schoolId || initialUser.schoolId,
+            municipio_id: prev.municipio_id || initialUser.municipio_id
+          };
+        }
+        return initialUser;
+      });
       setIsLoggedIn(true);
       // Se for Admin, sempre vai para admin_total
       if (mappedProfile === UserProfile.ADMIN) {
@@ -661,13 +721,29 @@ export default function App() {
       // Responde apenas ao login explícito do usuário (não disparado por nossa lógica interna)
       if (event === 'SIGNED_IN' && session) {
         if (isBypassLogin.current) return;
-        await processUserSession(session);
-        loadSettings();
+        
+        // Evita reprocessar se o usuário já estiver logado de forma consistente
+        const currentUserId = userRef.current?.id || (userRef.current as any)?.auth_user_id;
+        if (!isLoggedInRef.current || !userRef.current || currentUserId !== session.user.id) {
+          await processUserSession(session);
+          loadSettings();
+        } else {
+          console.log('App: Ignorando processamento de SIGNED_IN redundante ao re-focar a aba.');
+        }
       } else if (event === 'SIGNED_OUT') {
         if (isBypassLogin.current) return;
         setUser(null);
         setIsLoggedIn(false);
         setLoading(false);
+
+        // Limpar localStorage de rotas e seletores
+        localStorage.removeItem('incluiedutec_active_tab');
+        localStorage.removeItem('incluiedutec_class_diary_tab');
+        localStorage.removeItem('incluiedutec_selected_school_id');
+        localStorage.removeItem('incluiedutec_selected_mediator_id');
+        localStorage.removeItem('incluiedutec_selected_teacher_id');
+        localStorage.removeItem('incluiedutec_selected_class_students_id');
+        localStorage.removeItem('incluiedutec_selected_student_view_id');
       }
     });
 
@@ -1002,6 +1078,18 @@ export default function App() {
     setSchoolToEdit(null);
     setClassToEdit(null);
     setIsAddingMediator(false);
+    setSelectedClassIdForStudents(null);
+    setSelectedStudentIdForView(null);
+
+    // Limpar localStorage de rotas e seletores
+    localStorage.removeItem('incluiedutec_active_tab');
+    localStorage.removeItem('incluiedutec_class_diary_tab');
+    localStorage.removeItem('incluiedutec_selected_school_id');
+    localStorage.removeItem('incluiedutec_selected_mediator_id');
+    localStorage.removeItem('incluiedutec_selected_teacher_id');
+    localStorage.removeItem('incluiedutec_selected_class_students_id');
+    localStorage.removeItem('incluiedutec_selected_student_view_id');
+
     // Limpa classe dark ao sair
     document.documentElement.classList.remove('dark');
   };
@@ -3225,7 +3313,17 @@ export default function App() {
         }
 
         const selectedSchool = schools.find(s => s.id === selectedSchoolId);
-        if (!selectedSchool) return null;
+        if (!selectedSchool) {
+          return (
+            <div className="min-h-[400px] flex flex-col items-center justify-center text-center p-12 bg-white rounded-3xl border border-gray-100 shadow-sm animate-pulse">
+              <div className="w-16 h-16 bg-blue-50/50 rounded-2xl flex items-center justify-center mb-4 text-blue-500">
+                <i className="fa-solid fa-school text-2xl animate-bounce"></i>
+              </div>
+              <h3 className="text-lg font-black text-gray-700 mb-1">Carregando unidade escolar...</h3>
+              <p className="text-xs text-gray-400 font-medium">Buscando informações atualizadas em tempo real.</p>
+            </div>
+          );
+        }
 
         return (
           <SchoolDetails

@@ -223,8 +223,86 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'pt-BR';
-        utterance.rate = 0.9;
+        utterance.rate = 0.9; // Mantém o ritmo original calmo para clareza pedagógica
         utterance.volume = gameVolume; // Sincroniza com o volume do jogo!
+
+        // Seleção inteligente da voz masculina brasileira de alta qualidade (priorizando vozes neurais/naturais)
+        const voices = window.speechSynthesis.getVoices();
+        const ptBrVoices = voices.filter(v => v.lang.startsWith('pt'));
+
+        // Ordem de preferência para máxima naturalidade e empatia:
+        // 1. Microsoft Antonio Online (Natural) - Melhor voz masculina neural pt-BR existente no navegador
+        // 2. Outras vozes masculinas neurais/online (que contenham "male"/"masculino" e "neural"/"natural"/"online")
+        // 3. Apple Felipe (Voz local masculina de excelente qualidade e suavidade)
+        // 4. Microsoft Daniel (Voz local do Windows)
+        // 5. Outras vozes masculinas pt-BR locais
+        // 6. Fallback para qualquer voz Neural pt-BR (como Francisca Online ou Google), modulando o tom para andrógina/masculina
+        let selectedVoice = ptBrVoices.find(v => 
+          (v.name.includes('Antonio') || v.name.includes('antonio')) && 
+          (v.name.includes('Neural') || v.name.includes('Natural') || v.name.includes('Online'))
+        );
+
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => 
+            (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('masculino') || v.name.toLowerCase().includes('man')) &&
+            (v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('online'))
+          );
+        }
+
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => v.name.includes('Felipe') || v.name.includes('felipe'));
+        }
+        
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => v.name.includes('Daniel') || v.name.includes('daniel'));
+        }
+
+        if (!selectedVoice) {
+          selectedVoice = ptBrVoices.find(v => 
+            v.name.toLowerCase().includes('male') || 
+            v.name.toLowerCase().includes('masculino') || 
+            v.name.toLowerCase().includes('man') || 
+            v.name.toLowerCase().includes('antonio')
+          );
+        }
+
+        if (!selectedVoice) {
+          // Fallback para qualquer voz Neural pt-BR de altíssima qualidade (mesmo feminina), modulando o tom para soar grave
+          selectedVoice = ptBrVoices.find(v => 
+            v.name.toLowerCase().includes('neural') || 
+            v.name.toLowerCase().includes('natural') || 
+            v.name.toLowerCase().includes('online')
+          );
+        }
+
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+          const nameLower = selectedVoice.name.toLowerCase();
+          
+          // Calibração empática de tom baseada na identidade acústica da voz
+          if (nameLower.includes('antonio')) {
+            utterance.pitch = 1.0; // Antonio Neural já possui entonação humana impecável e suave
+          } else if (nameLower.includes('daniel')) {
+            utterance.pitch = 1.06; // Pequeno brilho para tornar a voz local do Daniel mais leve
+          } else if (nameLower.includes('felipe')) {
+            utterance.pitch = 0.98; // Ajuste para tom caloroso e aveludado
+          } else if (nameLower.includes('neural') || nameLower.includes('natural') || nameLower.includes('online')) {
+            // Se for uma voz neural feminina extremamente natural (ex: Francisca), reduzimos o pitch
+            // para 0.86, transformando-a em uma voz andrógina/masculina super suave, empática e acolhedora
+            utterance.pitch = 0.86;
+          } else {
+            utterance.pitch = 1.0;
+          }
+        } else {
+          // Sem vozes pré-filtradas no sistema: modulamos a voz padrão pt-BR para tom grave (pitch = 0.83)
+          // gerando um timbre masculino/andrógino suave, calmo e acolhedor.
+          const bestPtBr = ptBrVoices[0] || voices.find(v => v.lang.includes('pt'));
+          if (bestPtBr) {
+            utterance.voice = bestPtBr;
+          }
+          utterance.pitch = 0.83; 
+        }
+
         utterance.onerror = (e) => {
           console.warn("[ACE Speech] Erro na síntese nativa, acionando fallback:", e);
           playFallbackTTS(text);
@@ -356,7 +434,11 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           ];
           const item = ocultasDB[(roundNum - 1) % ocultasDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-          speakCommand(item.frase + " " + item.prompt);
+          const cleanText = (t: string) => t.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
+          const cleanAnswer = cleanText(item.correta);
+          const fraseSemEmoji = cleanText(item.frase);
+          const fraseFalada = fraseSemEmoji.replace(new RegExp(cleanAnswer, 'gi'), 'lacuna');
+          speakCommand(fraseFalada + " " + cleanText(item.prompt));
           setGameState({ prompt: `${item.frase} -> ${item.prompt}`, respostaCorreta: item.correta, opcoes, incompleta: '?', tipo: 'frase' });
         } 
         else if (lvl === 2) {
@@ -547,7 +629,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
           const prompt = `Memorize o padrão do Tangram que vai aparecer por um instante: ${item.sequencia}`;
-          speakCommand(prompt);
+          speakCommand("Memorize o padrão do Tangram que vai aparecer por um instante.");
           
           setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
           
@@ -600,7 +682,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
           const prompt = `Memorize a posição do brinquedo: ${item.sequencia}`;
-          speakCommand(prompt);
+          speakCommand("Memorize a posição do brinquedo.");
           
           setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
           
@@ -652,7 +734,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
           const prompt = `Memorize a sequência de comandos algorítmicos rápidos: ${item.sequencia}`;
-          speakCommand(prompt);
+          speakCommand("Memorize a sequência de comandos algorítmicos rápidos.");
           
           setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
           
@@ -706,7 +788,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const item = memoriasDB[(roundNum - 1) % memoriasDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
           const prompt = `Memorize a sequência que vai aparecer por um instante: ${item.sequencia}`;
-          speakCommand(prompt);
+          speakCommand("Memorize a sequência que vai aparecer por um instante.");
           
           setGameState({ prompt, respostaCorreta: item.correta, opcoes, sequencia: item.sequencia, tipo: 'memoria_piscar' });
           
@@ -1411,7 +1493,10 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         return text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
       };
       
-      speakCommand(gameState.feedbackCorreto ? cleanSpeakText(gameState.feedbackCorreto) : (preProfile?.comportamental.reforcoPositivo ? "Incrível! Você acertou e brilhou!" : "Muito bem! Acertou."));
+      const respostaTexto = cleanSpeakText(gameState.respostaCorreta);
+      const baseTexto = gameState.feedbackCorreto ? cleanSpeakText(gameState.feedbackCorreto) : (preProfile?.comportamental.reforcoPositivo ? "Incrível! Você acertou e brilhou!" : "Muito bem! Acertou.");
+      speakCommand(baseTexto + " A resposta é: " + respostaTexto);
+      
       setFeedbackMsg({ text: msgReforco, type: 'success' });
       metrics.current.respostas.push({ 
         rodada: currentRound, 
@@ -1453,7 +1538,10 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         return text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
       };
       
-      speakCommand(gameState.feedbackIncorreto ? cleanSpeakText(gameState.feedbackIncorreto) : (preProfile?.comportamental.frustracaoAlta ? "Sem problemas. Vamos tentar juntos." : "Tente mais uma vez."));
+      const respostaTexto = cleanSpeakText(gameState.respostaCorreta);
+      const baseTexto = gameState.feedbackIncorreto ? cleanSpeakText(gameState.feedbackIncorreto) : (preProfile?.comportamental.frustracaoAlta ? "Sem problemas. Vamos tentar juntos." : "Tente mais uma vez.");
+      speakCommand(baseTexto + " A resposta correta é: " + respostaTexto);
+      
       setFeedbackMsg({ text: msgFrustracao, type: 'error' });
       let novoNumOpcoes = difficultyModulation.numeroOpcoes;
       let novoTamanho = difficultyModulation.tamanhoAlvo;
