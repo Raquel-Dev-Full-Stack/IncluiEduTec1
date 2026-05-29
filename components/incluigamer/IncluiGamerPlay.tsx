@@ -143,6 +143,44 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
       console.warn("[ACE Audio] Falha silenciosa ao sintetizar áudio nativo:", err);
     }
   };
+  
+  // Função inteligente que verifica o som local na pasta "sons" e cai para o som sintetizado se não encontrado
+  const playSound = async (localSound: string | undefined, fallbackType: 'chuva' | 'passaro' | 'mar' | 'acerto' | 'erro') => {
+    const temHipersensibilidadeSonora = preProfile?.sensorial.hipersensibilidadeSonora;
+    if (temHipersensibilidadeSonora && fallbackType !== 'acerto' && fallbackType !== 'erro') {
+      console.log("[ACE Audio] Hipersensibilidade sonora ativa. Omitindo som.");
+      return;
+    }
+
+    if (!localSound) {
+      // Sem som local correspondente definido, vai direto para a síntese nativa de som padrão do sistema
+      playSynthesizedSound(fallbackType);
+      return;
+    }
+
+    const localPath = `/sons/${localSound}`;
+    
+    try {
+      // Usamos a API Fetch para testar a existência do arquivo no servidor de forma assíncrona
+      const response = await fetch(localPath, { method: 'HEAD' });
+      if (response.ok) {
+        // O arquivo existe no servidor! Vamos reproduzi-lo usando o player nativo do navegador
+        const audio = new Audio(localPath);
+        const calibraçãoAcessibilidade = temHipersensibilidadeSonora ? 0.25 : (accessibility.modoCalmante ? 0.5 : 1.0);
+        audio.volume = gameVolume * calibraçãoAcessibilidade * 0.75;
+        await audio.play();
+        console.log(`[ACE Audio] Som local reproduzido com sucesso: ${localPath}`);
+      } else {
+        // Retornou erro (como 404), arquivo não existe fisicamente na pasta "sons"
+        console.log(`[ACE Audio] Arquivo de som local não encontrado em ${localPath} (Status: ${response.status}). Acionando som padrão do sistema.`);
+        playSynthesizedSound(fallbackType);
+      }
+    } catch (err) {
+      // Falha de rede ou CORS, aciona o fallback sintético
+      console.warn(`[ACE Audio] Falha ao verificar existência do som local ${localPath}:`, err);
+      playSynthesizedSound(fallbackType);
+    }
+  };
 
   // Estados do Jogo
   const [currentRound, setCurrentRound] = useState<number>(1);
@@ -206,7 +244,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
   });
 
   // Falar comando se áudio descrição estiver ativa (respeitando hipersensibilidade sonora)
-  const speakCommand = (text: string) => {
+  const speakCommand = (rawText: string) => {
     const temHipersensibilidadeSonora = preProfile?.sensorial.hipersensibilidadeSonora;
     if (temHipersensibilidadeSonora) {
       console.log("[ACE] Hipersensibilidade sonora detectada. Omitindo comando sonoro.");
@@ -216,6 +254,9 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
     if (!accessibility.audioDescricao) {
       return;
     }
+
+    // Limpa emojis e caracteres especiais que podem travar ou confundir a síntese de voz (como o emoji de clave de sol 🎼)
+    const text = rawText.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
 
     if ('speechSynthesis' in window) {
       try {
@@ -979,12 +1020,10 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           ];
           const item = sonsDB[(roundNum - 1) % sonsDB.length];
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
-          const prompt = `Toque no botão para orquestrar o som de: ${item.som}`;
-          speakCommand(prompt);
-          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey, localSound: undefined });
           
           setTimeout(() => {
-            playSynthesizedSound(item.audioKey);
+            playSound(undefined, item.audioKey);
           }, 1400);
         } 
         else if (lvl === 2) {
@@ -1018,13 +1057,14 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         if (lvl === 1) {
           // Instrumentos de Causa-Efeito (0-3 anos)
           const sonsDB = [
-            { som: 'Sons suaves de uma harpa dedilhada 🎵', correta: '🎵 Harpa Suave', incorretas: ['🥁 Tambor Forte', '🎺 Corneta Alta'], audioKey: 'mar' as const },
+            { som: 'Sons suaves de uma harpa dedilhada 🎵', correta: '🎵 Harpa Suave', incorretas: ['🥁 Tambor Forte', '🎺 Corneta Alta'], audioKey: 'mar' as const, localSound: 'somharpa-1.mp3' },
             { som: 'Sons mágicos de um xilofone lúdico 🎼', correta: '🎼 Xilofone Mágico', incorretas: ['🔔 Alarme Barulhento', '💥 Ruído Alto'], audioKey: 'passaro' as const },
             { 
               som: 'O bichinho quer dormir… ajude escolhendo o som mais calminho.', 
               correta: '🎵 Harpa (som suave)', 
               incorretas: ['🥁 Tambor (som forte)'], 
               audioKey: 'mar' as const,
+              localSound: 'somharpa-1.mp3',
               feedbackCorreto: 'Muito bem! Você ajudou o bichinho a dormir com o som suave da harpa. 🌙',
               feedbackIncorreto: 'Ops! Esse som é muito forte, tente escolher o mais calminho.',
               xpReward: 20,
@@ -1042,6 +1082,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
             molde: item.som, 
             tipo: 'sons', 
             audioKey: item.audioKey,
+            localSound: item.localSound,
             feedbackCorreto: item.feedbackCorreto,
             feedbackIncorreto: item.feedbackIncorreto,
             xpReward: item.xpReward,
@@ -1049,7 +1090,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           });
           
           setTimeout(() => {
-            playSynthesizedSound(item.audioKey);
+            playSound(item.localSound, item.audioKey);
           }, 1400);
         }
         else if (lvl === 2) {
@@ -1062,7 +1103,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
           const prompt = `Identifique o som de carinho correspondente: ${item.som}`;
           speakCommand(prompt);
-          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey, localSound: undefined });
         }
         else {
           // Estrelas cadentes em movimento rápido
@@ -1096,6 +1137,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               correta: '🌧️ Chuva (som da natureza)', 
               incorretas: ['🔔 Sino da igreja (som criado pelo homem)'], 
               audioKey: 'chuva' as const,
+              localSound: 'somchuva-1.mp3',
               feedbackCorreto: 'Parabéns! A chuva é um som fresquinho da nossa mãe natureza! 🌧️',
               feedbackIncorreto: 'O sino é muito legal, mas foi feito pelas mãos das pessoas. Vamos tentar a chuva?',
               xpReward: 20,
@@ -1106,6 +1148,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               correta: '🎵 Harpa suave', 
               incorretas: ['🥁 Tambor forte', '🎺 Trompete alto'], 
               audioKey: 'mar' as const,
+              localSound: 'somharpa-1.mp3',
               feedbackCorreto: 'Perfeito! A harpa dedilhada produz ondas de puro carinho! 🎵',
               feedbackIncorreto: 'O tambor e o trompete são incríveis, mas não usam dedilhado de corda calma. Tente a harpa!',
               xpReward: 20,
@@ -1123,6 +1166,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
             molde: item.som, 
             tipo: 'sons', 
             audioKey: item.audioKey,
+            localSound: item.localSound,
             feedbackCorreto: item.feedbackCorreto,
             feedbackIncorreto: item.feedbackIncorreto,
             xpReward: item.xpReward,
@@ -1130,7 +1174,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           });
           
           setTimeout(() => {
-            playSynthesizedSound(item.audioKey);
+            playSound(item.localSound, item.audioKey);
           }, 1400);
         }
         else if (lvl === 2) {
@@ -1178,6 +1222,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
             molde: item.som, 
             tipo: 'sons', 
             audioKey: item.audioKey,
+            localSound: undefined,
             feedbackCorreto: item.feedbackCorreto,
             feedbackIncorreto: item.feedbackIncorreto,
             xpReward: item.xpReward,
@@ -1185,7 +1230,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           });
           
           setTimeout(() => {
-            playSynthesizedSound(item.audioKey);
+            playSound(undefined, item.audioKey);
           }, 1400);
         }
         else {
@@ -1233,6 +1278,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
             molde: item.som, 
             tipo: 'sons', 
             audioKey: item.audioKey,
+            localSound: undefined,
             feedbackCorreto: item.feedbackCorreto,
             feedbackIncorreto: item.feedbackIncorreto,
             xpReward: item.xpReward,
@@ -1240,7 +1286,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           });
           
           setTimeout(() => {
-            playSynthesizedSound(item.audioKey);
+            playSound(undefined, item.audioKey);
           }, 1400);
         }
       }
@@ -1248,7 +1294,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         // toque_cores (Floresta de Toques Luminosos - 0-3 anos) - Fallback original
         if (lvl === 1) {
           const sonsDB = [
-            { som: 'Chuva caindo de mansinho 🌧️', correta: '🌧️ Som de Chuva', incorretas: ['🐦 Canto de Pássaro', '🌊 Ondas do Mar'], audioKey: 'chuva' as const },
+            { som: 'Chuva caindo de mansinho 🌧️', correta: '🌧️ Som de Chuva', incorretas: ['🐦 Canto de Pássaro', '🌊 Ondas do Mar'], audioKey: 'chuva' as const, localSound: 'somchuva-1.mp3' },
             { som: 'Canto alegre de um passarinho 🐦', correta: '🐦 Canto de Pássaro', incorretas: ['🌧️ Som de Chuva', '🌊 Ondas do Mar'], audioKey: 'passaro' as const },
             { som: 'Ondas do mar que vêm e vão 🌊', correta: '🌊 Ondas do Mar', incorretas: ['🌧️ Som de Chuva', '🐦 Canto de Pássaro'], audioKey: 'mar' as const },
           ];
@@ -1256,10 +1302,10 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.correta].sort(() => Math.random() - 0.5);
           const prompt = `Toque no botão correspondente para orquestrar o som de: ${item.som}`;
           speakCommand(prompt);
-          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey });
+          setGameState({ prompt, respostaCorreta: item.correta, opcoes, molde: item.som, tipo: 'sons', audioKey: item.audioKey, localSound: item.localSound });
           
           setTimeout(() => {
-            playSynthesizedSound(item.audioKey);
+            playSound(item.localSound, item.audioKey);
           }, 1400);
         } 
         else if (lvl === 2) {
@@ -1538,9 +1584,8 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
         return text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
       };
       
-      const respostaTexto = cleanSpeakText(gameState.respostaCorreta);
       const baseTexto = gameState.feedbackIncorreto ? cleanSpeakText(gameState.feedbackIncorreto) : (preProfile?.comportamental.frustracaoAlta ? "Sem problemas. Vamos tentar juntos." : "Tente mais uma vez.");
-      speakCommand(baseTexto + " A resposta correta é: " + respostaTexto);
+      speakCommand(baseTexto);
       
       setFeedbackMsg({ text: msgFrustracao, type: 'error' });
       let novoNumOpcoes = difficultyModulation.numeroOpcoes;
@@ -2143,7 +2188,7 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               {gameState.tipo === 'sons' && (
                 <div className="space-y-4">
                   <button
-                    onClick={() => playSynthesizedSound(gameState.audioKey)}
+                    onClick={() => playSound(gameState.localSound, gameState.audioKey)}
                     className="group relative text-5xl font-black text-emerald-400 bg-slate-900 border border-emerald-500/20 hover:border-emerald-400/50 p-6 rounded-3xl w-28 h-28 mx-auto shadow-inner flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     title="Clique para ouvir o som novamente"
                   >

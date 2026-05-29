@@ -3079,12 +3079,15 @@ export default function App() {
         return null;
 
       case 'activity_logs':
-        return (
-          <ActivityLogsTab 
-            logs={activityLogs}
-            userId={user.id}
-          />
-        );
+        if (user.profile === UserProfile.ADMIN) {
+          return (
+            <ActivityLogsTab 
+              logs={activityLogs}
+              userId={user.id}
+            />
+          );
+        }
+        return null;
 
       case 'messages':
         return <Messages user={user} />;

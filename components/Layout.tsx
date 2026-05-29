@@ -131,7 +131,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, activeTab, setActiveTab
       id: 'activity_logs',
       label: 'Registro de Atividades',
       icon: 'fa-clock-rotate-left',
-      profileOnly: [UserProfile.DIRETOR]
+      profileOnly: [UserProfile.ADMIN]
     },
     {
       id: 'inclui_gamer',

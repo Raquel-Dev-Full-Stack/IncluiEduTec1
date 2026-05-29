@@ -367,9 +367,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Renderização específica para o Diretor
   if (isDiretor) {
+    // Conta todos os professores vinculados à escola (da mesma forma que a listagem de Corpo Docente no perfil Diretor)
+    const totalSchoolTeachers = (usersList || []).filter(u => 
+      u.profile === UserProfile.PROFESSOR && 
+      (u.schoolId === schoolId || (classes || []).some(c => c.teacherId === u.id && c.schoolId === schoolId))
+    ).length;
+
     const directorStats = [
       { label: 'Alunos Atendidos', count: directorData.alunos_atendidos, icon: 'fa-graduation-cap', bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-600', iconBg: 'bg-blue-500' },
-      { label: 'Professores', count: directorData.professores, icon: 'fa-chalkboard-user', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', iconBg: 'bg-emerald-500' },
+      { label: 'Professores', count: totalSchoolTeachers, icon: 'fa-chalkboard-user', bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-600', iconBg: 'bg-emerald-500' },
       { label: 'Turmas Ativas', count: directorData.turmas_ativas, icon: 'fa-users-rectangle', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-600', iconBg: 'bg-purple-500' },
       { label: 'Mediadores', count: filteredMediators.length, icon: 'fa-hand-holding-heart', bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-600', iconBg: 'bg-indigo-500' },
       { label: 'Relatórios Pendentes', count: directorData.relatorios_pendentes, icon: 'fa-file-lines', bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-600', iconBg: 'bg-rose-500' },

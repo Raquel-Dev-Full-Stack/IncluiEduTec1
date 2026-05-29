@@ -146,17 +146,17 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
   const [preProfile, setPreProfile] = useState<PreGamerProfile | null>(null);
   const [latestPreProfile, setLatestPreProfile] = useState<PreGamerProfile | null>(null);
 
-  // ExpansÃ£o PedagÃ³gica BNCC (Fase 3)
+  // Expansão Pedagógica BNCC (Fase 3)
   const [ageWarningGame, setAgeWarningGame] = useState<GameDefinition | null>(null);
   const [ageBlockGame, setAgeBlockGame] = useState<GameDefinition | null>(null);
   const [cognitiveScore, setCognitiveScore] = useState<any>(null);
 
-  // ProgressÃ£o e NÃ­veis (Fase 5)
+  // Progressão e Níveis (Fase 5)
   const [gameProgress, setGameProgress] = useState<Record<string, { current_level: number; stars_earned: number; completed: boolean }>>({});
   const [levelSelectorGame, setLevelSelectorGame] = useState<GameDefinition | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<number>(1);
 
-  // Carregamento de Scores Cognitivos HistÃ³ricos
+  // Carregamento de Scores Cognitivos Históricos
   useEffect(() => {
     if (!selectedStudentId) {
       setCognitiveScore(null);
@@ -197,7 +197,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     loadScores();
   }, [selectedStudentId]);
 
-  // Carregar perfil cognitivo prÃ©-jogo mais recente (reutilizaÃ§Ã£o rÃ¡pida)
+  // Carregar perfil cognitivo pré-jogo mais recente (reutilização rápida)
   useEffect(() => {
     if (!selectedStudentId) {
       setLatestPreProfile(null);
@@ -264,7 +264,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     loadLatestProfile();
   }, [selectedStudentId]);
 
-  // Carregamento reativo de Progresso de Jogos / NÃ­veis (Fase 5)
+  // Carregamento reativo de Progresso de Jogos / Níveis (Fase 5)
   const loadProgress = async () => {
     if (!selectedStudentId) {
       setGameProgress({});
@@ -328,19 +328,19 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       return;
     }
 
-    // Regra 1: Bloqueio PedagÃ³gico Absoluto (diferenÃ§a de 2 faixas etÃ¡rias ou mais para cima)
+    // Regra 1: Bloqueio Pedagógico Absoluto (diferença de 2 faixas etárias ou mais para cima)
     if (gameIdx - studentIdx >= 2) {
       setAgeBlockGame(game);
       return;
     }
 
-    // Regra 2: Alerta de MediaÃ§Ã£o / SubestimulaÃ§Ã£o (studentIdx > gameIdx) ou Pequeno Desvio Superior (gameIdx - studentIdx === 1)
+    // Regra 2: Alerta de Mediação / Subestimulação (studentIdx > gameIdx) ou Pequeno Desvio Superior (gameIdx - studentIdx === 1)
     if (studentIdx > gameIdx || gameIdx - studentIdx === 1) {
       setAgeWarningGame(game);
       return;
     }
 
-    // Regra 3: Faixa etÃ¡ria correspondente exata -> Abrir seletor de nÃ­vel
+    // Regra 3: Faixa etária correspondente exata -> Abrir seletor de nível
     setLevelSelectorGame(game);
   };
 
@@ -377,7 +377,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     }
   }, [students, selectedStudentId]);
 
-  // FunÃ§Ã£o para calcular a idade a partir da data de nascimento
+  // Função para calcular a idade a partir da data de nascimento
   const studentAge = useMemo(() => {
     if (!selectedStudent) return 0;
     const dateStr = selectedStudent.birth_date || selectedStudent.birthDate;
@@ -393,7 +393,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     return age;
   }, [selectedStudent]);
 
-  // Determinar a faixa etÃ¡ria para recomendaÃ§Ã£o da BNCC
+  // Determinar a faixa etária para recomendação da BNCC
   const ageGroupKey = useMemo(() => {
     if (!selectedStudent) return null;
     const age = studentAge;
@@ -405,13 +405,13 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
     return '13+';
   }, [selectedStudent, studentAge]);
 
-  // Sistema de RecomendaÃ§Ã£o PedagÃ³gica Inteligente Local (ExpansÃ£o Fase 3)
+  // Sistema de Recomendação Pedagógica Inteligente Local (Expansão Fase 3)
   const recommendations = useMemo(() => {
     if (!selectedStudent || !ageGroupKey) return [];
     
     let list = GAMES_CATALOG;
     
-    // Obter deficiÃªncia e dados histÃ³ricos de scores
+    // Obter deficiência e dados históricos de scores
     const deficiency = (selectedStudent.deficiency || '').toLowerCase();
     const diagnosis = (selectedStudent.diagnosis || '').toLowerCase();
     const scores = cognitiveScore || {
@@ -541,7 +541,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           </div>
         </div>
 
-        {/* SeleÃ§Ã£o do Aluno */}
+        {/* Seleção do Aluno */}
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto z-10">
           <div className="space-y-1 w-full sm:w-64">
             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Acompanhamento do Aluno</label>
@@ -565,7 +565,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       </header>
 
       {activeGame ? (
-        /* SeÃ§Ã£o de Jogo Ativo */
+        /* Seção de Jogo Ativo */
         <IncluiGamerPlay 
           game={activeGame} 
           student={selectedStudent!} 
@@ -577,12 +577,12 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
           onClose={() => {
             setActiveGame(null);
             setPreProfile(null);
-            loadProgress(); // Atualiza os nÃ­veis na gaveta reativamente
-            setActiveSubTab('dashboard'); // Ir para o dashboard ver os resultados apÃ³s o jogo
+            loadProgress(); // Atualiza os níveis na gaveta reativamente
+            setActiveSubTab('dashboard'); // Ir para o dashboard ver os resultados após o jogo
           }} 
         />
       ) : pendingGame ? (
-        /* Stepper de Perfil Cognitivo PrÃ©-Jogo ObrigatÃ³rio */
+        /* Stepper de Perfil Cognitivo Pré-Jogo Obrigatório */
         <IncluiGamerPreProfile
           student={selectedStudent!}
           game={pendingGame}
@@ -592,7 +592,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
         />
       ) : selectedStudent ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Painel Lateral: Perfil, Acessibilidade e RecomendaÃ§Ãµes */}
+          {/* Painel Lateral: Perfil, Acessibilidade e Recomendações */}
           <div className="lg:col-span-1 space-y-6">
             
             {/* Mini Card Aluno */}
@@ -619,11 +619,11 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-4 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
               <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-file-pdf"></i> Apoio PedagÃ³gico Offline
+                <i className="fa-solid fa-file-pdf"></i> Apoio Pedagógico Offline
               </h4>
               <div className="space-y-3">
                 <p className="text-[10px] text-slate-400 leading-relaxed font-semibold">
-                  Baixe o Caderno de Atividades de MusicalizaÃ§Ã£o Infantil para dinÃ¢micas offline complementares com os alunos.
+                  Baixe o Caderno de Atividades de Musicalização Infantil para dinâmicas offline complementares com os alunos.
                 </p>
                 <a 
                   href="/Musicalizacao_Infantil_1ano.pdf" 
@@ -635,7 +635,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               </div>
             </div>
 
-            {/* ConfiguraÃ§Ãµes de Acessibilidade Gamer */}
+            {/* Configurações de Acessibilidade Gamer */}
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-5 shadow-sm">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <i className="fa-solid fa-sliders text-indigo-500"></i> Acessibilidade Adaptativa
@@ -643,10 +643,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
 
               <div className="space-y-3.5">
                 {[
-                  { key: 'modoCalmante', label: 'Modo Calmante', desc: 'Reduz luzes e remove estÃ­mulos agressivos.', icon: 'fa-wind', color: 'text-sky-400' },
+                  { key: 'modoCalmante', label: 'Modo Calmante', desc: 'Reduz luzes e remove estímulos agressivos.', icon: 'fa-wind', color: 'text-sky-400' },
                   { key: 'altoContraste', label: 'Alto Contraste', desc: 'Maximiza cores para foco visual ampliado.', icon: 'fa-circle-half-stroke', color: 'text-yellow-400' },
-                  { key: 'tempoEstendido', label: 'Tempo Estendido', desc: 'Dobra os contadores e reduz cobranÃ§a de tempo.', icon: 'fa-clock', color: 'text-amber-400' },
-                  { key: 'audioDescricao', label: 'Suporte por Voz', desc: 'Sintetiza comandos e feedbacks em Ã¡udio.', icon: 'fa-volume-high', color: 'text-emerald-400' },
+                  { key: 'tempoEstendido', label: 'Tempo Estendido', desc: 'Dobra os contadores e reduz cobrança de tempo.', icon: 'fa-clock', color: 'text-amber-400' },
+                  { key: 'audioDescricao', label: 'Suporte por Voz', desc: 'Sintetiza comandos e feedbacks em áudio.', icon: 'fa-volume-high', color: 'text-emerald-400' },
                 ].map(item => (
                   <div key={item.key} className="flex items-start justify-between gap-3 p-2 rounded-xl hover:bg-slate-800/40 transition-all">
                     <div className="flex gap-2.5">
@@ -660,7 +660,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                       <span className={`text-[8px] font-black uppercase tracking-wider transition-all duration-305 animate-in fade-in ${
                         (accessibility as any)[item.key] ? 'text-emerald-400' : 'text-rose-500'
                       }`}>
-                        {(accessibility as any)[item.key] ? 'Ativo' : 'NÃ£o ativo'}
+                        {(accessibility as any)[item.key] ? 'Ativo' : 'Não ativo'}
                       </span>
                       <label className="relative inline-flex items-center cursor-pointer mt-0.5 select-none">
                         <input 
@@ -694,10 +694,10 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               </div>
             </div>
 
-            {/* RecomendaÃ§Ãµes Inteligentes da BNCC */}
+            {/* Recomendações Inteligentes da BNCC */}
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-4 shadow-sm">
               <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                <i className="fa-solid fa-brain"></i> SugestÃµes Inteligentes
+                <i className="fa-solid fa-brain"></i> Sugestões Inteligentes
               </h4>
               <div className="space-y-3">
                 {recommendations.map(({ game, reason, isClinica }) => (
@@ -715,7 +715,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                         isClinica 
                           ? 'bg-rose-500/10 text-rose-300 border-rose-500/20' 
                           : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'
-                      }`}>{isClinica ? 'ClÃ­nico' : game.difficulty}</span>
+                      }`}>{isClinica ? 'Clínico' : game.difficulty}</span>
                     </div>
                     <p className="text-[9px] text-slate-400 leading-relaxed font-semibold">{reason}</p>
                   </div>
@@ -724,14 +724,14 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             </div>
           </div>
 
-          {/* Ãrea Principal: Abas e Telas */}
+          {/* Área Principal: Abas e Telas */}
           <div className="lg:col-span-3 space-y-6">
             
-            {/* NavegaÃ§Ã£o entre Mapa e Dashboard */}
+            {/* Navegação entre Mapa e Dashboard */}
             <div className="flex bg-slate-900/60 p-2 rounded-[2rem] border border-slate-800/80 shadow-inner w-full max-w-sm">
               <button
                 onClick={() => setActiveSubTab('mapa')}
-                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-3 text-[10px] font-bold tracking-wider rounded-2xl transition-all flex items-center justify-center gap-2 ${
                   activeSubTab === 'mapa'
                     ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white'
@@ -753,7 +753,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
               </button>
             </div>
 
-            {/* ConteÃºdo Ativo */}
+            {/* Conteúdo Ativo */}
             <div className="bg-slate-900 border border-slate-800 p-8 rounded-[3.5rem] shadow-xl relative min-h-[500px]">
               {activeSubTab === 'mapa' ? (
                 <IncluiGamerMap 
@@ -774,23 +774,23 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
       ) : (
         /* Estado Vazio - Selecione um Aluno */
         <div className="bg-slate-900 border border-slate-800 p-20 rounded-[3.5rem] text-center space-y-6 max-w-2xl mx-auto shadow-xl relative overflow-hidden">
-          {/* DecoraÃ§Ãµes Neon Gamer */}
+          {/* Decorações Neon Gamer */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent blur-[2px]"></div>
           
           <div className="w-24 h-24 bg-slate-800 rounded-[2.5rem] border border-slate-700 flex items-center justify-center mx-auto text-indigo-400 text-4xl shadow-inner animate-bounce">
             <i className="fa-solid fa-gamepad"></i>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white tracking-tight">Iniciar SessÃ£o IncluiGamer</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">Iniciar Sessão IncluiGamer</h2>
             <p className="text-slate-400 text-sm font-medium leading-relaxed">
-              O IncluiGamer Ã© um mÃ³dulo de jogos pedagÃ³gicos alinhados Ã  BNCC. <br />
-              Selecione um dos seus alunos no menu superior para comeÃ§ar a trilha de <br />
+              O IncluiGamer é um módulo de jogos pedagógicos alinhados à BNCC. <br />
+              Selecione um dos seus alunos no menu superior para começar a trilha de <br />
               aprendizagem adaptativa e monitorar seu desenvolvimento.
             </p>
           </div>
         </div>
       )}
-      {/* Modal de Alerta PedagÃ³gico de Faixa EtÃ¡ria BNCC */}
+      {/* Modal de Alerta Pedagógico de Faixa Etária BNCC */}
       {ageWarningGame && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-amber-500/30 p-8 rounded-[3rem] shadow-2xl max-w-md w-full text-center space-y-6 relative overflow-hidden">
@@ -802,15 +802,15 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-black text-white tracking-tight">AdequaÃ§Ã£o PedagÃ³gica</h3>
+              <h3 className="text-xl font-black text-white tracking-tight">Adequação Pedagógica</h3>
               <p className="text-slate-400 text-xs font-semibold leading-relaxed">
-                Esta atividade Ã© classificada para a faixa de <span className="text-amber-400 font-bold">{ageWarningGame.ageLabel}</span>. 
-                O aluno selecionado, <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos), possui perfil correspondente Ã  faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
+                Esta atividade é classificada para a faixa de <span className="text-amber-400 font-bold">{ageWarningGame.ageLabel}</span>. 
+                O aluno selecionado, <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos), possui perfil correspondente à faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
               </p>
             </div>
 
             <div className="bg-slate-950/50 p-4 border border-slate-850 rounded-2xl text-left space-y-2">
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Habilidade BNCC Requerida</p>
+              <p className="text-[10px] text-slate-500 font-black tracking-wider">Habilidade BNCC Requerida</p>
               {BNCC_MAPPING_DATA.filter(m => m.gameId === ageWarningGame.id).slice(0, 1).map(item => (
                 <div key={item.id} className="text-xs space-y-1">
                   <span className="inline-block px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-black rounded-md uppercase tracking-wider">{item.habilidadeBncc}</span>
@@ -822,23 +822,23 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => setAgeWarningGame(null)}
-                className="w-full py-3.5 bg-slate-800 hover:bg-slate-750 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border border-slate-750 shadow-md"
+                className="w-full py-3.5 bg-slate-800 hover:bg-slate-750 text-white rounded-2xl text-[10px] font-black tracking-widest transition-all active:scale-95 border border-slate-750 shadow-md"
               >
                 Voltar ao Mapa (Recomendado)
               </button>
               
               <button
                 onClick={() => handleForceLaunchGame(ageWarningGame)}
-                className="w-full py-3.5 bg-gradient-to-tr from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-950/20"
+                className="w-full py-3.5 bg-gradient-to-tr from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-2xl text-[10px] font-black tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-950/20"
               >
-                ForÃ§ar InicializaÃ§Ã£o (MediaÃ§Ã£o)
+                Forçar Inicialização (Mediação)
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Bloqueio PedagÃ³gico Absoluto por Faixa EtÃ¡ria BNCC */}
+      {/* Modal de Bloqueio Pedagógico Absoluto por Faixa Etária BNCC */}
       {ageBlockGame && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-rose-500/30 p-8 rounded-[3rem] shadow-2xl max-w-md w-full text-center space-y-6 relative overflow-hidden">
@@ -852,16 +852,16 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             <div className="space-y-2">
               <h3 className="text-xl font-black text-white tracking-tight">Atividade Restrita</h3>
               <p className="text-slate-400 text-xs font-semibold leading-relaxed">
-                Complexidade cognitiva incompatÃ­vel com a etapa de desenvolvimento do aluno.
+                Complexidade cognitiva incompatível com a etapa de desenvolvimento do aluno.
               </p>
               <p className="text-slate-400 text-[11px] leading-relaxed">
-                O aluno <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos) estÃ¡ na faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
-                O jogo <span className="text-rose-400 font-bold">{ageBlockGame.name}</span> Ã© exclusivo para a faixa de <span className="text-rose-400 font-bold">{ageBlockGame.ageLabel}</span>.
+                O aluno <span className="text-indigo-400 font-bold">{selectedStudent?.name}</span> ({studentAge} anos) está na faixa <span className="text-indigo-400 font-bold">{ageGroupKey}</span>.
+                O jogo <span className="text-rose-400 font-bold">{ageBlockGame.name}</span> é exclusivo para a faixa de <span className="text-rose-400 font-bold">{ageBlockGame.ageLabel}</span>.
               </p>
             </div>
 
             <div className="bg-slate-950/50 p-4 border border-slate-850 rounded-2xl text-left space-y-2">
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Habilidade BNCC Requerida</p>
+              <p className="text-[10px] text-slate-500 font-black tracking-wider">Habilidade BNCC Requerida</p>
               {BNCC_MAPPING_DATA.filter(m => m.gameId === ageBlockGame.id).slice(0, 1).map(item => (
                 <div key={item.id} className="text-xs space-y-1">
                   <span className="inline-block px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-black rounded-md uppercase tracking-wider">{item.habilidadeBncc}</span>
@@ -873,7 +873,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
             <div>
               <button
                 onClick={() => setAgeBlockGame(null)}
-                className="w-full py-3.5 bg-gradient-to-tr from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-950/20"
+                className="w-full py-3.5 bg-gradient-to-tr from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-2xl text-[10px] font-black tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-950/20"
               >
                 Voltar ao Mapa (Recomendado)
               </button>
@@ -882,7 +882,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
         </div>
       )}
 
-      {/* Modal Seletor de NÃ­veis PedagÃ³gicos Premium (Fase 5) */}
+      {/* Modal Seletor de Níveis Pedagógicos Premium (Fase 5) */}
       {levelSelectorGame && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] shadow-2xl max-w-lg w-full text-center space-y-6 relative overflow-hidden">
@@ -896,7 +896,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 </div>
                 <div className="text-left">
                   <h3 className="text-base font-black text-white uppercase tracking-wider">{levelSelectorGame.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{levelSelectorGame.ageLabel} â€¢ Bioma: {levelSelectorGame.bioma.toUpperCase()}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{levelSelectorGame.ageLabel} • Bioma: {levelSelectorGame.bioma.toUpperCase()}</p>
                 </div>
               </div>
               <button 
@@ -915,7 +915,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                 const progress = gameProgress[levelSelectorGame.id] || { current_level: 1, stars_earned: 0, completed: false };
                 const isDesbloqueado = lvlNum <= progress.current_level;
                 
-                // Exibir estrelas se concluÃ­do
+                // Exibir estrelas se concluído
                 const estrelas = lvlNum < progress.current_level 
                   ? progress.stars_earned 
                   : lvlNum === progress.current_level && progress.completed 
@@ -933,7 +933,7 @@ export default function IncluiGamerHub({ students, classes, user, studentRecords
                   >
                     <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase text-indigo-400">NÃ­vel {lvlNum}</span>
+                        <span className="text-[10px] font-black uppercase text-indigo-400">Nível {lvlNum}</span>
                         <h4 className="text-xs font-black text-white">{lvlDef.name}</h4>
                         
                         {/* Estrelas obtidas no nÃ­vel */}
