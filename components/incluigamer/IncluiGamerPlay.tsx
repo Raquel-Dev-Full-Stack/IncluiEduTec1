@@ -2168,9 +2168,236 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               )}
 
               {gameState.tipo === 'emocoes' && (
-                <div className="text-7xl font-black bg-slate-900 border border-slate-800 w-28 h-28 rounded-3xl mx-auto shadow-inner flex items-center justify-center animate-bounce">
-                  {gameState.emoji}
-                </div>
+                gameState.prompt.includes('cachorrinho') ? (
+                  <div className="bg-slate-900 border border-slate-800 w-36 h-36 rounded-3xl mx-auto shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 100 100" className="w-28 h-28">
+                      <style>
+                        {`
+                          @keyframes tailWag {
+                            0%, 100% { transform: rotate(0deg); }
+                            50% { transform: rotate(-25deg); }
+                          }
+                          @keyframes headBob {
+                            0%, 100% { transform: translateY(0px) rotate(0deg); }
+                            50% { transform: translateY(-4px) rotate(2deg); }
+                          }
+                          @keyframes bark {
+                            0%, 100% { transform: scaleY(1); }
+                            50% { transform: scaleY(0.4); }
+                          }
+                          @keyframes earWiggleLeft {
+                            0%, 100% { transform: rotate(0deg); }
+                            50% { transform: rotate(-8deg); }
+                          }
+                          @keyframes earWiggleRight {
+                            0%, 100% { transform: rotate(0deg); }
+                            50% { transform: rotate(8deg); }
+                          }
+                          .dog-tail {
+                            animation: tailWag 0.15s infinite ease-in-out;
+                            transform-origin: 32px 55px;
+                          }
+                          .dog-head {
+                            animation: headBob 0.5s infinite ease-in-out;
+                            transform-origin: 50px 45px;
+                          }
+                          .dog-mouth {
+                            animation: bark 0.25s infinite ease-in-out;
+                            transform-origin: 50px 58px;
+                          }
+                          .dog-ear-left {
+                            animation: earWiggleLeft 0.4s infinite ease-in-out;
+                            transform-origin: 38px 42px;
+                          }
+                          .dog-ear-right {
+                            animation: earWiggleRight 0.4s infinite ease-in-out;
+                            transform-origin: 62px 42px;
+                          }
+                        `}
+                      </style>
+                      {/* Corpo do cachorro */}
+                      <rect x="30" y="46" width="38" height="26" rx="12" fill="#F59E0B" />
+                      {/* Patas */}
+                      <circle cx="38" cy="74" r="6" fill="#D97706" />
+                      <circle cx="60" cy="74" r="6" fill="#D97706" />
+                      {/* Rabo animado */}
+                      <path d="M 32 55 Q 18 52 20 40" stroke="#F59E0B" strokeWidth="6" strokeLinecap="round" fill="none" className="dog-tail" />
+                      {/* Cabeça animada */}
+                      <g className="dog-head">
+                        {/* Orelhas */}
+                        <path d="M 38 42 L 30 25 L 36 28 Z" fill="#D97706" className="dog-ear-left" />
+                        <path d="M 62 42 L 70 25 L 64 28 Z" fill="#D97706" className="dog-ear-right" />
+                        {/* Rosto */}
+                        <circle cx="50" cy="45" r="16" fill="#F59E0B" />
+                        {/* Olhos felizes */}
+                        <path d="M 42 41 Q 45 37 48 41" stroke="#451A03" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                        <path d="M 52 41 Q 55 37 58 41" stroke="#451A03" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                        {/* Focinho */}
+                        <ellipse cx="50" cy="51" rx="6" ry="4" fill="#FEF3C7" />
+                        <polygon points="47,49 53,49 50,52" fill="#451A03" />
+                        {/* Sorriso e Boca aberta (latindo) */}
+                        <path d="M 46 55 Q 50 61 54 55" fill="none" stroke="#451A03" strokeWidth="2" strokeLinecap="round" />
+                        <circle cx="50" cy="57" r="3.5" fill="#EF4444" className="dog-mouth" />
+                      </g>
+                    </svg>
+                  </div>
+                ) : gameState.prompt.includes('gatinho') ? (
+                  <div className="bg-slate-900 border border-slate-800 w-36 h-36 rounded-3xl mx-auto shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 100 100" className="w-28 h-28">
+                      <style>
+                        {`
+                          @keyframes slowBreathing {
+                            0%, 100% { transform: scale(1) translateY(0px); }
+                            50% { transform: scale(0.97) translateY(1.5px); }
+                          }
+                          @keyframes tearDrop {
+                            0% { transform: translateY(0px); opacity: 0; }
+                            30% { opacity: 0.8; }
+                            80% { transform: translateY(12px); opacity: 0.8; }
+                            100% { transform: translateY(12px); opacity: 0; }
+                          }
+                          @keyframes slowTail {
+                            0%, 100% { transform: rotate(0deg); }
+                            50% { transform: rotate(-8deg); }
+                          }
+                          .cat-body-group {
+                            animation: slowBreathing 3s infinite ease-in-out;
+                            transform-origin: 50px 60px;
+                          }
+                          .cat-tail {
+                            animation: slowTail 4s infinite ease-in-out;
+                            transform-origin: 32px 65px;
+                          }
+                          .tear-left {
+                            animation: tearDrop 2.5s infinite ease-in;
+                          }
+                          .tear-right {
+                            animation: tearDrop 2.5s infinite ease-in;
+                            animation-delay: 1.25s;
+                          }
+                        `}
+                      </style>
+                      {/* Rabo do gatinho */}
+                      <path d="M 34 65 Q 18 68 22 55" stroke="#94A3B8" strokeWidth="4" strokeLinecap="round" fill="none" className="cat-tail" />
+                      
+                      <g className="cat-body-group">
+                        {/* Corpo encolhido */}
+                        <ellipse cx="50" cy="62" rx="20" ry="15" fill="#CBD5E1" />
+                        
+                        {/* Orelhinhas abaixadas de tristeza */}
+                        <path d="M 36 42 L 24 38 L 34 32 Z" fill="#94A3B8" />
+                        <path d="M 64 42 L 76 38 L 66 32 Z" fill="#94A3B8" />
+                        
+                        {/* Cabeça levemente baixa */}
+                        <circle cx="50" cy="42" r="14" fill="#CBD5E1" />
+                        
+                        {/* Detalhe interno orelhas (rosado suave) */}
+                        <path d="M 34 40 L 26 37 L 32 34 Z" fill="#FDA4AF" opacity="0.6" />
+                        <path d="M 66 40 L 74 37 L 68 34 Z" fill="#FDA4AF" opacity="0.6" />
+
+                        {/* Olhinhos tristes (curvados para baixo) */}
+                        <path d="M 41 41 Q 44 44 47 41" stroke="#475569" strokeWidth="2" fill="none" strokeLinecap="round" />
+                        <path d="M 53 41 Q 56 44 59 41" stroke="#475569" strokeWidth="2" fill="none" strokeLinecap="round" />
+
+                        {/* Narizinho */}
+                        <polygon points="49,45 51,45 50,47" fill="#FDA4AF" />
+                        
+                        {/* Boquinha triste invertida */}
+                        <path d="M 47 50 Q 50 48 53 50" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" />
+                        
+                        {/* Bigodes caídos */}
+                        <line x1="38" y1="46" x2="30" y2="48" stroke="#94A3B8" strokeWidth="1" />
+                        <line x1="38" y1="48" x2="31" y2="51" stroke="#94A3B8" strokeWidth="1" />
+                        <line x1="62" y1="46" x2="70" y2="48" stroke="#94A3B8" strokeWidth="1" />
+                        <line x1="62" y1="48" x2="69" y2="51" stroke="#94A3B8" strokeWidth="1" />
+
+                        {/* Lágrimas suaves escorrendo dos olhinhos */}
+                        <circle cx="44" cy="43" r="2" fill="#38BDF8" className="tear-left" />
+                        <circle cx="56" cy="43" r="2" fill="#38BDF8" className="tear-right" />
+                      </g>
+                    </svg>
+                  </div>
+                ) : gameState.prompt.includes('leão') || gameState.prompt.includes('leãozinho') ? (
+                  <div className="bg-slate-900 border border-slate-800 w-36 h-36 rounded-3xl mx-auto shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 100 100" className="w-28 h-28">
+                      <style>
+                        {`
+                          @keyframes tremble {
+                            0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+                            10% { transform: translate(-0.5px, 0.5px) rotate(-0.5deg); }
+                            30% { transform: translate(0.5px, -0.5px) rotate(0.5deg); }
+                            50% { transform: translate(-0.5px, -0.5px) rotate(-0.5deg); }
+                            70% { transform: translate(0.5px, 0.5px) rotate(0.5deg); }
+                            90% { transform: translate(-0.5px, 0.5px) rotate(-0.5deg); }
+                          }
+                          @keyframes peek {
+                            0%, 100% { transform: translateY(0px) translateX(0px); }
+                            50% { transform: translateY(2px) translateX(-2px); }
+                          }
+                          .lion-trembling-group {
+                            animation: tremble 0.25s infinite linear;
+                          }
+                          .lion-head-group {
+                            animation: peek 4s infinite ease-in-out;
+                          }
+                        `}
+                      </style>
+                      {/* Fundo do canto / Parede/Arbusto para se esconder */}
+                      <path d="M 0 100 Q 15 65 42 72 Q 55 75 60 100 Z" fill="#047857" opacity="0.8" /> {/* Arbusto */}
+                      <path d="M 0 100 Q 20 58 35 68 Q 45 74 50 100 Z" fill="#065F46" /> {/* Folhas da frente */}
+
+                      {/* Leão se escondendo atrás do arbusto */}
+                      <g className="lion-head-group" transform="translate(12, 10)">
+                        <g className="lion-trembling-group">
+                          {/* Juba do Leãozinho */}
+                          <circle cx="50" cy="50" r="22" fill="#D97706" />
+                          <circle cx="34" cy="38" r="8" fill="#B45309" />
+                          <circle cx="66" cy="38" r="8" fill="#B45309" />
+                          <circle cx="30" cy="54" r="8" fill="#B45309" />
+                          <circle cx="70" cy="54" r="8" fill="#B45309" />
+                          <circle cx="38" cy="68" r="8" fill="#B45309" />
+                          <circle cx="62" cy="68" r="8" fill="#B45309" />
+                          <circle cx="50" cy="72" r="8" fill="#B45309" />
+
+                          {/* Orelhas abaixadas */}
+                          <path d="M 36 38 Q 28 32 34 26" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" fill="none" />
+                          <path d="M 64 38 Q 72 32 66 26" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" fill="none" />
+
+                          {/* Rosto */}
+                          <circle cx="50" cy="52" r="16" fill="#FBBF24" />
+
+                          {/* Olhos Arregalados de Medo */}
+                          <circle cx="44" cy="48" r="5" fill="#FFFFFF" />
+                          <circle cx="44" cy="48" r="2.5" fill="#1E293B" />
+                          <circle cx="43" cy="47" r="1" fill="#FFFFFF" /> {/* Brilho */}
+
+                          <circle cx="56" cy="48" r="5" fill="#FFFFFF" />
+                          <circle cx="56" cy="48" r="2.5" fill="#1E293B" />
+                          <circle cx="55" cy="47" r="1" fill="#FFFFFF" /> {/* Brilho */}
+
+                          {/* Sobrancelhas inclinadas de preocupação / medo */}
+                          <path d="M 38 41 Q 43 39 46 43" fill="none" stroke="#78350F" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M 62 41 Q 57 39 54 43" fill="none" stroke="#78350F" strokeWidth="2" strokeLinecap="round" />
+
+                          {/* Focinho */}
+                          <ellipse cx="50" cy="56" rx="4.5" ry="3" fill="#FEF3C7" />
+                          <polygon points="48,54 52,54 50,56.5" fill="#78350F" />
+
+                          {/* Boca trêmula / pequena de preocupação */}
+                          <path d="M 47 60 Q 50 58 53 60" fill="none" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" />
+                          
+                          {/* Patinhas segurando o arbusto */}
+                          <ellipse cx="38" cy="68" rx="4" ry="3" fill="#FBBF24" />
+                          <ellipse cx="62" cy="68" rx="4" ry="3" fill="#FBBF24" />
+                        </g>
+                      </g>
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="text-7xl font-black bg-slate-900 border border-slate-800 w-28 h-28 rounded-3xl mx-auto shadow-inner flex items-center justify-center animate-bounce">
+                    {gameState.emoji}
+                  </div>
+                )
               )}
 
               {gameState.tipo === 'sentimentos' && (

@@ -115,6 +115,28 @@ Escolha um momento de transição (como a chegada, o recreio ou a saída) e plan
 * **Código:** \`EF15AR01\` - Identificar e apreciar formas distintas das artes visuais...
 * **Estratégia DUA:** No pilar do **Engajamento**, promova uma "galeria de sensações" (tato, som, aroma). Isso permite que alunos com deficiências sensoriais se envolvam profundamente com a apreciação artística.`
       },
+      {
+        id: 4,
+        title: 'Quiz: Fundamentos da Inclusão',
+        duration: '15 min',
+        type: 'quiz',
+        completed: false,
+        description: 'Avaliação de conhecimentos sobre o binômio Educar-Cuidar e a mediação humanizadora.',
+        content: `### Quiz - Módulo 1: Fundamentos da Inclusão
+Responda mentalmente ou anote suas respostas:
+
+**1. O que representa o binômio "Educar-Cuidar" na educação inclusiva?**
+a) A divisão de tarefas onde o professor educa e o mediador apenas cuida do bem-estar físico.
+b) A compreensão de que as ações de cuidado (alimentação, higiene) são indissociáveis do ato educativo e promovem autonomia.
+c) A priorização das necessidades médicas e de saúde em detrimento das atividades de aprendizagem pedagógica.
+
+**2. A atuação do mediador na Zona de Desenvolvimento Proximal (ZPD) caracteriza-se por:**
+a) Realizar a tarefa pelo aluno para evitar frustrações.
+b) Oferecer o suporte temporário e ajustado ("andaime" ou scaffolding) para que o aluno desenvolva autonomia.
+c) Deixar o aluno realizar as atividades sem intervenção, estimulando a autodescoberta pura.
+
+*Gabarito: 1-b, 2-b*`
+      }
     ],
   },
   {
@@ -133,7 +155,7 @@ Escolha um momento de transição (como a chegada, o recreio ou a saída) e plan
     ],
     lessons: [
       { 
-        id: 4, 
+        id: 5, 
         title: 'Alfabetização Inclusiva e a Lei 15.247/2025', 
         duration: '30 min', 
         type: 'leitura', 
@@ -159,7 +181,7 @@ A lei é categórica: o fracasso na alfabetização de um aluno PCD é um fracas
 * **Estratégia DUA:** No pilar da **Representação**, use letras móveis magnéticas coloridas e softwares de síntese de voz. O feedback instantâneo por múltiplos canais facilita a associação fonema-grafema.`
       },
       { 
-        id: 5, 
+        id: 6, 
         title: 'Implementando o AEE sem Laudo', 
         duration: '20 min', 
         type: 'atividade', 
@@ -184,6 +206,28 @@ Implementar o AEE sem laudo reconhece a soberania da escola sobre as necessidade
 * **Código:** \`EF15LP03\` - Localizar informações explícitas em textos.
 * **Estratégia DUA:** No pilar da **Representação**, use marcadores físicos ou digitais coloridos. Se o aluno não decodifica, ele busca a informação em um texto lido pelo mediador, apontando a ilustração correspondente.`
       },
+      {
+        id: 7,
+        title: 'Quiz: O Novo Marco Legal',
+        duration: '15 min',
+        type: 'quiz',
+        completed: false,
+        description: 'Avaliação de conhecimentos sobre a Lei 15.247/2025 e o AEE sem laudo.',
+        content: `### Quiz - Módulo 2: O Novo Marco Legal
+Responda mentalmente ou anote suas respostas:
+
+**1. Segundo a Lei nº 15.247/2025, qual documento é obrigatório para iniciar o AEE na escola?**
+a) Laudo médico com CID específico emitido por neuropediatra.
+b) O laudo médico deixa de ser obrigatório; basta a identificação de barreiras pedagógicas pela escola.
+c) Encaminhamento assinado pelo Ministério Público ou Conselho Tutelar.
+
+**2. Qual o foco principal do Atendimento Educacional Especializado (AEE)?**
+a) O tratamento clínico das patologias do desenvolvimento.
+b) A eliminação de barreiras pedagógicas, de comunicação e atitudinais para garantir acessibilidade ao currículo.
+c) A aceleração de conteúdos para que o aluno alcance a seriação regular mais rápido.
+
+*Gabarito: 1-b, 2-b*`
+      }
     ],
   },
   {
@@ -201,7 +245,7 @@ Implementar o AEE sem laudo reconhece a soberania da escola sobre as necessidade
     ],
     lessons: [
       { 
-        id: 6, 
+        id: 8, 
         title: 'Os 3 Princípios do DUA', 
         duration: '45 min', 
         type: 'leitura', 
@@ -227,7 +271,7 @@ O educador deve abrir múltiplas portas de entrada para o conteúdo. A "Avaliaç
 * **Estratégia DUA:** No pilar de **Engajamento**, use situações reais como numeração de salas ou códigos de barras. Materiais manipuláveis facilitam a conceituação para alunos com dificuldades de abstração.`
       },
       { 
-        id: 7, 
+        id: 9, 
         title: 'Planejamento Proativo', 
         duration: '40 min', 
         type: 'atividade', 
@@ -252,6 +296,28 @@ Um planejamento proativo é robusto e respeita a inteligência de cada estudante
 * **Código:** \`EF01CI01\` - Comparar características de diferentes materiais do cotidiano quanto a sua forma, textura, dureza, cor e brilho.
 * **Estratégia DUA:** No pilar de **Ação e Expressão**, organize uma "caixa de mistérios" para classificar materiais pelo tato. É equidade total para deficientes visuais e facilita a conceituação concreta para alunos com TEA.`
       },
+      {
+        id: 10,
+        title: 'Quiz: Desenho Universal para a Aprendizagem (DUA)',
+        duration: '15 min',
+        type: 'quiz',
+        completed: false,
+        description: 'Avaliação de conhecimentos sobre os pilares do DUA.',
+        content: `### Quiz - Módulo 3: Desenho Universal para a Aprendizagem
+Responda mentalmente ou anote suas respostas:
+
+**1. Quais são os três pilares fundamentais do DUA?**
+a) Representação, Ação e Expressão, e Engajamento.
+b) Diagnóstico, Medicação e Adaptação Individualizada.
+c) Didática, Avaliação Tradicional e Atividades Complementares.
+
+**2. Na perspectiva do DUA, a flexibilidade curricular deve ser planejada:**
+a) Apenas quando o aluno com deficiência apresentar dificuldades extremas na aula.
+b) De forma proativa desde a concepção do plano de aula, beneficiando todos os estudantes.
+c) Reduzindo as expectativas e o nível de exigência para os alunos PCD.
+
+*Gabarito: 1-a, 2-b*`
+      }
     ],
   },
   {
@@ -269,7 +335,7 @@ Um planejamento proativo é robusto e respeita a inteligência de cada estudante
     ],
     lessons: [
       { 
-        id: 8, 
+        id: 11, 
         title: 'As 4 Etapas do Estudo de Caso', 
         duration: '35 min', 
         type: 'leitura', 
@@ -285,6 +351,28 @@ Um planejamento proativo é robusto e respeita a inteligência de cada estudante
 *Habilidade:* Identificar materiais dos objetos.
 *Inclusão:* Para aluno com barreira motora, a avaliação é sensorial (caixa misteriosa), focando no progresso da percepção científica.`
       },
+      {
+        id: 12,
+        title: 'Quiz: Avaliação Formativa e Estudo de Caso',
+        duration: '15 min',
+        type: 'quiz',
+        completed: false,
+        description: 'Avaliação de conhecimentos sobre o Estudo de Caso e Avaliação Formativa.',
+        content: `### Quiz - Módulo 4: Avaliação Formativa e Estudo de Caso
+Responda mentalmente ou anote suas respostas:
+
+**1. De acordo com o Guia MEC 2026, qual é a primeira etapa na elaboração do Estudo de Caso?**
+a) A definição da medicação escolar.
+b) A identificação das barreiras que impedem a participação ativa do estudante.
+c) A reprovação ou aprovação direta do ano letivo.
+
+**2. A "Avaliação para a Aprendizagem" se diferencia da avaliação tradicional pois:**
+a) Não gera relatórios formais e foca apenas na observação informal.
+b) É diagnóstica, processual e serve para ajustar os suportes pedagógicos em tempo real.
+c) Elimina qualquer critério de avaliação, aprovando todos de forma automática.
+
+*Gabarito: 1-b, 2-b*`
+      }
     ],
   },
   {
@@ -302,7 +390,7 @@ Um planejamento proativo é robusto e respeita a inteligência de cada estudante
     ],
     lessons: [
       { 
-        id: 9, 
+        id: 13, 
         title: 'Transformando BNCC em Metas PEI', 
         duration: '45 min', 
         type: 'leitura', 
@@ -313,7 +401,7 @@ Um planejamento proativo é robusto e respeita a inteligência de cada estudante
 *Meta PEI (D.I.):* Identificar 3 elementos culturais (comida, música, roupa) através de imagens, relacionando-os ao clima. A meta é derivada da BNCC, mas funcional para o aluno.`
       },
       { 
-        id: 10, 
+        id: 14, 
         title: 'Quiz Final e Certificação', 
         duration: '20 min', 
         type: 'quiz', 
@@ -337,11 +425,98 @@ a) Engajamento.
 b) Ação e Expressão.
 c) Representação.
 
-### Conclusão do Curso
-Parabéns! Você completou a formação **Inclusão na Prática**. Aplique esses conceitos no seu dia a dia e utilize as ferramentas do IncluiEduTec para documentar a evolução dos seus alunos. Seu certificado estará disponível assim que marcar todas as lições como concluídas.`
+### Conclusão do Módulo
+Parabéns! Você completou o Módulo 5. Avance para o próximo módulo para concluir sua formação.`
       },
     ],
   },
+  {
+    id: 6,
+    title: 'Módulo 6',
+    subtitle: 'Atualizações Legislativas e Diretrizes Inclusivas 2025',
+    icon: 'fa-scale-balanced',
+    color: 'from-indigo-600 to-indigo-800',
+    description: 'Capacitar professores e gestores escolares sobre as novas políticas e decretos de inclusão publicados pelo MEC em 2025, com foco na aplicação prática das normativas na escola.',
+    objectives: [
+      'Compreender as diretrizes da Portaria MEC nº 421/2025 para o AEE',
+      'Analisar o impacto do Decreto nº 12.686/2025 (PNEEI) na escola',
+      'Promover equidade, acessibilidade e combate ao capacitismo',
+      'Aplicar o checklist de conformidade e o uso de tecnologias assistivas',
+    ],
+    lessons: [
+      {
+        id: 15,
+        title: 'Diretrizes e Decretos da Inclusão 2025',
+        duration: '40 min',
+        type: 'leitura',
+        completed: false,
+        description: 'Apresentação detalhada da Portaria MEC nº 421/2025 e do Decreto nº 12.686/2025.',
+        content: `### Portaria MEC nº 421/2025
+A Portaria nº 421/2025 estabelece novas orientações operacionais para o funcionamento das salas de recursos multifuncionais e para a atuação do profissional do AEE. Ela enfatiza a importância de um trabalho integrado com o professor de classe comum, superando o modelo de atendimento isolado no contraturno.
+
+### Decreto nº 12.686/2025 e a PNEEI
+O Decreto nº 12.686/2025 consolida a Política Nacional de Educação Especial Inclusiva (PNEEI), reafirmando o compromisso do Estado brasileiro com sistemas de ensino plenamente inclusivos. O foco é a remoção de barreiras arquitetônicas, pedagógicas, atitudinais e tecnológicas nas escolas públicas e privadas.
+
+### Equidade e Acessibilidade
+O MEC define equidade como a oferta de recursos diferenciados para atender às necessidades específicas de cada estudante, garantindo condições de igualdade para o aprendizado. A acessibilidade deve ser pensada sob o prisma da diversidade humana, combatendo de maneira veemente qualquer prática de capacitismo no ambiente escolar.
+
+### Tecnologias Assistivas e Práticas Inclusivas
+A utilização de leitores de tela, teclados adaptados, softwares de comunicação alternativa e recursos de baixo custo é incentivada de forma integrada ao planejamento da BNCC.
+
+**Integração BNCC:**
+* **Código:** \`EF02LP01\` - Expressar-se em situações de intercâmbio oral com clareza...
+* **Estratégia DUA:** No pilar de **Ação e Expressão**, incentive o uso de pranchas de Comunicação Alternativa e Ampliada (CAA) físicas ou digitais. Isso garante que alunos não-verbais participem ativamente dos momentos de expressão oral.`
+      },
+      {
+        id: 16,
+        title: 'Aplicando as Novas Normas na Escola',
+        duration: '30 min',
+        type: 'atividade',
+        completed: false,
+        description: 'Estratégias de implementação prática do AEE e checklist de conformidade.',
+        content: `### Estudo Prático de Caso
+Imagine uma escola que recebe um novo aluno com paralisia cerebral severa. De acordo com as diretrizes de 2025, o primeiro passo deve ser a formação de uma comissão colaborativa (professor regente, AEE, equipe de gestão e mediador) para realizar a avaliação functional inicial e elaborar o PEI, sem dependência prévia de laudos clínicos.
+
+### Checklist de Conformidade Escolar
+* **Acessibilidade física e arquitetônica** garantida em todos os espaços de vivência.
+* **Planejamento docente** baseado nos princípios do DUA.
+* **AEE de suporte articulado** com o professor da sala de aula comum.
+* **Ações escolares integradas** para combate ao capacitismo.
+
+### Atividade Prática de Implementação
+Elabore um checklist de conformidade contendo 5 pontos críticos a serem avaliados na sua escola para atender à Portaria nº 421/2025. Proponha uma ação imediata de conscientização atitudinal a ser realizada com o conselho escolar sobre o combate ao capacitismo.
+
+**Integração BNCC:**
+* **Código:** \`EF03MA05\` - Utilizar diferentes procedimentos de cálculo mental e escrito...
+* **Estratégia DUA:** No pilar de **Engajamento**, apresente desafios matemáticos contextualizados com jogos acessíveis em software inclusivo. A gamificação estimula a persistência e o foco de forma flexível.`
+      },
+      {
+        id: 17,
+        title: 'Quiz final e Certificação do Curso',
+        duration: '20 min',
+        type: 'quiz',
+        completed: false,
+        description: 'Avaliação final integradora sobre a legislação 2025 e conformidade inclusiva.',
+        content: `### Quiz - Módulo 6: Atualizações 2025
+Responda mentalmente ou anote suas respostas:
+
+**1. Qual o foco principal do Decreto nº 12.686/2025 (PNEEI)?**
+a) A criação de escolas especiais exclusivas para alunos com deficiência.
+b) O fortalecimento de sistemas de ensino plenamente inclusivos com remoção sistemática de barreiras pedagógicas e tecnológicas.
+c) A transferência da responsabilidade educacional exclusivamente para as famílias.
+
+**2. A Portaria MEC nº 421/2025 orienta que o trabalho do AEE deve ser:**
+a) Desenvolvido de forma isolada, sem contato com o planejamento da sala comum.
+b) Integrado e articulado com o professor de classe comum, visando ao coplanejamento.
+c) Restrito apenas ao preenchimento de relatórios administrativos.
+
+*Gabarito: 1-b, 2-b*
+
+### Conclusão do Curso
+Parabéns! Você completou a formação **Inclusão na Prática**. Aplique esses conceitos no seu dia a dia e utilize as ferramentas do IncluiEduTec para documentar a evolução dos seus alunos. Seu certificado de formação continuada de Educação Inclusiva (MEC 2026/2025) estará disponível assim que marcar todas as lições como concluídas.`
+      }
+    ],
+  }
 ];
 
 const typeConfig: Record<string, { icon: string; label: string; color: string }> = {
@@ -417,7 +592,7 @@ const CourseTab: React.FC = () => {
           <div className="flex gap-6 mt-6 flex-wrap">
             <div className="flex items-center gap-2 text-sm">
               <i className="fa-solid fa-layer-group text-blue-300" />
-              <span className="text-blue-100">5 Módulos</span>
+              <span className="text-blue-100">6 Módulos</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <i className="fa-solid fa-clock text-blue-300" />
@@ -610,8 +785,8 @@ const CourseTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Card de certificado se módulo 5 */}
-          {activeModule.id === 5 && (
+          {/* Card de certificado se módulo 6 */}
+          {activeModule.id === 6 && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 flex items-center gap-4">
               <div className="w-14 h-14 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-200">
                 <i className="fa-solid fa-award text-white text-2xl" />
