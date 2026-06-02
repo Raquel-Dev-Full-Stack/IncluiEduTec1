@@ -128,6 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedTeacherStudentId, setSelectedTeacherStudentId] = useState<string>('all');
   const [selectedRecordType, setSelectedRecordType] = useState<string>('all');
   const [selectedDirectorStudentId, setSelectedDirectorStudentId] = useState<string>('all');
+  const [selectedTeacherPeriod, setSelectedTeacherPeriod] = useState<string>('mes');
 
   // Estados e Carregamento de dados da evolução cognitiva (IncluiGamer)
   const [gamerRecords, setGamerRecords] = useState<any[]>([]);
@@ -660,7 +661,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       return r.student_id === selectedGamerStudentId;
     });
 
-    // 2. Filtrar por período (mes ou semana)
+    // 2. Filtrar por período (mes, semana ou ano)
     if (selectedGamerPeriod === 'semana') {
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -669,6 +670,10 @@ const Dashboard: React.FC<DashboardProps> = ({
       const oneMonthAgo = new Date();
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
       filteredGamerRecords = filteredGamerRecords.filter(r => new Date(r.date_played || 0) >= oneMonthAgo);
+    } else if (selectedGamerPeriod === 'ano') {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      filteredGamerRecords = filteredGamerRecords.filter(r => new Date(r.date_played || 0) >= oneYearAgo);
     }
 
     // 3. Agrupar por data (ex: 'dd/MM') para o gráfico
@@ -783,7 +788,44 @@ const Dashboard: React.FC<DashboardProps> = ({
       return null;
     };
 
-    
+    const CustomTeacherTooltip = ({ active, payload }: any) => {
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+          <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-200 text-xs font-bold text-gray-600">
+            <p className="font-black text-gray-800 text-xs uppercase tracking-widest mb-2 border-b border-gray-50 pb-2">Registros em {data.date}</p>
+            <div className="space-y-1.5">
+              {(selectedRecordType === 'all' || selectedRecordType === 'presenca') && (
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-blue-500">Presença:</span>
+                  <span className="text-gray-800 font-black">{data.presenca.toFixed(0)}%</span>
+                </div>
+              )}
+              {(selectedRecordType === 'all' || selectedRecordType === 'refeicao') && (
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-purple-500">Refeição:</span>
+                  <span className="text-gray-800 font-black">{data.refeicao.toFixed(0)}%</span>
+                </div>
+              )}
+              {(selectedRecordType === 'all' || selectedRecordType === 'atividade') && (
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-amber-500">Atividades:</span>
+                  <span className="text-gray-800 font-black">{(data.atividades / 10).toFixed(0)} reg.</span>
+                </div>
+              )}
+              {(selectedRecordType === 'all' || selectedRecordType === 'notas') && (
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-pink-500">Notas (Média):</span>
+                  <span className="text-gray-800 font-black">{(data.notasReal || 0).toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+      return null;
+    };
+
     return (
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-5">
@@ -886,38 +928,70 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Período</label>
-                <select className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                  <option>Mês Atual</option>
-                  <option>Semana</option>
+                <select 
+                  value={selectedTeacherPeriod}
+                  onChange={(e) => setSelectedTeacherPeriod(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                >
+                   <option value="mes">Mês Atual</option>
+                  <option value="semana">Semana</option>
+                  <option value="ano">Ano Atual</option>
                 </select>
               </div>
             </div>
 
             <div className="h-[300px] w-full bg-gray-50/30 rounded-[2rem] border border-gray-50 p-6">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={studentRecords && studentRecords.length > 0 ?
-                  Array.from(new Set(studentRecords
-                    .filter(r => selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId)
-                    .map(r => r.date))).sort().slice(-15).map(date => {
-                      const dayRecords = studentRecords.filter(r => r.date === date && (selectedTeacherStudentId === 'all' ? myStudents.some(s => s.id === r.studentId) : r.studentId === selectedTeacherStudentId));
-                      const totalStudentsOnDay = selectedTeacherStudentId === 'all' ? Math.max(1, myStudents.length) : 1;
+                <LineChart data={studentRecords && studentRecords.length > 0 ? (() => {
+                  // 1. Filtrar registros por estudante
+                  let teacherFilteredRecords = studentRecords.filter(r => 
+                    selectedTeacherStudentId === 'all' 
+                      ? myStudents.some(s => s.id === r.studentId) 
+                      : r.studentId === selectedTeacherStudentId
+                  );
 
-                      return {
-                        date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                        presenca: (dayRecords.filter(r => r.recordType === 'presenca' && r.value === 'presente').length / totalStudentsOnDay) * 100,
-                        refeicao: (dayRecords.filter(r => r.recordType === 'refeicao' && r.value !== 'não consumiu').length / totalStudentsOnDay) * 100,
-                        atividades: (dayRecords.filter(r => r.recordType === 'atividade').length / totalStudentsOnDay) * 10,
-                        notas: (dayRecords.filter(r => r.recordType === 'nota' || r.recordType === 'notas').length / totalStudentsOnDay) * 10,
-                      };
-                    }) : [
-                    { date: '01/02', presenca: 80, refeicao: 70, atividades: 6, notas: 7 },
-                    { date: '10/02', presenca: 90, refeicao: 85, atividades: 8, notas: 8 },
-                    { date: '20/02', presenca: 95, refeicao: 90, atividades: 9, notas: 9 },
-                  ]}>
+                  // 2. Filtrar por período (mes, semana ou ano)
+                  if (selectedTeacherPeriod === 'semana') {
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    teacherFilteredRecords = teacherFilteredRecords.filter(r => new Date(r.date) >= oneWeekAgo);
+                  } else if (selectedTeacherPeriod === 'mes') {
+                    const oneMonthAgo = new Date();
+                    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+                    teacherFilteredRecords = teacherFilteredRecords.filter(r => new Date(r.date) >= oneMonthAgo);
+                  } else if (selectedTeacherPeriod === 'ano') {
+                    const oneYearAgo = new Date();
+                    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                    teacherFilteredRecords = teacherFilteredRecords.filter(r => new Date(r.date) >= oneYearAgo);
+                  }
+
+                  return Array.from(new Set(teacherFilteredRecords.map(r => r.date))).sort().slice(-15).map(date => {
+                    const dayRecords = teacherFilteredRecords.filter(r => r.date === date);
+                    const totalStudentsOnDay = selectedTeacherStudentId === 'all' ? Math.max(1, myStudents.length) : 1;
+
+                    const gradeRecords = dayRecords.filter(r => r.recordType === 'nota' || r.recordType === 'notas');
+                    const avgGrade = gradeRecords.length > 0
+                      ? gradeRecords.reduce((sum, r) => sum + parseFloat(r.value || '0'), 0) / gradeRecords.length
+                      : 0;
+
+                    return {
+                      date: new Date(date as string).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                      presenca: (dayRecords.filter(r => r.recordType === 'presenca' && r.value === 'presente').length / totalStudentsOnDay) * 100,
+                      refeicao: (dayRecords.filter(r => r.recordType === 'refeicao' && r.value !== 'não consumiu').length / totalStudentsOnDay) * 100,
+                      atividades: (dayRecords.filter(r => r.recordType === 'atividade').length / totalStudentsOnDay) * 10,
+                      notas: avgGrade * 10,
+                      notasReal: avgGrade,
+                    };
+                  });
+                })() : [
+                  { date: '01/02', presenca: 80, refeicao: 70, atividades: 6, notas: 70, notasReal: 7 },
+                  { date: '10/02', presenca: 90, refeicao: 85, atividades: 8, notas: 80, notasReal: 8 },
+                  { date: '20/02', presenca: 95, refeicao: 90, atividades: 9, notas: 90, notasReal: 9 },
+                ]}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} domain={[0, 100]} />
-                  <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip content={<CustomTeacherTooltip />} />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 800 }} />
                   {(selectedRecordType === 'all' || selectedRecordType === 'presenca') && (
                     <Line type="monotone" dataKey="presenca" name="Presença %" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
@@ -929,7 +1003,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <Line type="monotone" dataKey="atividades" name="Atividades (Qtd)" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
                   )}
                   {(selectedRecordType === 'all' || selectedRecordType === 'notas') && (
-                    <Line type="monotone" dataKey="notas" name="Notas (Qtd)" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="notas" name="Média de Notas" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} />
                   )}
                 </LineChart>
               </ResponsiveContainer>
@@ -989,6 +1063,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <option value="mes">Mês Atual</option>
                   <option value="semana">Semana</option>
+                  <option value="ano">Ano Atual</option>
                 </select>
               </div>
             </div>
