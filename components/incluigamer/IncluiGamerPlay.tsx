@@ -687,6 +687,35 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
           }, 2200);
         }
       }
+      else if (gameId === 'mapa_regioes_10_12') {
+        const estadosDB = [
+          { estado: 'Amazonas (AM)', regiao: 'Norte', pinX: 32, pinY: 35, incorretas: ['Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'] },
+          { estado: 'Bahia (BA)', regiao: 'Nordeste', pinX: 72, pinY: 42, incorretas: ['Norte', 'Centro-Oeste', 'Sudeste', 'Sul'] },
+          { estado: 'Mato Grosso (MT)', regiao: 'Centro-Oeste', pinX: 46, pinY: 58, incorretas: ['Norte', 'Nordeste', 'Sudeste', 'Sul'] },
+          { estado: 'São Paulo (SP)', regiao: 'Sudeste', pinX: 68, pinY: 74, incorretas: ['Norte', 'Nordeste', 'Centro-Oeste', 'Sul'] },
+          { estado: 'Rio Grande do Sul (RS)', regiao: 'Sul', pinX: 52, pinY: 88, incorretas: ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste'] },
+          { estado: 'Pará (PA)', regiao: 'Norte', pinX: 46, pinY: 28, incorretas: ['Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'] },
+          { estado: 'Pernambuco (PE)', regiao: 'Nordeste', pinX: 80, pinY: 35, incorretas: ['Norte', 'Centro-Oeste', 'Sudeste', 'Sul'] },
+          { estado: 'Goiás (GO)', regiao: 'Centro-Oeste', pinX: 54, pinY: 64, incorretas: ['Norte', 'Nordeste', 'Sudeste', 'Sul'] },
+          { estado: 'Minas Gerais (MG)', regiao: 'Sudeste', pinX: 68, pinY: 66, incorretas: ['Norte', 'Nordeste', 'Centro-Oeste', 'Sul'] },
+          { estado: 'Santa Catarina (SC)', regiao: 'Sul', pinX: 56, pinY: 82, incorretas: ['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste'] }
+        ];
+
+        const item = estadosDB[(roundNum - 1) % estadosDB.length];
+        const opcoes = [...item.incorretas.slice(0, numOptions - 1), item.regiao].sort(() => Math.random() - 0.5);
+        const prompt = `Associe o estado ${item.estado} à sua região brasileira correspondente:`;
+        speakCommand(prompt);
+        setGameState({
+          prompt,
+          respostaCorreta: item.regiao,
+          opcoes,
+          estado: item.estado,
+          regiao: item.regiao,
+          pinX: item.pinX,
+          pinY: item.pinY,
+          tipo: 'mapa_regioes'
+        });
+      }
       else if (gameId === 'balao_formas') {
         if (lvl === 1) {
           // Pareamento de Formas Planas Simples (faixa 0-3 anos)
@@ -2131,16 +2160,61 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               
               {/* Renderizadores de Caixas lúdicas especializadas por tipo de mecânica (Fase 5) */}
               {gameState.tipo === 'letras' && (
-                <div className="text-6xl font-black text-white tracking-widest bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-xs mx-auto shadow-inner flex items-center justify-center gap-1">
-                  {gameState.incompleta.split('').map((char: string, i: number) => (
-                    <span 
-                      key={i} 
-                      className={`${char === '_' ? 'text-indigo-400 border-b-4 border-indigo-500/60 pb-1 px-2' : ''}`}
-                    >
-                      {char === '_' ? '?' : char}
-                    </span>
-                  ))}
-                </div>
+                game.id === 'cacadores_letras_infantil' && gameState.prompt.includes('sílaba BO') ? (
+                  <div className="flex flex-col items-center justify-center h-32 w-32 mx-auto relative select-none">
+                    <style>
+                      {`
+                        @keyframes ballBounce {
+                          0%, 100% { transform: translateY(0); }
+                          50% { transform: translateY(-25px); }
+                        }
+                        @keyframes shadowPulse {
+                          0%, 100% { transform: scale(1); opacity: 0.35; }
+                          50% { transform: scale(0.6); opacity: 0.15; }
+                        }
+                        .bouncing-ball {
+                          animation: ballBounce 1.2s infinite ease-in-out;
+                        }
+                        .ball-shadow {
+                          animation: shadowPulse 1.2s infinite ease-in-out;
+                          transform-origin: center;
+                        }
+                      `}
+                    </style>
+                    <svg viewBox="0 0 100 100" className="w-24 h-24 overflow-visible">
+                      <defs>
+                        <radialGradient id="ballGrad" cx="35%" cy="35%" r="65%">
+                          <stop offset="0%" stopColor="#ff5e62" />
+                          <stop offset="35%" stopColor="#ff9966" />
+                          <stop offset="70%" stopColor="#ffcc33" />
+                          <stop offset="100%" stopColor="#33ccff" />
+                        </radialGradient>
+                      </defs>
+                      {/* Sombra da bola */}
+                      <ellipse cx="50" cy="85" rx="18" ry="4.5" fill="#000" className="ball-shadow" />
+                      {/* Bola colorida */}
+                      <g className="bouncing-ball">
+                        <circle cx="50" cy="45" r="22" fill="url(#ballGrad)" stroke="#fff" strokeWidth="2.5" />
+                        {/* Brilho da bola */}
+                        <circle cx="42" cy="37" r="5" fill="#fff" opacity="0.6" />
+                        {/* Linhas decorativas da bola */}
+                        <path d="M 33 34 Q 50 55 67 34" stroke="#fff" strokeWidth="1.5" fill="none" opacity="0.6" />
+                        <path d="M 31 48 Q 50 67 69 48" stroke="#fff" strokeWidth="1.5" fill="none" opacity="0.6" />
+                      </g>
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="text-6xl font-black text-white tracking-widest bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-xs mx-auto shadow-inner flex items-center justify-center gap-1">
+                    {gameState.incompleta.split('').map((char: string, i: number) => (
+                      <span 
+                        key={i} 
+                        className={`${char === '_' ? 'text-indigo-400 border-b-4 border-indigo-500/60 pb-1 px-2' : ''}`}
+                      >
+                        {char === '_' ? '?' : char}
+                      </span>
+                    ))}
+                  </div>
+                )
               )}
 
               {gameState.tipo === 'formas' && (
@@ -2432,6 +2506,110 @@ export default function IncluiGamerPlay({ game, student, user, accessibility, pr
               {gameState.tipo === 'matematica' && (
                 <div className="text-3xl font-black text-amber-300 max-w-md mx-auto bg-slate-900/60 border border-slate-850 p-6 rounded-3xl shadow-inner tracking-wider flex flex-col gap-2 items-center justify-center">
                   {gameState.conjunto || gameState.sequencia}
+                </div>
+              )}
+
+              {gameState.tipo === 'mapa_regioes' && (
+                <div className="flex flex-col items-center justify-center space-y-4 max-w-lg mx-auto select-none">
+                  <style>
+                    {`
+                      @keyframes mapGlow {
+                        0%, 100% { filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.2)); }
+                        50% { filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.8)); }
+                      }
+                      .correct-region-glow {
+                        animation: mapGlow 1.2s infinite ease-in-out;
+                        stroke: #10B981 !important;
+                        stroke-width: 3px !important;
+                      }
+                      @keyframes pulsePin {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.2); }
+                      }
+                      .pulse-state-pin {
+                        animation: pulsePin 1.2s infinite ease-in-out;
+                        transform-origin: center;
+                      }
+                      .region-path {
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                      }
+                      .region-path:hover {
+                        opacity: 0.85;
+                        transform: scale(1.01);
+                        transform-origin: center;
+                      }
+                    `}
+                  </style>
+                  <div className="relative bg-slate-950/80 border border-slate-850 p-4 rounded-[2.5rem] shadow-2xl w-full flex items-center justify-center overflow-hidden min-h-[300px]">
+                    <svg viewBox="0 0 100 100" className="w-72 h-72 overflow-visible select-none">
+                      {/* Região Norte */}
+                      <path
+                        d="M 10,38 C 15,18 48,15 56,38 C 50,55 35,62 10,48 Z"
+                        fill="#10B981"
+                        stroke="#047857"
+                        strokeWidth="1.5"
+                        className={`region-path ${feedbackMsg.type === 'success' && gameState.regiao === 'Norte' ? 'correct-region-glow' : ''}`}
+                        onClick={() => handleSelectOption('Norte')}
+                      />
+                      <text x="28" y="36" fill="#fff" className="text-[5px] font-black pointer-events-none uppercase tracking-widest opacity-90">Norte</text>
+
+                      {/* Região Nordeste */}
+                      <path
+                        d="M 56,38 C 70,22 86,25 92,40 C 92,55 70,60 58,52 Z"
+                        fill="#F59E0B"
+                        stroke="#B45309"
+                        strokeWidth="1.5"
+                        className={`region-path ${feedbackMsg.type === 'success' && gameState.regiao === 'Nordeste' ? 'correct-region-glow' : ''}`}
+                        onClick={() => handleSelectOption('Nordeste')}
+                      />
+                      <text x="70" y="38" fill="#fff" className="text-[5px] font-black pointer-events-none uppercase tracking-widest opacity-90">Nordeste</text>
+
+                      {/* Região Centro-Oeste */}
+                      <path
+                        d="M 32,54 C 52,50 62,48 64,65 C 58,78 42,78 32,70 Z"
+                        fill="#8B5CF6"
+                        stroke="#6D28D9"
+                        strokeWidth="1.5"
+                        className={`region-path ${feedbackMsg.type === 'success' && gameState.regiao === 'Centro-Oeste' ? 'correct-region-glow' : ''}`}
+                        onClick={() => handleSelectOption('Centro-Oeste')}
+                      />
+                      <text x="38" y="62" fill="#fff" className="text-[5px] font-black pointer-events-none uppercase tracking-widest opacity-90">Centro-Oeste</text>
+
+                      {/* Região Sudeste */}
+                      <path
+                        d="M 64,65 C 74,60 84,68 78,82 C 68,85 60,78 64,65 Z"
+                        fill="#3B82F6"
+                        stroke="#1D4ED8"
+                        strokeWidth="1.5"
+                        className={`region-path ${feedbackMsg.type === 'success' && gameState.regiao === 'Sudeste' ? 'correct-region-glow' : ''}`}
+                        onClick={() => handleSelectOption('Sudeste')}
+                      />
+                      <text x="67" y="73" fill="#fff" className="text-[5px] font-black pointer-events-none uppercase tracking-widest opacity-90">Sudeste</text>
+
+                      {/* Região Sul */}
+                      <path
+                        d="M 45,78 C 55,75 62,78 60,95 C 52,98 45,90 45,78 Z"
+                        fill="#EF4444"
+                        stroke="#B91C1C"
+                        strokeWidth="1.5"
+                        className={`region-path ${feedbackMsg.type === 'success' && gameState.regiao === 'Sul' ? 'correct-region-glow' : ''}`}
+                        onClick={() => handleSelectOption('Sul')}
+                      />
+                      <text x="49" y="87" fill="#fff" className="text-[5px] font-black pointer-events-none uppercase tracking-widest opacity-90">Sul</text>
+
+                      {/* Marcador do Estado Ativo */}
+                      <g transform={`translate(${gameState.pinX}, ${gameState.pinY})`} className="pulse-state-pin">
+                        <circle cx="0" cy="0" r="8" fill="#fff" stroke="#ff007f" strokeWidth="2.5" className="shadow-lg" />
+                        <text x="0" y="2.5" fill="#ff007f" className="text-[7px] font-black" textAnchor="middle">
+                          {gameState.estado.split('(')[1].split(')')[0]}
+                        </text>
+                      </g>
+                    </svg>
+                  </div>
+                  <div className="text-center font-bold text-sm text-indigo-300">
+                    O estado marcado é: <span className="text-white text-base font-black underline decoration-indigo-500 decoration-2">{gameState.estado}</span>
+                  </div>
                 </div>
               )}
 
